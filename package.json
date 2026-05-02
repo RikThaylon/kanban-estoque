@@ -1,0 +1,21 @@
+{
+  "name": "kanban-estoque",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de controle de estoque com metodologia Kanban (orquestração local)",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "db:migrate": "npm run migrate --prefix backend",
+    "db:seed": "npm run seed --prefix backend",
+    "db:reset": "npm run reset --prefix backend",
+    "db:fresh": "npm run db:reset && npm run db:migrate && npm run db:seed",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently -k -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "start:backend": "npm start --prefix backend",
+    "build:frontend": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

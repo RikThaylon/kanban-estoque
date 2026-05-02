@@ -1,0 +1,93 @@
+# ── Dependências ────────────────────────────────────────────
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+
+# ── Variáveis de ambiente (NUNCA commitar) ─────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+# Mas o .env.example PODE ser commitado (template sem secrets)
+!.env.example
+
+# ── Build outputs ───────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# ── Vite / Frontend ────────────────────────────────────────
+.vite/
+vite.config.js.timestamp-*
+
+# ── Logs ────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Coverage / Testes ──────────────────────────────────────
+coverage/
+*.lcov
+.nyc_output/
+
+# ── Editores / IDEs ────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ── Sistema operacional ────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Banco de dados local / dumps ───────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+backup/
+backups/
+*.dump
+
+# ── Certificados e chaves ──────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+
+# ── Lock files de outros gerenciadores ─────────────────────
+# (manter package-lock.json — npm é o padrão do projeto)
+yarn.lock
+pnpm-lock.yaml
+
+# ── Diversos ────────────────────────────────────────────────
+*.tgz
+.npm
+.eslintcache
+.stylelintcache
+.history/
+tmp/
+temp/
