@@ -169,19 +169,32 @@ function calcularParametrosKanban({
 
   const Z = Z_TABLE[nivelServico] || Z_TABLE[95];
 
-  // 1. Holt → demanda
+  // 1. Holt → demanda semanal prevista; converte para diária
+  //    (assumindo independência diária: σ_d = σ_w / √7)
   const holt = holtDoubleExponential(demandaSemanalSeries);
   const demandaDiariaMedia = holt.forecast / 7;
   const sigmaD = holt.sigma / Math.sqrt(7);
 
-  // 2. Regressão → lead time
+  // 2. Regressão → lead time previsto e seu desvio
   const reg = regressaoLinear(leadTimeSeries);
   const ltPrevisto = Math.max(1, reg.previsao);
   const sigmaLT = reg.sigma;
+  // ltSeguro mantido apenas para exposição de buffer no rastreamento
   const ltSeguro = ltPrevisto + Z_TABLE[95] * sigmaLT;
 
-  // 3. ES = Z × σd × √(LT_seguro)  [arredondar para cima]
-  const ES = Math.ceil(Z * sigmaD * Math.sqrt(ltSeguro));
+  // 3. ES — fórmula clássica de demanda durante lead time com AMBOS estocásticos:
+  //
+  //        ES = Z × √( LT × σd² + d² × σLT² )
+  //
+  //    Termo (LT × σd²)   → variabilidade da demanda durante o lead time previsto
+  //    Termo (d² × σLT²)  → impacto da variabilidade do lead time multiplicada
+  //                         pela demanda média (atrasos custam d×ΔLT unidades)
+  //
+  //    Versão anterior usava ES = Z × σd × √LT_seguro, que IGNORAVA o segundo termo
+  //    e subestimava o estoque de segurança em 30–50% para itens com d alto e LT instável.
+  const varDuranteLT = ltPrevisto * sigmaD * sigmaD + demandaDiariaMedia * demandaDiariaMedia * sigmaLT * sigmaLT;
+  const sigmaDuranteLT = Math.sqrt(Math.max(0, varDuranteLT));
+  const ES = Math.ceil(Z * sigmaDuranteLT);
 
   // 4. PR = ceil(demanda_diaria × lt_previsto + ES)
   const PR = Math.ceil(demandaDiariaMedia * ltPrevisto + ES);
@@ -238,6 +251,7 @@ function calcularParametrosKanban({
       ltPrevisto,
       sigmaLT,
       ltSeguro,
+      sigmaDuranteLT,
       Z,
       dAnual,
       H,

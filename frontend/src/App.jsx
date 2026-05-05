@@ -9,6 +9,9 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Produtos = React.lazy(() => import('./pages/Produtos'));
 const ProdutoDetalhe = React.lazy(() => import('./pages/ProdutoDetalhe'));
 const Pedidos = React.lazy(() => import('./pages/Pedidos'));
+const Movimentacoes = React.lazy(() => import('./pages/Movimentacoes'));
+const Alertas = React.lazy(() => import('./pages/Alertas'));
+const Relatorios = React.lazy(() => import('./pages/Relatorios'));
 const Usuarios = React.lazy(() => import('./pages/Usuarios'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
@@ -54,7 +57,10 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/produtos" element={<Produtos />} />
               <Route path="/produtos/:id" element={<ProdutoDetalhe />} />
+              <Route path="/movimentacoes" element={<Movimentacoes />} />
               <Route path="/pedidos" element={<Pedidos />} />
+              <Route path="/alertas" element={<Alertas />} />
+              <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/raci" element={<Raci />} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />

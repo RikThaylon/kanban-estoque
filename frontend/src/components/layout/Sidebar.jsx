@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, BarChart2, Settings, AlertTriangle, ArrowLeftRight, Users, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, BarChart2, AlertTriangle, ArrowLeftRight, Users, GitBranch } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -17,7 +17,6 @@ const Sidebar = () => {
     { path: '/raci',          icon: GitBranch,       label: 'Matriz RACI',        roles: ['*'] },
     { path: '/relatorios',    icon: BarChart2,       label: 'Relatórios',         roles: ['admin', 'gerente_operacoes', 'gerente_engenharia', 'plant_manager', 'comprador'] },
     { path: '/usuarios',      icon: Users,           label: 'Usuários',           roles: ['admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'] },
-    { path: '/configuracoes', icon: Settings,        label: 'Configurações',      roles: ['admin'] },
   ];
 
   const filteredItems = menuItems.filter(item => 
