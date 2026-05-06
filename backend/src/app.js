@@ -50,6 +50,7 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/usuarios', require('./routes/usuarios'));
 app.use('/api/v1/produtos', require('./routes/produtos'));
+app.use('/api/v1/fornecedores', require('./routes/fornecedores'));
 app.use('/api/v1/movimentacoes', require('./routes/movimentacoes'));
 app.use('/api/v1/pedidos', require('./routes/pedidos'));
 app.use('/api/v1/dashboard', require('./routes/dashboard'));

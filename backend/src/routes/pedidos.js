@@ -29,10 +29,11 @@ async function gerarNumeroPedido() {
 
 // Transições válidas de status
 const TRANSICOES = {
-  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'CANCELADO'],
+  // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
+  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'APROVADO', 'EMITIDO', 'CANCELADO'],
   'AGUARDANDO_APROVACAO': ['APROVADO', 'CANCELADO'],
   'APROVADO': ['EMITIDO', 'CANCELADO'],
-  'EMITIDO': ['EM_TRANSITO', 'CANCELADO'],
+  'EMITIDO': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
   'EM_TRANSITO': ['RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
   'RECEBIDO_PARCIAL': ['RECEBIDO', 'CANCELADO'],
   'RECEBIDO': [],
@@ -273,15 +274,20 @@ router.post('/:id/receber', authenticate,
         [totalRecebido, novoStatus, dataReceb, id]
       );
 
-      // Criar movimentação ENTRADA
+      // Criar movimentação ENTRADA + atualizar estoque (a migration 003 removeu o trigger)
       const prodRes = await client.query('SELECT estoque_atual FROM produtos WHERE id = $1 FOR UPDATE', [pedido.produto_id]);
       const estoqueAntes = parseFloat(prodRes.rows[0].estoque_atual);
       const estoqueDepois = estoqueAntes + parseFloat(quantidade_recebida);
 
       await client.query(
-        `INSERT INTO movimentacoes (produto_id, tipo, quantidade, estoque_antes, estoque_depois, referencia, numero_documento, criado_por)
-         VALUES ($1, 'ENTRADA', $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO movimentacoes (produto_id, tipo, quantidade, estoque_antes, estoque_depois, referencia, numero_documento, status, criado_por)
+         VALUES ($1, 'ENTRADA', $2, $3, $4, $5, $6, 'EXECUTADO', $7)`,
         [pedido.produto_id, quantidade_recebida, estoqueAntes, estoqueDepois, `Pedido ${pedido.numero}`, numero_nf, req.user.id]
+      );
+
+      await client.query(
+        'UPDATE produtos SET estoque_atual = $1, atualizado_em = NOW() WHERE id = $2',
+        [estoqueDepois, pedido.produto_id]
       );
 
       await client.query('COMMIT');

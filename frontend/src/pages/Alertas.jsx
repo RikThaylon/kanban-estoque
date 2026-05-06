@@ -31,7 +31,7 @@ const Alertas = () => {
   });
 
   const alertas = data?.data || [];
-  const total = data?.pagination?.total || 0;
+  const total = data?.total || 0;
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">

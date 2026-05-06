@@ -39,14 +39,11 @@ const Produtos = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800 tracking-tight">Catálogo de Produtos</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-navy-800 tracking-tight">Catálogo de Produtos</h1>
           <p className="text-navy-400 text-sm mt-1">Gerencie os itens do estoque e acompanhe as faixas Kanban</p>
         </div>
-        <button className="btn-primary">
-          <Plus className="w-4 h-4" /> Novo Produto
-        </button>
       </div>
 
       <div className="card p-4">
