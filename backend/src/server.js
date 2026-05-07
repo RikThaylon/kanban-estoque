@@ -1,4 +1,5 @@
 const http = require('http');
+const os = require('os');
 const { Server } = require('socket.io');
 const cron = require('node-cron');
 const app = require('./app');
@@ -11,12 +12,43 @@ const { limparTokensExpirados } = require('./jobs/limpeza.job');
 const { recalcularABC } = require('./jobs/abc.job');
 const logger = require('./utils/logger');
 
+/** Lista todos os IPv4 não-internos das interfaces de rede (Wi-Fi, Ethernet, etc.) */
+function listarIPsLocais() {
+  const ifaces = os.networkInterfaces();
+  const ips = [];
+  for (const [nome, addrs] of Object.entries(ifaces)) {
+    for (const a of addrs || []) {
+      if (a.family === 'IPv4' && !a.internal) {
+        ips.push({ interface: nome, address: a.address });
+      }
+    }
+  }
+  return ips;
+}
+
 const server = http.createServer(app);
 
 // ── Socket.io ─────────────────────────────────────────────
+// Mesma lógica do CORS HTTP em app.js: aceita LAN privada em dev pra permitir
+// que celular/tablet conectem ao WebSocket via IP da LAN.
+const corsOriginsLista = env.CORS_ORIGINS.split(',').map(o => o.trim());
 const io = new Server(server, {
   cors: {
-    origin: env.CORS_ORIGINS.split(',').map(o => o.trim()),
+    origin: (origin, callback) => {
+      if (!origin || corsOriginsLista.includes(origin)) return callback(null, true);
+      if (env.NODE_ENV === 'development') {
+        try {
+          const h = new URL(origin).hostname;
+          if (
+            /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)
+            || /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
+            || /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h)
+            || h === 'localhost' || h === '127.0.0.1'
+          ) return callback(null, true);
+        } catch (_) { /* ignore */ }
+      }
+      callback(new Error('Bloqueado pelo CORS'));
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -41,9 +73,37 @@ cron.schedule('0 2 * * 0', () => recalcularABC());
 // ── Start Server ──────────────────────────────────────────
 async function start() {
   await connectRedis();
-  
-  server.listen(env.PORT, () => {
-    logger.info(`🚀 Servidor rodando em http://localhost:${env.PORT}`);
+
+  // 0.0.0.0 → escuta em TODAS as interfaces (localhost + LAN). Permite acesso
+  // de celular/tablet na mesma rede WiFi (necessário pra teste mobile real).
+  server.listen(env.PORT, '0.0.0.0', () => {
+    const ips = listarIPsLocais();
+    const conteudos = [
+      '🚀 Kanban Estoque — Backend ativo',
+      '',
+      `Local:    http://localhost:${env.PORT}`,
+      `          http://127.0.0.1:${env.PORT}`,
+    ];
+    if (ips.length > 0) {
+      conteudos.push('');
+      conteudos.push('Rede (LAN — acesso de celular/tablet na mesma WiFi):');
+      for (const ip of ips) {
+        conteudos.push(`  [${ip.interface}] http://${ip.address}:${env.PORT}`);
+      }
+    }
+    // Largura dinâmica = maior linha + padding
+    const larguraInterna = Math.max(...conteudos.map(c => c.length)) + 4;
+    const horiz = '─'.repeat(larguraInterna);
+    console.log('');
+    console.log('╭' + horiz + '╮');
+    conteudos.forEach((c, i) => {
+      const linha = '  ' + c;
+      console.log('│' + linha + ' '.repeat(larguraInterna - linha.length) + '│');
+      // separador após o título
+      if (i === 0) console.log('├' + horiz + '┤');
+    });
+    console.log('╰' + horiz + '╯');
+
     logger.info(`📊 Ambiente: ${env.NODE_ENV}`);
     logger.info(`🔌 Socket.io ativo`);
     logger.info(`⏰ Jobs agendados: recálculo (06/18h), prazos (08h), limpeza (03h), ABC (dom 02h)`);

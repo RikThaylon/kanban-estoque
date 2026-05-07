@@ -1,7 +1,16 @@
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../stores/authStore';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+// Mesma estratégia do api.js: resolve dinamicamente para suportar acesso de
+// celular/tablet via IP da LAN (não pode ser "localhost" hardcoded).
+function resolverWsUrl() {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:3001`;
+  }
+  return 'http://localhost:3001';
+}
+const WS_URL = resolverWsUrl();
 
 let socket = null;
 

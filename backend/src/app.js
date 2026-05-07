@@ -16,14 +16,28 @@ app.use(helmet({
 }));
 
 // ── CORS ──────────────────────────────────────────────────
+// Em dev, aceitamos também qualquer origem da rede local privada (192.168.x.x,
+// 10.x.x.x, 172.16-31.x.x) para permitir acesso de celular/tablet na mesma WiFi.
 const allowedOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim());
+const isLanOrigin = (origin) => {
+  if (!origin) return true;
+  try {
+    const url = new URL(origin);
+    const h = url.hostname;
+    // RFC1918: redes privadas
+    return /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)
+      || /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
+      || /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h)
+      || h === 'localhost' || h === '127.0.0.1';
+  } catch {
+    return false;
+  }
+};
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Bloqueado pelo CORS'));
-    }
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (env.NODE_ENV === 'development' && isLanOrigin(origin)) return callback(null, true);
+    callback(new Error('Bloqueado pelo CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],

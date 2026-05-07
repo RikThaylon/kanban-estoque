@@ -1,7 +1,31 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+/**
+ * Resolve baseURL dinamicamente para suportar acesso de mobile/tablet na LAN.
+ *
+ * - Se VITE_API_URL foi setado explicitamente (ex: produção) → usa ele.
+ * - Senão → usa o MESMO hostname pelo qual a página foi acessada, mas porta 3001.
+ *
+ * Por que? Quando você abre o app do celular em http://192.168.0.10:5173, o
+ * "localhost:3001" hardcoded NÃO funciona — porque "localhost" no celular é o
+ * próprio celular. A solução é apontar pra http://192.168.0.10:3001 dinamicamente.
+ */
+function resolverApiUrl() {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:3001/api/v1`;
+  }
+  return 'http://localhost:3001/api/v1';
+}
+
+const API_URL = resolverApiUrl();
+// Expor pra debug e pro WebSocket usar a mesma resolução
+export const API_BASE_URL = API_URL;
+if (typeof window !== 'undefined') {
+  // eslint-disable-next-line no-console
+  console.info('[Kanban Estoque] API base:', API_URL);
+}
 
 const api = axios.create({
   baseURL: API_URL,

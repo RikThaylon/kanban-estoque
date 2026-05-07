@@ -10,7 +10,11 @@ export default defineConfig({
     },
   },
   server: {
+    // 0.0.0.0 → escuta em TODAS as interfaces (localhost + LAN). O Vite mostra
+    // automaticamente as URLs Local e Network ao iniciar (pra acessar do celular).
+    host: '0.0.0.0',
     port: 5173,
+    strictPort: false,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
