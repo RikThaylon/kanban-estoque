@@ -91,3 +91,15 @@ pnpm-lock.yaml
 .history/
 tmp/
 temp/
+
+
+# Arquivos temporarios de QA/commit
+.commit-msg.tmp
+.qa.log
+.qa.err
+.backend.log
+.backend.err
+.token.tmp
+.test-boot.log
+.test-boot.err
+
