@@ -249,4 +249,70 @@ router.get('/estatisticas-gerais', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── GET /api/v1/relatorios/previsao-gastos-mensal ──────────────────────────
+// Agrupa pedidos APROVADOS / EMITIDOS / EM_TRANSITO / RECEBIDO_PARCIAL por
+// data_chegada = COALESCE(data_prevista, data_emissao + lead_time_nominal_dias).
+// Retorna previsão de saída de caixa por mês de chegada (não por data de emissão).
+router.get('/previsao-gastos-mensal', authenticate, async (req, res, next) => {
+  try {
+    const meses = Math.min(parseInt(req.query.meses, 10) || 12, 24);
+
+    // Status que ainda vão chegar (excluindo RECEBIDO total, CANCELADO, REJEITADO, RASCUNHO, AGUARDANDO_*)
+    const result = await query(`
+      WITH com_chegada AS (
+        SELECT pc.id, pc.numero, pc.status, pc.custo_total,
+               pc.quantidade_pedida, pc.quantidade_recebida,
+               (pc.custo_total - COALESCE(pc.custo_total * pc.quantidade_recebida / NULLIF(pc.quantidade_pedida, 0), 0)) AS valor_aberto,
+               COALESCE(
+                 pc.data_prevista::TIMESTAMPTZ,
+                 pc.data_emissao + (COALESCE(pf.lead_time_nominal_dias, 7) || ' days')::INTERVAL
+               ) AS data_chegada,
+               p.id AS produto_id, p.codigo AS produto_codigo, p.nome AS produto_nome,
+               c.nome AS categoria_nome, c.cor_hex
+        FROM pedidos_compra pc
+        JOIN produtos p ON p.id = pc.produto_id
+        LEFT JOIN categorias c ON c.id = p.categoria_id
+        LEFT JOIN produto_fornecedor pf ON pf.produto_id = pc.produto_id AND pf.fornecedor_id = pc.fornecedor_id
+        WHERE pc.status IN ('APROVADO', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL')
+          AND pc.data_emissao IS NOT NULL
+      )
+      SELECT TO_CHAR(date_trunc('month', data_chegada), 'YYYY-MM') AS mes_chegada,
+             COUNT(*) AS qtd_ordens,
+             SUM(valor_aberto) AS valor_total_previsto,
+             SUM(custo_total) AS valor_total_bruto,
+             jsonb_agg(jsonb_build_object(
+               'pedido_id', id,
+               'numero', numero,
+               'status', status,
+               'produto_codigo', produto_codigo,
+               'produto_nome', produto_nome,
+               'categoria_nome', categoria_nome,
+               'cor_hex', cor_hex,
+               'valor_aberto', valor_aberto,
+               'data_chegada', data_chegada
+             ) ORDER BY data_chegada) AS itens
+      FROM com_chegada
+      WHERE data_chegada <= NOW() + ($1 || ' months')::INTERVAL
+      GROUP BY date_trunc('month', data_chegada)
+      ORDER BY date_trunc('month', data_chegada) ASC
+    `, [meses]);
+
+    const linhas = result.rows.map(r => ({
+      mes_chegada: r.mes_chegada,
+      qtd_ordens: parseInt(r.qtd_ordens, 10),
+      valor_total_previsto: parseFloat(r.valor_total_previsto || 0),
+      valor_total_bruto: parseFloat(r.valor_total_bruto || 0),
+      itens: r.itens || [],
+    }));
+
+    const totalPeriodo = linhas.reduce((s, l) => s + l.valor_total_previsto, 0);
+
+    res.json({
+      meses_horizonte: meses,
+      total_previsto_periodo: totalPeriodo,
+      linhas,
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

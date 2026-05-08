@@ -30,14 +30,16 @@ async function gerarNumeroPedido() {
 // Transições válidas de status
 const TRANSICOES = {
   // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
-  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'APROVADO', 'EMITIDO', 'CANCELADO'],
-  'AGUARDANDO_APROVACAO': ['APROVADO', 'CANCELADO'],
+  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'APROVADO', 'EMITIDO', 'CANCELADO'],
+  'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  'AGUARDANDO_GERENTE': ['APROVADO', 'CANCELADO', 'REJEITADO'],
   'APROVADO': ['EMITIDO', 'CANCELADO'],
   'EMITIDO': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
   'EM_TRANSITO': ['RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
   'RECEBIDO_PARCIAL': ['RECEBIDO', 'CANCELADO'],
   'RECEBIDO': [],
   'CANCELADO': [],
+  'REJEITADO': [],
 };
 
 // GET /api/v1/pedidos
@@ -108,26 +110,53 @@ router.post('/', authenticate,
   ], validate,
   async (req, res, next) => {
     try {
-      const { produto_id, fornecedor_id, quantidade_pedida, preco_unitario, data_prevista } = req.body;
+      const { produto_id, fornecedor_id, quantidade_pedida, preco_unitario, data_prevista, departamento_id } = req.body;
       const numero = await gerarNumeroPedido();
       const custoTotal = preco_unitario ? (preco_unitario * quantidade_pedida) : null;
 
       const kpRes = await query('SELECT faixa_atual, ponto_reposicao FROM kanban_parametros WHERE produto_id = $1', [produto_id]);
       const prodRes = await query('SELECT estoque_atual FROM produtos WHERE id = $1', [produto_id]);
 
-      // Comprador/facilitador sempre criam em AGUARDANDO_APROVACAO. Supervisor/gerente/admin podem
-      // criar como RASCUNHO para emitir manualmente depois.
-      const status = ['comprador', 'facilitador'].includes(req.user.perfil)
-        ? 'AGUARDANDO_APROVACAO'
+      // Roteamento automático por departamento:
+      // se não foi passado, tenta inferir pela 1ª máquina vinculada ao produto
+      let deptId = departamento_id || null;
+      if (!deptId) {
+        const inf = await query(`
+          SELECT m.departamento_id FROM maquina_produto mp
+          JOIN maquinas m ON m.id = mp.maquina_id
+          WHERE mp.produto_id = $1 AND m.departamento_id IS NOT NULL
+          LIMIT 1
+        `, [produto_id]);
+        deptId = inf.rows[0]?.departamento_id || null;
+      }
+
+      // Status inicial:
+      //  - Comprador/facilitador → AGUARDANDO_APROVACAO (sup turno aprova primeiro)
+      //  - Acima de R$ LIMITE_GERENCIA → AGUARDANDO_GERENTE direto se é facilitador/comprador
+      //  - Supervisor/gerente/admin → RASCUNHO (controle manual)
+      const isOperacional = ['comprador', 'facilitador'].includes(req.user.perfil);
+      const exigeGerencia = custoTotal !== null && custoTotal >= LIMITE_GERENCIA;
+      const status = isOperacional
+        ? (exigeGerencia ? 'AGUARDANDO_GERENTE' : 'AGUARDANDO_APROVACAO')
         : 'RASCUNHO';
 
       const result = await query(
-        `INSERT INTO pedidos_compra (numero, produto_id, fornecedor_id, quantidade_pedida, preco_unitario, custo_total, status, faixa_no_momento, estoque_no_momento, pr_no_momento, data_prevista, criado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        `INSERT INTO pedidos_compra (numero, produto_id, fornecedor_id, quantidade_pedida, preco_unitario, custo_total, status, faixa_no_momento, estoque_no_momento, pr_no_momento, data_prevista, departamento_id, criado_por)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [numero, produto_id, fornecedor_id, quantidade_pedida, preco_unitario, custoTotal, status,
          kpRes.rows[0]?.faixa_atual, prodRes.rows[0]?.estoque_atual, kpRes.rows[0]?.ponto_reposicao,
-         data_prevista, req.user.id]
+         data_prevista, deptId, req.user.id]
       );
+
+      const io = req.app.get('io');
+      if (io && status !== 'RASCUNHO') {
+        io.emit('pedido:status', {
+          pedido_id: result.rows[0].id,
+          numero: result.rows[0].numero,
+          status_novo: status,
+          departamento_id: deptId,
+        });
+      }
 
       res.status(201).json(result.rows[0]);
     } catch (err) { next(err); }
@@ -135,7 +164,10 @@ router.post('/', authenticate,
 );
 
 // POST /api/v1/pedidos/:id/aprovar
-// Sup turno aprova se custo < LIMITE_GERENCIA. Acima disso, exige gerente de operacoes (ou admin).
+// Fluxo:
+//   AGUARDANDO_APROVACAO + custo >= LIMITE → escalar para AGUARDANDO_GERENTE (sup turno aprovou nível 1)
+//   AGUARDANDO_APROVACAO + custo < LIMITE  → APROVADO direto (sup turno tem alçada total)
+//   AGUARDANDO_GERENTE (qualquer custo)    → APROVADO (somente gerente_operacoes/plant_manager/admin)
 router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compra'),
   async (req, res, next) => {
     try {
@@ -144,38 +176,86 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
 
       const pedido = pedRes.rows[0];
-      if (pedido.status !== 'AGUARDANDO_APROVACAO') {
+      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(pedido.status)) {
         throw new AppError(`Pedido não está aguardando aprovação (status atual: ${pedido.status})`, 400, 'STATUS_INVALIDO');
       }
 
       const custo = parseFloat(pedido.custo_total || 0);
-      const exigeGerencia = custo >= LIMITE_GERENCIA;
 
-      if (exigeGerencia && !podeAprovarNivel2(req.user.perfil)) {
-        throw new AppError(
-          `Pedido acima de R$ ${LIMITE_GERENCIA} exige aprovação do Gerente de Operações`,
-          403,
-          'APROVACAO_INSUFICIENTE'
-        );
+      // Não permitir auto-aprovação (criador ≠ aprovador, exceto admin)
+      if (pedido.criado_por === req.user.id && req.user.perfil !== 'admin') {
+        throw new AppError('Você não pode aprovar seu próprio pedido', 403, 'AUTO_APROVACAO_PROIBIDA');
       }
 
-      if (!exigeGerencia && !podeAprovarNivel1(req.user.perfil)) {
-        throw new AppError(
-          'Sem permissão para aprovar — necessário Supervisor de Turno ou superior',
-          403,
-          'FORBIDDEN'
-        );
+      let novoStatus = 'APROVADO';
+
+      if (pedido.status === 'AGUARDANDO_APROVACAO') {
+        if (!podeAprovarNivel1(req.user.perfil)) {
+          throw new AppError('Necessário Supervisor de Turno ou superior', 403, 'FORBIDDEN');
+        }
+        // Sup turno aprovou: se passa do limite, escala para gerente
+        if (custo >= LIMITE_GERENCIA && !podeAprovarNivel2(req.user.perfil)) {
+          novoStatus = 'AGUARDANDO_GERENTE';
+        }
+      } else {
+        // AGUARDANDO_GERENTE: só nível 2+ pode aprovar
+        if (!podeAprovarNivel2(req.user.perfil)) {
+          throw new AppError(
+            `Pedido acima de R$ ${LIMITE_GERENCIA} exige aprovação do Gerente de Operações`,
+            403, 'APROVACAO_INSUFICIENTE'
+          );
+        }
+      }
+
+      const sql = novoStatus === 'APROVADO'
+        ? `UPDATE pedidos_compra SET status = 'APROVADO', aprovado_por = $1, atualizado_em = NOW() WHERE id = $2 RETURNING *`
+        : `UPDATE pedidos_compra SET status = 'AGUARDANDO_GERENTE', escalado_em = NOW(), atualizado_em = NOW() WHERE id = $2 RETURNING *`;
+
+      const result = await query(sql, [req.user.id, id]);
+
+      const io = req.app.get('io');
+      if (io) io.emit('pedido:status', { pedido_id: id, numero: result.rows[0].numero, status_novo: novoStatus });
+
+      res.json(result.rows[0]);
+    } catch (err) { next(err); }
+  }
+);
+
+// POST /api/v1/pedidos/:id/rejeitar
+// Sup turno rejeita se status = AGUARDANDO_APROVACAO; gerente rejeita também AGUARDANDO_GERENTE.
+router.post('/:id/rejeitar', authenticate, audit('REJEITAR_PEDIDO', 'pedidos_compra'),
+  [body('motivo').isString().trim().isLength({ min: 5, max: 1000 }).withMessage('Motivo deve ter 5-1000 caracteres')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { motivo } = req.body;
+
+      const pedRes = await query('SELECT status, criado_por FROM pedidos_compra WHERE id = $1', [id]);
+      if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
+      const ped = pedRes.rows[0];
+
+      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(ped.status)) {
+        throw new AppError(`Pedido não pode ser rejeitado neste status: ${ped.status}`, 400, 'STATUS_INVALIDO');
+      }
+
+      // Sup turno rejeita AGUARDANDO_APROVACAO; gerente+ rejeita ambos
+      if (ped.status === 'AGUARDANDO_APROVACAO' && !podeAprovarNivel1(req.user.perfil)) {
+        throw new AppError('Necessário Supervisor de Turno ou superior', 403, 'FORBIDDEN');
+      }
+      if (ped.status === 'AGUARDANDO_GERENTE' && !podeAprovarNivel2(req.user.perfil)) {
+        throw new AppError('Necessário Gerente de Operações ou superior', 403, 'FORBIDDEN');
       }
 
       const result = await query(
-        `UPDATE pedidos_compra
-         SET status = 'APROVADO', aprovado_por = $1, atualizado_em = NOW()
-         WHERE id = $2 RETURNING *`,
-        [req.user.id, id]
+        `UPDATE pedidos_compra SET status = 'REJEITADO', rejeitado_por = $1,
+           rejeitado_em = NOW(), motivo_rejeicao = $2, atualizado_em = NOW()
+         WHERE id = $3 RETURNING *`,
+        [req.user.id, motivo, id]
       );
 
       const io = req.app.get('io');
-      if (io) io.emit('pedido:status', { pedido_id: id, numero: result.rows[0].numero, status_novo: 'APROVADO' });
+      if (io) io.emit('pedido:status', { pedido_id: id, numero: result.rows[0].numero, status_novo: 'REJEITADO' });
 
       res.json(result.rows[0]);
     } catch (err) { next(err); }
@@ -188,12 +268,16 @@ router.get('/:id', authenticate, async (req, res, next) => {
     const result = await query(
       `SELECT pc.*, p.nome AS produto_nome, p.codigo AS produto_codigo,
               f.nome AS fornecedor_nome, f.cnpj AS fornecedor_cnpj,
-              u1.nome AS criado_por_nome, u2.nome AS aprovado_por_nome
+              d.nome AS departamento_nome, d.codigo AS departamento_codigo,
+              u1.nome AS criado_por_nome, u2.nome AS aprovado_por_nome,
+              u3.nome AS rejeitado_por_nome
        FROM pedidos_compra pc
        LEFT JOIN produtos p ON p.id = pc.produto_id
        LEFT JOIN fornecedores f ON f.id = pc.fornecedor_id
+       LEFT JOIN departamentos d ON d.id = pc.departamento_id
        LEFT JOIN usuarios u1 ON u1.id = pc.criado_por
        LEFT JOIN usuarios u2 ON u2.id = pc.aprovado_por
+       LEFT JOIN usuarios u3 ON u3.id = pc.rejeitado_por
        WHERE pc.id = $1`, [req.params.id]
     );
     if (result.rows.length === 0) throw new NotFoundError('Pedido');

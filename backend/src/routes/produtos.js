@@ -246,15 +246,44 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
       estoqueAtual: parseFloat(produto.estoque_atual),
     });
 
+    // Conferência manual com fórmula clássica simples (CMD = Σ/dias, PR = CMD × LT_médio)
+    // Para validação cruzada com o modelo estatístico avançado (Holt + Regressão).
+    const diasObservados = Math.max(1, demandaSemanalSeries.length * 7);
+    const totalConsumo = demandaSemanalSeries.reduce((s, v) => s + v, 0);
+    const cmdSimples = totalConsumo / diasObservados;
+    const ltMedio = leadTimeSeries.length > 0
+      ? leadTimeSeries.reduce((s, v) => s + v, 0) / leadTimeSeries.length
+      : 0;
+    const prSimples = Math.ceil(cmdSimples * ltMedio);
+
     res.json({
       holt_inputs: { series: demandaSemanalSeries, alpha: 0.3, beta: 0.1 },
       holt_outputs: result.intermediarios.holt,
       regressao_inputs: { leadTimes: leadTimeSeries },
       regressao_outputs: result.intermediarios.regressao,
-      es_calculo: { Z: result.intermediarios.Z, sigmaD: result.intermediarios.sigmaD, ltSeguro: result.intermediarios.ltSeguro, ES: result.ES },
+      es_calculo: {
+        Z: result.intermediarios.Z,
+        sigmaD: result.intermediarios.sigmaD,
+        sigmaLT: result.intermediarios.sigmaLT,
+        ltPrevisto: result.intermediarios.ltPrevisto,
+        sigmaDuranteLT: result.intermediarios.sigmaDuranteLT,
+        ES: result.ES,
+        formula: 'Z × √(LT × σd² + d² × σLT²)',
+      },
       pr_calculo: { demandaDiaria: result.intermediarios.demandaDiariaMedia, ltPrevisto: result.intermediarios.ltPrevisto, ES: result.ES, PR: result.PR },
       eoq_calculo: { dAnual: result.intermediarios.dAnual, custoPedido: parseFloat(produto.custo_pedido), H: result.intermediarios.H, EOQ: result.EOQ },
       faixas_limites: { ES: result.ES, PR: result.PR, EOQ: result.EOQ, Emax: result.Emax, faixa: result.faixa, estoqueAtual: parseFloat(produto.estoque_atual) },
+      // Conferência clássica (modo simples — para validação manual)
+      conferencia_simples: {
+        formula_cmd: 'Σ(consumo) / dias_período',
+        total_consumo: totalConsumo,
+        dias_observados: diasObservados,
+        cmd_simples: parseFloat(cmdSimples.toFixed(4)),
+        formula_pr: 'CMD × lead_time_médio',
+        lead_time_medio: parseFloat(ltMedio.toFixed(2)),
+        pr_simples: prSimples,
+        observacao: 'Fórmula clássica determinística sem componente estocástico — útil para auditoria e conferência manual.',
+      },
     });
   } catch (err) { next(err); }
 });

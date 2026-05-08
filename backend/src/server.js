@@ -70,6 +70,29 @@ cron.schedule('0 3 * * *', () => limparTokensExpirados());
 // Classificação ABC: domingo 02:00
 cron.schedule('0 2 * * 0', () => recalcularABC());
 
+// Tratamento de erro do listen (porta ocupada, permissão, etc.)
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error('');
+    console.error('╭──────────────────────────────────────────────────────────╮');
+    console.error(`│  ❌ Porta ${env.PORT} já está em uso                            │`);
+    console.error('├──────────────────────────────────────────────────────────┤');
+    console.error('│  Outra instância do backend pode estar rodando.          │');
+    console.error('│                                                          │');
+    console.error('│  Como resolver:                                          │');
+    console.error('│   1) Pare o outro processo (PowerShell):                 │');
+    console.error(`│      Get-NetTCPConnection -LocalPort ${env.PORT} -State Listen   │`);
+    console.error('│      Stop-Process -Id <PID>                              │');
+    console.error('│   2) Ou rode em outra porta:                             │');
+    console.error(`│      $env:PORT = "${env.PORT + 1}"; npm run dev:backend          │`);
+    console.error('╰──────────────────────────────────────────────────────────╯');
+    console.error('');
+  } else {
+    logger.error('Erro no servidor HTTP', { code: err.code, message: err.message });
+  }
+  process.exit(1);
+});
+
 // ── Start Server ──────────────────────────────────────────
 async function start() {
   await connectRedis();

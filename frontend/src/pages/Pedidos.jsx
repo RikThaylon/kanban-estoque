@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CheckCircle, X, Check, Send, PackageCheck, Clock, Eye } from 'lucide-react';
+import { Plus, CheckCircle, X, Check, Send, PackageCheck, Clock, Eye, Ban } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatMoney, formatDate } from '../utils/formatters';
@@ -8,12 +8,14 @@ import { formatMoney, formatDate } from '../utils/formatters';
 const STATUS_STYLES = {
   RASCUNHO: 'bg-gray-100 text-gray-700',
   AGUARDANDO_APROVACAO: 'bg-purple-100 text-purple-700',
+  AGUARDANDO_GERENTE: 'bg-fuchsia-100 text-fuchsia-700',
   APROVADO: 'bg-blue-100 text-blue-700',
   EMITIDO: 'bg-indigo-100 text-indigo-700',
   EM_TRANSITO: 'bg-amber-100 text-amber-700',
   RECEBIDO_PARCIAL: 'bg-teal-100 text-teal-700',
   RECEBIDO: 'bg-green-100 text-green-700',
   CANCELADO: 'bg-red-100 text-red-700',
+  REJEITADO: 'bg-rose-200 text-rose-800',
 };
 
 const PERFIS_APROVADORES_N1 = ['admin', 'supervisor_turno', 'gerente_operacoes', 'plant_manager'];
@@ -27,6 +29,7 @@ const Pedidos = () => {
   const [openNovo, setOpenNovo] = useState(false);
   const [openReceber, setOpenReceber] = useState(null);
   const [openDetalhe, setOpenDetalhe] = useState(null);
+  const [openRejeitar, setOpenRejeitar] = useState(null);
   const [pedidoTemplate, setPedidoTemplate] = useState(null);
 
   const isAprovadorN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
@@ -55,6 +58,14 @@ const Pedidos = () => {
   const cancelar = useMutation({
     mutationFn: (id) => api.patch(`/pedidos/${id}/status`, { status: 'CANCELADO' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+  });
+
+  const rejeitar = useMutation({
+    mutationFn: ({ id, motivo }) => api.post(`/pedidos/${id}/rejeitar`, { motivo }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      setOpenRejeitar(null);
+    },
   });
 
   const handleGerarSugestao = (sug) => {
@@ -230,6 +241,7 @@ const Pedidos = () => {
               <PedidoActions
                 pedido={pedido}
                 onAprovar={() => aprovar.mutate(pedido.id)}
+                onRejeitar={() => setOpenRejeitar(pedido)}
                 onEmitir={() => emitir.mutate(pedido.id)}
                 onReceber={() => setOpenReceber(pedido)}
                 onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
@@ -255,6 +267,7 @@ const Pedidos = () => {
       {openNovo && <NovoPedidoModal template={pedidoTemplate} onClose={() => { setOpenNovo(false); setPedidoTemplate(null); }} />}
       {openReceber && <ReceberPedidoModal pedido={openReceber} onClose={() => setOpenReceber(null)} />}
       {openDetalhe && <DetalhePedidoModal pedido={openDetalhe} onClose={() => setOpenDetalhe(null)} />}
+      {openRejeitar && <RejeitarPedidoModal pedido={openRejeitar} onClose={() => setOpenRejeitar(null)} onConfirm={(motivo) => rejeitar.mutate({ id: openRejeitar.id, motivo })} loading={rejeitar.isPending} />}
     </div>
   );
 };
@@ -267,11 +280,13 @@ const Row = ({ label, value, clamp }) => (
 );
 
 // ─── Ações por pedido ───────────────────────────────────────────────────────
-const PedidoActions = ({ pedido, onAprovar, onEmitir, onReceber, onCancelar, onDetalhe, isAprovador }) => {
-  const podeAprovar = pedido.status === 'AGUARDANDO_APROVACAO' && isAprovador;
+const PedidoActions = ({ pedido, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe, isAprovador }) => {
+  const aguardando = ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(pedido.status);
+  const podeAprovar = aguardando && isAprovador;
+  const podeRejeitar = aguardando && isAprovador;
   const podeEmitir = pedido.status === 'APROVADO' || pedido.status === 'RASCUNHO';
   const podeReceber = ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
-  const podeCancelar = !['RECEBIDO', 'CANCELADO'].includes(pedido.status);
+  const podeCancelar = !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 justify-center">
@@ -281,6 +296,11 @@ const PedidoActions = ({ pedido, onAprovar, onEmitir, onReceber, onCancelar, onD
       {podeAprovar && (
         <button onClick={onAprovar} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Aprovar">
           <Check className="w-4 h-4" />
+        </button>
+      )}
+      {podeRejeitar && (
+        <button onClick={onRejeitar} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded transition-colors" title="Rejeitar">
+          <Ban className="w-4 h-4" />
         </button>
       )}
       {podeEmitir && (
@@ -298,6 +318,38 @@ const PedidoActions = ({ pedido, onAprovar, onEmitir, onReceber, onCancelar, onD
           <X className="w-4 h-4" />
         </button>
       )}
+    </div>
+  );
+};
+
+// ─── Modal: Rejeitar Pedido ─────────────────────────────────────────────────
+const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
+  const [motivo, setMotivo] = useState('');
+  return (
+    <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+        <div className="p-5 border-b border-surface-200 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-rose-700">Rejeitar pedido</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); if (motivo.trim().length < 5) return; onConfirm(motivo.trim()); }} className="p-5 space-y-3">
+          <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
+            <div><strong>{pedido.numero}</strong> · {pedido.produto_codigo} — {pedido.produto_nome}</div>
+            <div className="text-xs">Status: {pedido.status} · Total: {formatMoney(pedido.custo_total)}</div>
+          </div>
+          <div>
+            <label className="label">Motivo da rejeição</label>
+            <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows={3} required minLength={5} maxLength={1000}
+              placeholder="Explique o motivo (mínimo 5 caracteres)..." className="input resize-none" autoFocus />
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-secondary justify-center">Cancelar</button>
+            <button type="submit" disabled={loading || motivo.trim().length < 5} className="btn-danger justify-center">
+              {loading ? 'Rejeitando…' : 'Confirmar rejeição'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
@@ -553,6 +605,9 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
               <DetailRow label="Produto" value={`${p.produto_codigo} — ${p.produto_nome}`} />
               <DetailRow label="Fornecedor" value={p.fornecedor_nome} />
               {p.fornecedor_cnpj && <DetailRow label="CNPJ" value={p.fornecedor_cnpj} />}
+              {p.departamento_nome && <DetailRow label="Departamento" value={`${p.departamento_codigo} — ${p.departamento_nome}`} />}
+              {p.motivo_rejeicao && <DetailRow label="Motivo rejeição" value={<span className="text-rose-700">{p.motivo_rejeicao}</span>} />}
+              {p.rejeitado_por_nome && <DetailRow label="Rejeitado por" value={p.rejeitado_por_nome} />}
               <DetailRow label="Quantidade" value={p.quantidade_pedida} />
               <DetailRow label="Quantidade recebida" value={p.quantidade_recebida || 0} />
               <DetailRow label="Preço unitário" value={p.preco_unitario ? formatMoney(p.preco_unitario) : '—'} />

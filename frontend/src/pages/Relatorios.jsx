@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { TrendingUp, Users, Package, Layers, ShoppingCart, AlertCircle, Activity } from 'lucide-react';
+import { TrendingUp, Users, Package, Layers, ShoppingCart, AlertCircle, Activity, CalendarClock } from 'lucide-react';
 import api from '../services/api';
 import { formatMoney, formatNumber } from '../utils/formatters';
 
@@ -53,6 +53,12 @@ const Relatorios = () => {
   const { data: giroEstoque } = useQuery({
     queryKey: ['relatorios', 'giro-estoque'],
     queryFn: async () => (await api.get('/relatorios/giro-estoque')).data,
+  });
+
+  // Previsão de gastos por mês de chegada
+  const { data: previsao } = useQuery({
+    queryKey: ['relatorios', 'previsao-gastos-mensal'],
+    queryFn: async () => (await api.get('/relatorios/previsao-gastos-mensal', { params: { meses: 12 } })).data,
   });
 
   return (
@@ -252,6 +258,64 @@ const Relatorios = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Previsão de gastos por mês de chegada */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-5 h-5 text-navy-600" />
+            <h2 className="text-lg font-bold text-navy-800">Previsão de gastos por mês de chegada</h2>
+          </div>
+          {previsao && (
+            <div className="text-sm text-navy-600">
+              Total previsto: <strong className="text-navy-800">{formatMoney(previsao.total_previsto_periodo)}</strong>
+              <span className="text-navy-400 ml-1">({previsao.meses_horizonte} meses)</span>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-navy-500 mb-3">
+          Agrupado pela <strong>data de chegada estimada</strong> (data emissão + lead time do fornecedor),
+          considerando OCs em APROVADO, EMITIDO, EM_TRANSITO ou RECEBIDO_PARCIAL (apenas valor ainda em aberto).
+        </p>
+        {!previsao?.linhas?.length ? (
+          <EmptyMsg msg="Nenhuma OC com chegada prevista no horizonte" />
+        ) : (
+          <div className="space-y-3">
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={previsao.linhas}>
+                  <XAxis dataKey="mes_chegada" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => 'R$ ' + (v / 1000).toFixed(0) + 'k'} />
+                  <Tooltip formatter={(v) => formatMoney(v)} />
+                  <Bar dataKey="valor_total_previsto" name="Valor previsto (em aberto)" fill="#6366F1" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-50 text-navy-600 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Mês de chegada</th>
+                    <th className="px-3 py-2 text-right">Qtd OCs</th>
+                    <th className="px-3 py-2 text-right">Valor previsto (aberto)</th>
+                    <th className="px-3 py-2 text-right">Valor bruto</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-200">
+                  {previsao.linhas.map(l => (
+                    <tr key={l.mes_chegada} className="hover:bg-surface-50">
+                      <td className="px-3 py-2 font-mono font-medium text-navy-800">{l.mes_chegada}</td>
+                      <td className="px-3 py-2 text-right text-navy-600">{l.qtd_ordens}</td>
+                      <td className="px-3 py-2 text-right font-mono font-semibold text-navy-800">{formatMoney(l.valor_total_previsto)}</td>
+                      <td className="px-3 py-2 text-right font-mono text-navy-500">{formatMoney(l.valor_total_bruto)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

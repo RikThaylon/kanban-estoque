@@ -12,6 +12,7 @@ const Pedidos = React.lazy(() => import('./pages/Pedidos'));
 const Movimentacoes = React.lazy(() => import('./pages/Movimentacoes'));
 const Alertas = React.lazy(() => import('./pages/Alertas'));
 const Relatorios = React.lazy(() => import('./pages/Relatorios'));
+const Maquinas = React.lazy(() => import('./pages/Maquinas'));
 const Usuarios = React.lazy(() => import('./pages/Usuarios'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
@@ -61,6 +62,7 @@ function App() {
               <Route path="/pedidos" element={<Pedidos />} />
               <Route path="/alertas" element={<Alertas />} />
               <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/maquinas" element={<Maquinas />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/raci" element={<Raci />} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
