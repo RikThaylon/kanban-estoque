@@ -444,11 +444,19 @@ const NovoPedidoModal = ({ template, onClose }) => {
                 {produtosRes.data.map(p => (
                   <button
                     key={p.id} type="button"
-                    onClick={() => { setProdutoId(p.id); setBusca(`${p.codigo} — ${p.nome}`); }}
+                    onClick={() => {
+                      setProdutoId(p.id);
+                      setBusca(`${p.codigo} — ${p.nome}`);
+                      // Auto-preenche o preço unitário com o custo cadastrado no produto
+                      if (p.custo_unitario && !precoUnit) {
+                        setPrecoUnit(parseFloat(p.custo_unitario));
+                      }
+                    }}
                     className="w-full text-left px-3 py-2 hover:bg-surface-50 text-sm border-b border-surface-100 last:border-0"
                   >
                     <span className="font-medium text-navy-800">{p.codigo}</span>
                     <span className="text-navy-500 ml-2">{p.nome}</span>
+                    {p.custo_unitario && <span className="text-navy-400 ml-2 text-xs">R$ {parseFloat(p.custo_unitario).toFixed(2)}</span>}
                   </button>
                 ))}
               </div>

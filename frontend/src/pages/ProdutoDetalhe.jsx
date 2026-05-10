@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
 import KanbanBar from '../components/kanban/KanbanBar';
+import KanbanSawtoothChart from '../components/kanban/KanbanSawtoothChart';
 import FaixaBadge from '../components/kanban/FaixaBadge';
 import FormulaCard from '../components/kanban/FormulaCard';
 import ConsumptionChart from '../components/charts/ConsumptionChart';
 import { formatMoney, formatNumber } from '../utils/formatters';
+
+// ─── ErrorBoundary para proteger tabs de crash ────────────────────────────
+class TabErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error('[TabErrorBoundary]', error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center p-10 text-center gap-3">
+          <AlertTriangle className="w-10 h-10 text-amber-400" />
+          <p className="font-bold text-navy-700">Erro ao carregar esta seção</p>
+          <p className="text-sm text-navy-400 max-w-md">
+            {this.state.error?.message || 'Ocorreu um erro inesperado. Recarregue a página ou entre em contato com o suporte.'}
+          </p>
+          <button onClick={() => this.setState({ hasError: false, error: null })}
+            className="btn-secondary text-sm mt-2">Tentar novamente</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Helpers seguros para evitar crash em valores nulos
+const safe = (v, decimals = 4) => {
+  const n = parseFloat(v);
+  return isNaN(n) ? '—' : n.toFixed(decimals);
+};
 
 const ProdutoDetalhe = () => {
   const { id } = useParams();
@@ -21,17 +51,57 @@ const ProdutoDetalhe = () => {
     },
   });
 
-  const { data: rastreamento } = useQuery({
+  const { data: rastreamento, isLoading: loadingRastreamento } = useQuery({
     queryKey: ['produto', id, 'rastreamento'],
     queryFn: async () => {
       const res = await api.get(`/produtos/${id}/rastreamento-calculo`);
       return res.data;
     },
     enabled: !!produto && activeTab === 'rastreamento',
+    retry: false,
   });
+
+  // Dados dos fornecedores vinculados ao produto
+  const { data: fornecedoresVinculados } = useQuery({
+    queryKey: ['produto', id, 'fornecedores'],
+    queryFn: async () => {
+      try {
+        const res = await api.get(`/produtos/${id}/fornecedores`);
+        return res.data;
+      } catch { return []; }
+    },
+    enabled: !!produto && activeTab === 'fornecedores',
+  });
+
+  // Histórico para o gráfico serrote (últimas movimentações)
+  const historicoSerrote = useMemo(() => {
+    if (!produto?.ultimas_movimentacoes?.length) return [];
+    const movs = [...(produto.ultimas_movimentacoes || [])].reverse();
+    const diaBase = new Date(movs[0]?.criado_em).getTime();
+    return movs.map(m => ({
+      dia: Math.round((new Date(m.criado_em).getTime() - diaBase) / 86400000),
+      estoque: parseFloat(m.estoque_depois),
+    }));
+  }, [produto]);
 
   if (isLoading) return <div className="p-8 text-center animate-pulse">Carregando detalhes do produto...</div>;
   if (!produto) return <div className="p-8 text-center text-red-500">Produto não encontrado.</div>;
+
+  const cmd = parseFloat(produto.demanda_diaria_media) || 0;
+  const lt = parseFloat(produto.lead_time_previsto_dias) || 0;
+  const es = parseFloat(produto.estoque_seguranca) || 0;
+  const pr = parseFloat(produto.ponto_reposicao) || 0;
+  const emax = parseFloat(produto.estoque_maximo) || 0;
+
+  const temDadosKanban = emax > 0 && pr > 0;
+
+  const TABS = [
+    { key: 'kanban', label: 'Kanban' },
+    { key: 'grafico', label: 'Gráfico Serrote' },
+    { key: 'rastreamento', label: 'Rastreamento Matemático' },
+    { key: 'movimentacoes', label: 'Movimentações' },
+    { key: 'fornecedores', label: 'Fornecedores' },
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -61,7 +131,7 @@ const ProdutoDetalhe = () => {
             <div className="text-3xl font-bold text-navy-800">{formatNumber(produto.estoque_atual)} <span className="text-base font-normal text-navy-400">{produto.unidade}</span></div>
           </div>
           <div>
-            <p className="text-sm text-navy-500 font-medium mb-1">Custo Unitário</p>
+            <p className="text-sm text-navy-500 font-medium mb-1">Preço de Compra</p>
             <div className="text-xl font-bold text-navy-700">{formatMoney(produto.custo_unitario)}</div>
           </div>
           <div>
@@ -76,140 +146,259 @@ const ProdutoDetalhe = () => {
 
         <div className="mb-4">
           <h3 className="text-sm font-bold text-navy-800 mb-4 uppercase tracking-wider">Régua Kanban</h3>
-          <KanbanBar 
+          <KanbanBar
             estoqueAtual={parseFloat(produto.estoque_atual)}
-            es={parseFloat(produto.estoque_seguranca || 0)}
-            pr={parseFloat(produto.ponto_reposicao || 0)}
-            emax={parseFloat(produto.estoque_maximo || 0)}
+            es={es} pr={pr} emax={emax}
           />
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-surface-200">
-        <nav className="flex gap-6">
-          {['kanban', 'rastreamento', 'movimentacoes', 'pedidos'].map(tab => (
+      <div className="border-b border-surface-200 overflow-x-auto">
+        <nav className="flex gap-1 min-w-max">
+          {TABS.map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-3 px-1 text-sm font-bold capitalize border-b-2 transition-colors ${
-                activeTab === tab 
-                  ? 'border-navy-700 text-navy-800' 
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`py-3 px-3 text-sm font-bold whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-navy-700 text-navy-800'
                   : 'border-transparent text-navy-400 hover:text-navy-600 hover:border-surface-300'
               }`}
             >
-              {tab === 'rastreamento' ? 'Rastreamento Matemático' : tab}
+              {tab.label}
             </button>
           ))}
         </nav>
       </div>
 
       {/* Tab Content */}
-      <div className="pt-2">
-        {activeTab === 'kanban' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FormulaCard 
-              title="Estoque de Segurança (ES)"
-              value={formatNumber(produto.estoque_seguranca)}
-              formula={`Z × σd × √(LT)`}
-              tooltip={`Z(${produto.nivel_servico}%) = ${parseFloat(produto.fator_z).toFixed(2)}, Sigma D = ${parseFloat(produto.sigma_demanda_diaria).toFixed(2)}`}
-            />
-            <FormulaCard 
-              title="Ponto de Reposição (PR)"
-              value={formatNumber(produto.ponto_reposicao)}
-              formula={`(D × LT) + ES`}
-              tooltip={`Demanda diária = ${parseFloat(produto.demanda_diaria_media).toFixed(2)}, Lead time previsto = ${parseFloat(produto.lead_time_previsto_dias).toFixed(1)} dias`}
-            />
-            <FormulaCard 
-              title="Lote Econômico (EOQ)"
-              value={formatNumber(produto.eoq)}
-              formula={`√((2 × D × Cp) / H)`}
-              tooltip={`Cp = ${formatMoney(produto.custo_pedido)}, H (custo manter) = ${(parseFloat(produto.taxa_carregamento)*100).toFixed(0)}%`}
-            />
-            <FormulaCard 
-              title="Estoque Máximo (Emax)"
-              value={formatNumber(produto.estoque_maximo)}
-              formula={`ES + EOQ`}
-            />
-          </div>
-        )}
+      <TabErrorBoundary key={activeTab}>
+        <div className="pt-2">
 
-        {activeTab === 'rastreamento' && rastreamento && (
-          <div className="space-y-6">
-            <div className="card p-5 bg-surface-50 border-dashed">
-              <h3 className="font-bold text-navy-800 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-navy-400" />
-                Auditoria de Cálculos Preditivos
-              </h3>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">Suavização Exponencial Dupla de Holt (Demanda)</h4>
-                  <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
-                    <li>α (Nível) = {rastreamento.holt_outputs.alpha}</li>
-                    <li>β (Tendência) = {rastreamento.holt_outputs.beta}</li>
-                    <li>Previsão Semana (F_t+1) = {rastreamento.holt_outputs.forecast.toFixed(4)}</li>
-                    <li>Desvio Padrão (σ_res) = {rastreamento.holt_outputs.sigma.toFixed(4)}</li>
-                    <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
-                      Demanda Diária Média = {(rastreamento.holt_outputs.forecast / 7).toFixed(4)}
-                    </li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">Regressão Linear (Lead Time)</h4>
-                  <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
-                    <li>Intercepto (a) = {rastreamento.regressao_outputs.intercepto.toFixed(4)}</li>
-                    <li>Inclinação (b) = {rastreamento.regressao_outputs.inclinacao.toFixed(4)}</li>
-                    <li>R² = {rastreamento.regressao_outputs.r2.toFixed(4)}</li>
-                    <li>Desvio Padrão (σ_LT) = {rastreamento.regressao_outputs.sigma.toFixed(4)}</li>
-                    <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
-                      LT Previsto = {rastreamento.regressao_outputs.previsao.toFixed(4)} dias
-                    </li>
-                  </ul>
-                </div>
-              </div>
+          {/* ── Aba Kanban ── */}
+          {activeTab === 'kanban' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <FormulaCard
+                title="Estoque de Segurança (ES)"
+                value={formatNumber(produto.estoque_seguranca)}
+                formula="Z × σd × √(LT)"
+                tooltip={`Z(${produto.nivel_servico}%) = ${safe(produto.fator_z, 2)}, Sigma D = ${safe(produto.sigma_demanda_diaria, 2)}`}
+              />
+              <FormulaCard
+                title="Ponto de Reposição (PR)"
+                value={formatNumber(produto.ponto_reposicao)}
+                formula="(CMD × LT) + ES"
+                tooltip={`Consumo diário = ${safe(produto.demanda_diaria_media, 2)}, Lead time = ${safe(produto.lead_time_previsto_dias, 1)} dias`}
+              />
+              <FormulaCard
+                title="Lote Econômico (EOQ)"
+                value={formatNumber(produto.eoq)}
+                formula="√((2 × D × Cp) / H)"
+                tooltip={`Cp = ${formatMoney(produto.custo_pedido)}, H (custo manter) = ${(parseFloat(produto.taxa_carregamento || 0) * 100).toFixed(0)}%`}
+              />
+              <FormulaCard
+                title="Estoque Máximo (Emax)"
+                value={formatNumber(produto.estoque_maximo)}
+                formula="ES + EOQ"
+              />
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'movimentacoes' && (
-          <div className="card p-0 overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-surface-50 border-b border-surface-200">
-                <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
-                  <th className="p-4">Data</th>
-                  <th className="p-4">Tipo</th>
-                  <th className="p-4 text-right">Qtd</th>
-                  <th className="p-4 text-right">Estoque Após</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-100">
-                {produto.ultimas_movimentacoes?.length > 0 ? (
-                  produto.ultimas_movimentacoes.map(m => (
-                    <tr key={m.id} className="hover:bg-surface-50">
-                      <td className="p-4 text-sm text-navy-600">{new Date(m.criado_em).toLocaleDateString('pt-BR')}</td>
-                      <td className="p-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${
-                          ['ENTRADA', 'AJUSTE_POSITIVO', 'DEVOLUCAO'].includes(m.tipo) 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {m.tipo}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm font-bold text-navy-700 text-right">{formatNumber(m.quantidade)}</td>
-                      <td className="p-4 text-sm text-navy-600 text-right">{formatNumber(m.estoque_depois)}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan="4" className="p-8 text-center text-navy-400">Nenhuma movimentação</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          {/* ── Aba Gráfico Serrote ── */}
+          {activeTab === 'grafico' && (
+            <div className="space-y-4">
+              {temDadosKanban ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-navy-800">Ciclo de Reposição Kanban</h3>
+                      <p className="text-sm text-navy-400 mt-0.5">
+                        {historicoSerrote.length > 0
+                          ? '3 ciclos históricos (pontos roxos) + 3 ciclos estimados'
+                          : '6 ciclos estimados com base nos parâmetros calculados'}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-navy-400">
+                      <div>CMD: <strong>{safe(produto.demanda_diaria_media, 2)}/dia</strong></div>
+                      <div>LT: <strong>{safe(produto.lead_time_previsto_dias, 0)} dias</strong></div>
+                    </div>
+                  </div>
+                  <KanbanSawtoothChart
+                    cmd={cmd} leadTime={lt} es={es} pr={pr} emax={emax}
+                    ciclos={6}
+                    historico={historicoSerrote}
+                    height={280}
+                  />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-12 text-center gap-3">
+                  <div className="text-4xl">📊</div>
+                  <p className="font-bold text-navy-700">Parâmetros Kanban ainda não calculados</p>
+                  <p className="text-sm text-navy-400 max-w-md">
+                    O gráfico de ciclos será exibido após o sistema calcular ES, PR e EOQ a partir das movimentações e pedidos deste produto.
+                    Registre pelo menos algumas semanas de movimentação para o modelo estatístico entrar em ação.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Aba Rastreamento Matemático ── */}
+          {activeTab === 'rastreamento' && (
+            <div className="space-y-6">
+              {loadingRastreamento && (
+                <div className="p-8 text-center text-navy-400 animate-pulse">Carregando dados de rastreamento...</div>
+              )}
+              {!loadingRastreamento && !rastreamento && (
+                <div className="flex flex-col items-center justify-center p-10 text-center gap-3">
+                  <AlertCircle className="w-10 h-10 text-amber-400" />
+                  <p className="font-bold text-navy-700">Dados insuficientes para rastreamento</p>
+                  <p className="text-sm text-navy-400 max-w-md">
+                    O rastreamento matemático requer pelo menos 4 semanas de movimentações e 2 pedidos recebidos.
+                    Registre movimentações de saída regularmente para o modelo Holt-Winters e a Regressão Linear entrarem em ação.
+                  </p>
+                </div>
+              )}
+              {!loadingRastreamento && rastreamento && (
+                <div className="card p-5 bg-surface-50 border-dashed">
+                  <h3 className="font-bold text-navy-800 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-navy-400" />
+                    Auditoria de Cálculos Preditivos
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">
+                        Suavização Exponencial Dupla de Holt (Demanda)
+                      </h4>
+                      <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
+                        <li>α (Nível) = {safe(rastreamento?.holt_outputs?.alpha)}</li>
+                        <li>β (Tendência) = {safe(rastreamento?.holt_outputs?.beta)}</li>
+                        <li>Previsão Semana (F_t+1) = {safe(rastreamento?.holt_outputs?.forecast)}</li>
+                        <li>Desvio Padrão (σ_res) = {safe(rastreamento?.holt_outputs?.sigma)}</li>
+                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
+                          Demanda Diária Média = {safe(rastreamento?.holt_outputs?.forecast ? rastreamento.holt_outputs.forecast / 7 : null)}
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">
+                        Regressão Linear (Lead Time)
+                      </h4>
+                      <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
+                        <li>Intercepto (a) = {safe(rastreamento?.regressao_outputs?.intercepto)}</li>
+                        <li>Inclinação (b) = {safe(rastreamento?.regressao_outputs?.inclinacao)}</li>
+                        <li>R² = {safe(rastreamento?.regressao_outputs?.r2)}</li>
+                        <li>Desvio Padrão (σ_LT) = {safe(rastreamento?.regressao_outputs?.sigma)}</li>
+                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
+                          LT Previsto = {safe(rastreamento?.regressao_outputs?.previsao)} dias
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Aba Movimentações ── */}
+          {activeTab === 'movimentacoes' && (
+            <div className="card p-0 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-surface-50 border-b border-surface-200">
+                  <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
+                    <th className="p-4">Data</th>
+                    <th className="p-4">Tipo</th>
+                    <th className="p-4 text-right">Qtd</th>
+                    <th className="p-4 text-right">Estoque Após</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100">
+                  {produto.ultimas_movimentacoes?.length > 0 ? (
+                    produto.ultimas_movimentacoes.map(m => (
+                      <tr key={m.id} className="hover:bg-surface-50">
+                        <td className="p-4 text-sm text-navy-600">{new Date(m.criado_em).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-4">
+                          <span className={`text-xs font-bold px-2 py-1 rounded ${
+                            ['ENTRADA', 'AJUSTE_POSITIVO', 'DEVOLUCAO'].includes(m.tipo)
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {m.tipo}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm font-bold text-navy-700 text-right">{formatNumber(m.quantidade)}</td>
+                        <td className="p-4 text-sm text-navy-600 text-right">{formatNumber(m.estoque_depois)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="4" className="p-8 text-center text-navy-400">Nenhuma movimentação registrada.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── Aba Fornecedores ── */}
+          {activeTab === 'fornecedores' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-navy-800">Fornecedores vinculados</h3>
+              </div>
+              {!fornecedoresVinculados || fornecedoresVinculados.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-10 text-center gap-3 card">
+                  <div className="text-4xl">🏭</div>
+                  <p className="font-bold text-navy-700">Nenhum fornecedor vinculado</p>
+                  <p className="text-sm text-navy-400 max-w-sm">
+                    Vincule um fornecedor para que o sistema possa gerar pedidos automaticamente quando o estoque atingir o Ponto de Reposição.
+                  </p>
+                </div>
+              ) : (
+                <div className="card p-0 overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead className="bg-surface-50 border-b border-surface-200">
+                      <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
+                        <th className="p-4">Fornecedor</th>
+                        <th className="p-4">Prioridade</th>
+                        <th className="p-4 text-right">Preço acordado</th>
+                        <th className="p-4 text-right">Lead time</th>
+                        <th className="p-4 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-100">
+                      {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => (
+                        <tr key={i} className="hover:bg-surface-50">
+                          <td className="p-4">
+                            <div className="font-bold text-navy-800">{fv.fornecedor_nome || fv.nome}</div>
+                            {fv.cnpj && <div className="text-xs text-navy-400">{fv.cnpj}</div>}
+                          </td>
+                          <td className="p-4">
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-navy-500'}`}>
+                              {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right font-medium text-navy-700">
+                            {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
+                          </td>
+                          <td className="p-4 text-right text-navy-600">
+                            {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {fv.ativo !== false ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      </TabErrorBoundary>
     </div>
   );
 };
