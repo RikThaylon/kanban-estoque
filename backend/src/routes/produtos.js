@@ -10,6 +10,7 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { calcularParametrosKanban, holtDoubleExponential, regressaoLinear } = require('../services/kanban.math');
+const { getKanbanSeries } = require('../services/kanban.repo');
 
 const router = express.Router();
 
@@ -134,7 +135,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
 });
 
 // PATCH /api/v1/produtos/:id
-router.patch('/:id', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno'), audit('ATUALIZAR_PRODUTO', 'produtos'),
+router.patch('/:id', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'eng_producao'), audit('ATUALIZAR_PRODUTO', 'produtos'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -210,9 +211,6 @@ router.get('/:id/historico-lead-time', authenticate, async (req, res, next) => {
       ORDER BY data_recebimento DESC LIMIT 20
     `, [req.params.id]);
     res.json(result.rows);
-  } catch (err) { next(err); }
-});
-
 // GET /api/v1/produtos/:id/rastreamento-calculo
 router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => {
   try {
@@ -221,21 +219,7 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
     if (prodRes.rows.length === 0) throw new NotFoundError('Produto');
     const produto = prodRes.rows[0];
 
-    const consumoRes = await query(`
-      SELECT date_trunc('week', criado_em) AS semana,
-             COALESCE(SUM(CASE WHEN tipo IN ('SAIDA','TRANSFERENCIA') THEN quantidade ELSE 0 END), 0) AS consumo
-      FROM movimentacoes WHERE produto_id = $1 AND tipo IN ('SAIDA','TRANSFERENCIA')
-        AND criado_em >= NOW() - INTERVAL '52 weeks'
-      GROUP BY date_trunc('week', criado_em) ORDER BY semana ASC
-    `, [id]);
-    const demandaSemanalSeries = consumoRes.rows.map(r => parseFloat(r.consumo));
-
-    const ltRes = await query(`
-      SELECT lead_time_real_dias FROM pedidos_compra
-      WHERE produto_id = $1 AND status = 'RECEBIDO' AND lead_time_real_dias IS NOT NULL
-      ORDER BY data_recebimento DESC LIMIT 20
-    `, [id]);
-    const leadTimeSeries = ltRes.rows.map(r => r.lead_time_real_dias).reverse();
+    const { demandaSemanalSeries, leadTimeSeries } = await getKanbanSeries(id);
 
     const result = calcularParametrosKanban({
       demandaSemanalSeries, leadTimeSeries,

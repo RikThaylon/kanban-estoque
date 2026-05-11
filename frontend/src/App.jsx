@@ -14,6 +14,7 @@ const Alertas = React.lazy(() => import('./pages/Alertas'));
 const Relatorios = React.lazy(() => import('./pages/Relatorios'));
 const Maquinas = React.lazy(() => import('./pages/Maquinas'));
 const Usuarios = React.lazy(() => import('./pages/Usuarios'));
+const Fornecedores = React.lazy(() => import('./pages/Fornecedores'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
 
@@ -27,9 +28,11 @@ const FullPageLoader = () => (
   </div>
 );
 
+const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos
+
 // Protected Route Wrapper
 const ProtectedRoute = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, logout } = useAuthStore();
   const { checkAuth } = useAuth();
   
   useEffect(() => {
@@ -37,6 +40,30 @@ const ProtectedRoute = () => {
       checkAuth();
     }
   }, []);
+
+  // Monitoramento de Inatividade (10 min)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timeoutId;
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        logout();
+      }, TIMEOUT_MS);
+    };
+
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimer));
+
+    resetTimer(); // Inicia o timer
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [isAuthenticated, logout]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -64,6 +91,7 @@ function App() {
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/maquinas" element={<Maquinas />} />
               <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/fornecedores" element={<Fornecedores />} />
               <Route path="/raci" element={<Raci />} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>

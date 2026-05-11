@@ -9,6 +9,7 @@ const STATUS_STYLES = {
   RASCUNHO: 'bg-gray-100 text-gray-700',
   AGUARDANDO_APROVACAO: 'bg-purple-100 text-purple-700',
   AGUARDANDO_GERENTE: 'bg-fuchsia-100 text-fuchsia-700',
+  AGUARDANDO_DIRETORIA: 'bg-pink-100 text-pink-700',
   APROVADO: 'bg-blue-100 text-blue-700',
   EMITIDO: 'bg-indigo-100 text-indigo-700',
   EM_TRANSITO: 'bg-amber-100 text-amber-700',
@@ -20,6 +21,7 @@ const STATUS_STYLES = {
 
 const PERFIS_APROVADORES_N1 = ['admin', 'supervisor_turno', 'gerente_operacoes', 'plant_manager'];
 const PERFIS_APROVADORES_N2 = ['admin', 'gerente_operacoes', 'plant_manager'];
+const PERFIS_APROVADORES_N3 = ['admin', 'plant_manager'];
 
 const Pedidos = () => {
   const { user } = useAuthStore();
@@ -151,7 +153,9 @@ const Pedidos = () => {
           >
             <option value="">Todos os status</option>
             <option value="RASCUNHO">Rascunho</option>
-            <option value="AGUARDANDO_APROVACAO">Aguardando aprovação</option>
+            <option value="AGUARDANDO_APROVACAO">Aguardando aprovação (Nível 1)</option>
+            <option value="AGUARDANDO_GERENTE">Aguardando gerente (Nível 2)</option>
+            <option value="AGUARDANDO_DIRETORIA">Aguardando diretoria (Nível 3)</option>
             <option value="APROVADO">Aprovado</option>
             <option value="EMITIDO">Emitido</option>
             <option value="EM_TRANSITO">Em trânsito</option>
@@ -199,15 +203,16 @@ const Pedidos = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    <PedidoActions
-                      pedido={pedido}
-                      onAprovar={() => aprovar.mutate(pedido.id)}
-                      onEmitir={() => emitir.mutate(pedido.id)}
-                      onReceber={() => setOpenReceber(pedido)}
-                      onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
-                      onDetalhe={() => setOpenDetalhe(pedido)}
-                      isAprovador={isAprovadorN1}
-                    />
+                      <PedidoActions
+                        pedido={pedido}
+                        user={user}
+                        onAprovar={() => aprovar.mutate(pedido.id)}
+                        onEmitir={() => emitir.mutate(pedido.id)}
+                        onReceber={() => setOpenReceber(pedido)}
+                        onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
+                        onDetalhe={() => setOpenDetalhe(pedido)}
+                        onRejeitar={() => setOpenRejeitar(pedido)}
+                      />
                   </td>
                 </tr>
               ))}
@@ -240,13 +245,13 @@ const Pedidos = () => {
               </div>
               <PedidoActions
                 pedido={pedido}
+                user={user}
                 onAprovar={() => aprovar.mutate(pedido.id)}
                 onRejeitar={() => setOpenRejeitar(pedido)}
                 onEmitir={() => emitir.mutate(pedido.id)}
                 onReceber={() => setOpenReceber(pedido)}
                 onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
                 onDetalhe={() => setOpenDetalhe(pedido)}
-                isAprovador={isAprovadorN1}
               />
             </div>
           ))}
@@ -280,10 +285,17 @@ const Row = ({ label, value, clamp }) => (
 );
 
 // ─── Ações por pedido ───────────────────────────────────────────────────────
-const PedidoActions = ({ pedido, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe, isAprovador }) => {
-  const aguardando = ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(pedido.status);
-  const podeAprovar = aguardando && isAprovador;
-  const podeRejeitar = aguardando && isAprovador;
+const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe }) => {
+  const podeAprovarN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
+  const podeAprovarN2 = PERFIS_APROVADORES_N2.includes(user?.perfil);
+  const podeAprovarN3 = PERFIS_APROVADORES_N3.includes(user?.perfil);
+
+  let podeAprovar = false;
+  if (pedido.status === 'AGUARDANDO_APROVACAO') podeAprovar = podeAprovarN1;
+  else if (pedido.status === 'AGUARDANDO_GERENTE') podeAprovar = podeAprovarN2;
+  else if (pedido.status === 'AGUARDANDO_DIRETORIA') podeAprovar = podeAprovarN3;
+
+  const podeRejeitar = podeAprovar;
   const podeEmitir = pedido.status === 'APROVADO' || pedido.status === 'RASCUNHO';
   const podeReceber = ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
   const podeCancelar = !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);

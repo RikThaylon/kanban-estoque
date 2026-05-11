@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, BarChart2, AlertTriangle, ArrowLeftRight, Users, GitBranch, X, Cog } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, BarChart2, AlertTriangle, ArrowLeftRight, Users, GitBranch, X, Cog, Truck } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -13,6 +13,7 @@ const Sidebar = () => {
     { path: '/produtos',      icon: Package,         label: 'Produtos',           roles: ['*'] },
     { path: '/movimentacoes', icon: ArrowLeftRight,  label: 'Movimentações',      roles: ['*'] },
     { path: '/pedidos',       icon: ShoppingCart,    label: 'Pedidos de Compra',  roles: ['*'] },
+    { path: '/fornecedores',  icon: Truck,           label: 'Fornecedores',       roles: ['admin'] },
     { path: '/maquinas',      icon: Cog,             label: 'Máquinas',           roles: ['*'] },
     { path: '/alertas',       icon: AlertTriangle,   label: 'Alertas',            roles: ['*'] },
     { path: '/raci',          icon: GitBranch,       label: 'Matriz RACI',        roles: ['*'] },

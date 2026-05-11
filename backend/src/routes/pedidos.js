@@ -2,10 +2,12 @@ const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const { authorize, podeAprovarNivel1, podeAprovarNivel2 } = require('../middleware/rbac');
+const { authorize, podeAprovarNivel1, podeAprovarNivel2, podeAprovarNivel3 } = require('../middleware/rbac');
 
 // Pedidos com custo total >= LIMITE_GERENCIA exigem aprovacao do gerente de operacoes
 const LIMITE_GERENCIA = 5000;
+// Pedidos com custo total >= LIMITE_DIRETORIA exigem aprovacao do Plant Manager / Diretoria
+const LIMITE_DIRETORIA = 50000;
 const { audit } = require('../middleware/audit');
 const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
@@ -30,9 +32,10 @@ async function gerarNumeroPedido() {
 // Transições válidas de status
 const TRANSICOES = {
   // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
-  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'APROVADO', 'EMITIDO', 'CANCELADO'],
-  'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'APROVADO', 'CANCELADO', 'REJEITADO'],
-  'AGUARDANDO_GERENTE': ['APROVADO', 'CANCELADO', 'REJEITADO'],
+  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'EMITIDO', 'CANCELADO'],
+  'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  'AGUARDANDO_GERENTE': ['AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  'AGUARDANDO_DIRETORIA': ['APROVADO', 'CANCELADO', 'REJEITADO'],
   'APROVADO': ['EMITIDO', 'CANCELADO'],
   'EMITIDO': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
   'EM_TRANSITO': ['RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
@@ -165,9 +168,9 @@ router.post('/', authenticate,
 
 // POST /api/v1/pedidos/:id/aprovar
 // Fluxo:
-//   AGUARDANDO_APROVACAO + custo >= LIMITE → escalar para AGUARDANDO_GERENTE (sup turno aprovou nível 1)
-//   AGUARDANDO_APROVACAO + custo < LIMITE  → APROVADO direto (sup turno tem alçada total)
-//   AGUARDANDO_GERENTE (qualquer custo)    → APROVADO (somente gerente_operacoes/plant_manager/admin)
+//   AGUARDANDO_APROVACAO + custo >= LIMITE_GERENCIA   → escalar para AGUARDANDO_GERENTE (sup turno aprovou nível 1)
+//   AGUARDANDO_GERENTE   + custo >= LIMITE_DIRETORIA  → escalar para AGUARDANDO_DIRETORIA (gerente aprovou nível 2)
+//   AGUARDANDO_DIRETORIA (qualquer custo)             → APROVADO (somente diretoria/admin)
 router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compra'),
   async (req, res, next) => {
     try {
@@ -176,7 +179,7 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
 
       const pedido = pedRes.rows[0];
-      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(pedido.status)) {
+      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA'].includes(pedido.status)) {
         throw new AppError(`Pedido não está aguardando aprovação (status atual: ${pedido.status})`, 400, 'STATUS_INVALIDO');
       }
 
@@ -193,11 +196,17 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
         if (!podeAprovarNivel1(req.user.perfil)) {
           throw new AppError('Necessário Supervisor de Turno ou superior', 403, 'FORBIDDEN');
         }
-        // Sup turno aprovou: se passa do limite, escala para gerente
-        if (custo >= LIMITE_GERENCIA && !podeAprovarNivel2(req.user.perfil)) {
+        // Sup turno aprovou: se passa do limite de diretoria, ou gerencia, escala.
+        if (custo >= LIMITE_DIRETORIA && !podeAprovarNivel2(req.user.perfil)) {
+          // Se não é nível 2, só pode jogar pro próximo nível (gerente). O gerente fará o salto pra diretoria.
           novoStatus = 'AGUARDANDO_GERENTE';
+        } else if (custo >= LIMITE_GERENCIA && !podeAprovarNivel2(req.user.perfil)) {
+          novoStatus = 'AGUARDANDO_GERENTE';
+        } else if (custo >= LIMITE_DIRETORIA && podeAprovarNivel2(req.user.perfil) && !podeAprovarNivel3(req.user.perfil)) {
+          // Exceção: o proprio supervisor eh tbm nivel 2? (ex: admin). Mas no fluxo normal,
+          novoStatus = 'AGUARDANDO_DIRETORIA';
         }
-      } else {
+      } else if (pedido.status === 'AGUARDANDO_GERENTE') {
         // AGUARDANDO_GERENTE: só nível 2+ pode aprovar
         if (!podeAprovarNivel2(req.user.perfil)) {
           throw new AppError(
@@ -205,11 +214,25 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
             403, 'APROVACAO_INSUFICIENTE'
           );
         }
+        if (custo >= LIMITE_DIRETORIA && !podeAprovarNivel3(req.user.perfil)) {
+          novoStatus = 'AGUARDANDO_DIRETORIA';
+        }
+      } else if (pedido.status === 'AGUARDANDO_DIRETORIA') {
+        // AGUARDANDO_DIRETORIA: só nível 3+ pode aprovar
+        if (!podeAprovarNivel3(req.user.perfil)) {
+          throw new AppError(
+            `Pedido acima de R$ ${LIMITE_DIRETORIA} exige aprovação da Diretoria (Plant Manager)`,
+            403, 'APROVACAO_INSUFICIENTE'
+          );
+        }
       }
 
-      const sql = novoStatus === 'APROVADO'
-        ? `UPDATE pedidos_compra SET status = 'APROVADO', aprovado_por = $1, atualizado_em = NOW() WHERE id = $2 RETURNING *`
-        : `UPDATE pedidos_compra SET status = 'AGUARDANDO_GERENTE', escalado_em = NOW(), atualizado_em = NOW() WHERE id = $2 RETURNING *`;
+      let sql = '';
+      if (novoStatus === 'APROVADO') {
+        sql = `UPDATE pedidos_compra SET status = 'APROVADO', aprovado_por = $1, atualizado_em = NOW() WHERE id = $2 RETURNING *`;
+      } else {
+        sql = `UPDATE pedidos_compra SET status = '${novoStatus}', escalado_em = NOW(), atualizado_em = NOW() WHERE id = $2 RETURNING *`;
+      }
 
       const result = await query(sql, [req.user.id, id]);
 
@@ -222,7 +245,6 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
 );
 
 // POST /api/v1/pedidos/:id/rejeitar
-// Sup turno rejeita se status = AGUARDANDO_APROVACAO; gerente rejeita também AGUARDANDO_GERENTE.
 router.post('/:id/rejeitar', authenticate, audit('REJEITAR_PEDIDO', 'pedidos_compra'),
   [body('motivo').isString().trim().isLength({ min: 5, max: 1000 }).withMessage('Motivo deve ter 5-1000 caracteres')],
   validate,
@@ -235,16 +257,18 @@ router.post('/:id/rejeitar', authenticate, audit('REJEITAR_PEDIDO', 'pedidos_com
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
       const ped = pedRes.rows[0];
 
-      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE'].includes(ped.status)) {
+      if (!['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA'].includes(ped.status)) {
         throw new AppError(`Pedido não pode ser rejeitado neste status: ${ped.status}`, 400, 'STATUS_INVALIDO');
       }
 
-      // Sup turno rejeita AGUARDANDO_APROVACAO; gerente+ rejeita ambos
       if (ped.status === 'AGUARDANDO_APROVACAO' && !podeAprovarNivel1(req.user.perfil)) {
         throw new AppError('Necessário Supervisor de Turno ou superior', 403, 'FORBIDDEN');
       }
       if (ped.status === 'AGUARDANDO_GERENTE' && !podeAprovarNivel2(req.user.perfil)) {
         throw new AppError('Necessário Gerente de Operações ou superior', 403, 'FORBIDDEN');
+      }
+      if (ped.status === 'AGUARDANDO_DIRETORIA' && !podeAprovarNivel3(req.user.perfil)) {
+        throw new AppError('Necessário Plant Manager ou superior', 403, 'FORBIDDEN');
       }
 
       const result = await query(

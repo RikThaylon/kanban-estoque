@@ -1,5 +1,6 @@
 const { query, getClient } = require('../config/database');
 const { calcularParametrosKanban } = require('./kanban.math');
+const { getKanbanSeries } = require('./kanban.repo');
 const logger = require('../utils/logger');
 
 /**
@@ -17,29 +18,8 @@ async function recalcularKanban(produtoId, io = null) {
   if (prodRes.rows.length === 0) return null;
   const produto = prodRes.rows[0];
 
-  // Buscar consumo semanal das últimas 52 semanas
-  const consumoRes = await query(`
-    SELECT date_trunc('week', criado_em) AS semana,
-           COALESCE(SUM(CASE WHEN tipo IN ('SAIDA','TRANSFERENCIA') THEN quantidade ELSE 0 END), 0) AS consumo
-    FROM movimentacoes
-    WHERE produto_id = $1 AND tipo IN ('SAIDA','TRANSFERENCIA')
-      AND criado_em >= NOW() - INTERVAL '52 weeks'
-    GROUP BY date_trunc('week', criado_em)
-    ORDER BY semana ASC
-  `, [produtoId]);
-
-  const demandaSemanalSeries = consumoRes.rows.map(r => parseFloat(r.consumo));
-
-  // Buscar lead times dos últimos 20 pedidos recebidos
-  const ltRes = await query(`
-    SELECT lead_time_real_dias
-    FROM pedidos_compra
-    WHERE produto_id = $1 AND status = 'RECEBIDO' AND lead_time_real_dias IS NOT NULL
-    ORDER BY data_recebimento DESC
-    LIMIT 20
-  `, [produtoId]);
-
-  const leadTimeSeries = ltRes.rows.map(r => r.lead_time_real_dias).reverse();
+  // Obter séries temporais via repositório
+  const { demandaSemanalSeries, leadTimeSeries } = await getKanbanSeries(produtoId);
 
   // Calcular parâmetros
   const result = calcularParametrosKanban({
@@ -128,4 +108,23 @@ async function recalcularKanban(produtoId, io = null) {
   return result;
 }
 
-module.exports = { recalcularKanban };
+const kanbanDebounceMap = new Map();
+
+/**
+ * Versão com debounce do recálculo Kanban (evita concorrência e chamadas múltiplas na mesma janela de tempo)
+ * @param {string} produtoId - UUID do produto
+ * @param {object} [io] - Instância Socket.io
+ */
+function debouncedRecalcularKanban(produtoId, io = null) {
+  if (kanbanDebounceMap.has(produtoId)) {
+    clearTimeout(kanbanDebounceMap.get(produtoId));
+  }
+  
+  kanbanDebounceMap.set(produtoId, setTimeout(() => {
+    recalcularKanban(produtoId, io)
+      .catch(err => logger.error(`[Kanban] Erro ao recalcular para ${produtoId}:`, err))
+      .finally(() => kanbanDebounceMap.delete(produtoId));
+  }, 2000)); // Debounce de 2 segundos
+}
+
+module.exports = { recalcularKanban: debouncedRecalcularKanban, _recalcularKanbanSync: recalcularKanban };

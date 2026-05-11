@@ -334,7 +334,7 @@ const ProdutoModal = ({ produto, onClose }) => {
           {/* ── Seção: Dados de Custo ── */}
           <div>
             <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-3">Dados de Custo e Armazenagem</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Unidade</Label>
                 <select className="input" value={form.unidade} onChange={e => f('unidade', e.target.value)}>
@@ -347,20 +347,6 @@ const ProdutoModal = ({ produto, onClose }) => {
                 </Label>
                 <input className="input font-mono" type="number" step="0.01" min="0"
                   value={form.custo_unitario} onChange={e => f('custo_unitario', e.target.value)} required />
-              </div>
-              <div>
-                <Label tooltip="Valor fixo gasto a cada pedido: frete, taxa bancária, tempo para emitir. Normalmente entre R$ 50 e R$ 200.">
-                  Custo fixo por pedido (R$)
-                </Label>
-                <input className="input font-mono" type="number" step="0.01" min="0"
-                  value={form.custo_pedido} onChange={e => f('custo_pedido', e.target.value)} />
-              </div>
-              <div>
-                <Label tooltip="Porcentagem do valor do produto gasta por ano para mantê-lo em estoque: aluguel, seguro, deterioração. Exemplo: 0.20 = 20% ao ano.">
-                  Custo anual de estoque (%)
-                </Label>
-                <input className="input font-mono" type="number" step="0.01" min="0" max="1"
-                  value={form.taxa_carregamento} onChange={e => f('taxa_carregamento', e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3">
