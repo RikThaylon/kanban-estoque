@@ -47,12 +47,12 @@ const Fornecedores = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800">Fornecedores</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Fornecedores</h1>
           <p className="text-navy-400 text-sm">Gestão de parceiros comerciais e prestadores</p>
         </div>
-        <button onClick={handleNew} className="btn-primary">
+        <button onClick={handleNew} className="btn-primary w-full sm:w-auto justify-center">
           <Plus className="w-4 h-4 mr-2" /> Novo Fornecedor
         </button>
       </div>
@@ -176,8 +176,8 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-navy-900/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-5 border-b border-surface-200 flex justify-between items-center">
           <h2 className="text-xl font-bold text-navy-800">{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
