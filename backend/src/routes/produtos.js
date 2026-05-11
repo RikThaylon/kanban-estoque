@@ -211,6 +211,9 @@ router.get('/:id/historico-lead-time', authenticate, async (req, res, next) => {
       ORDER BY data_recebimento DESC LIMIT 20
     `, [req.params.id]);
     res.json(result.rows);
+  } catch (err) { next(err); }
+});
+
 // GET /api/v1/produtos/:id/rastreamento-calculo
 router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => {
   try {
