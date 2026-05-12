@@ -6,50 +6,72 @@ import { useQueryClient } from '@tanstack/react-query';
 export const useSocket = () => {
   const queryClient = useQueryClient();
   const incrementAlerts = useUiStore(state => state.incrementAlerts);
+  const setAlertsUnread = useUiStore(state => state.setAlertsUnread);
 
   useEffect(() => {
     const socket = getSocket();
 
+    const syncAlerts = async () => {
+      try {
+        const { default: api } = await import('../services/api');
+        const res = await api.get('/alertas', { params: { lido: false, limit: 1 } });
+        const total = res.data?.total;
+        if (Number.isFinite(total)) setAlertsUnread(total);
+      } catch {
+        incrementAlerts();
+      }
+    };
+
     const onFaixaMudou = (data) => {
-      console.log('🔄 Faixa mudou:', data);
-      // Invalida cache do produto específico e da lista
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['produto', data.produto_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     };
 
     const onEstoqueAtualizado = (data) => {
-      console.log('📦 Estoque atualizado:', data);
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['produto', data.produto_id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'evolucao'] });
     };
 
     const onPedidoStatus = (data) => {
-      console.log('🛒 Pedido atualizado:', data);
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       queryClient.invalidateQueries({ queryKey: ['pedido', data.pedido_id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     };
 
-    const onAlertaNovo = (data) => {
-      console.log('⚠️ Novo alerta:', data);
-      incrementAlerts();
+    const onAlertaNovo = () => {
       queryClient.invalidateQueries({ queryKey: ['alertas'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      syncAlerts();
     };
 
-    // Registrar listeners globais
+    const onMovimentacaoMudou = (data) => {
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['produto', data?.produto_id] });
+      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    };
+
     socket.on('faixa:mudou', onFaixaMudou);
     socket.on('estoque:atualizado', onEstoqueAtualizado);
     socket.on('pedido:status', onPedidoStatus);
     socket.on('alerta:novo', onAlertaNovo);
+    socket.on('movimentacao:pendente', onMovimentacaoMudou);
+    socket.on('movimentacao:aprovada', onMovimentacaoMudou);
+    socket.on('movimentacao:rejeitada', onMovimentacaoMudou);
 
     return () => {
       socket.off('faixa:mudou', onFaixaMudou);
       socket.off('estoque:atualizado', onEstoqueAtualizado);
       socket.off('pedido:status', onPedidoStatus);
       socket.off('alerta:novo', onAlertaNovo);
+      socket.off('movimentacao:pendente', onMovimentacaoMudou);
+      socket.off('movimentacao:aprovada', onMovimentacaoMudou);
+      socket.off('movimentacao:rejeitada', onMovimentacaoMudou);
     };
-  }, [queryClient, incrementAlerts]);
+  }, [queryClient, incrementAlerts, setAlertsUnread]);
 
   const subscribeToProduct = (produtoId) => {
     const socket = getSocket();

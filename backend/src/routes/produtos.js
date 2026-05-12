@@ -8,6 +8,7 @@ const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
+const { Z_TABLE } = require('../services/kanban.math');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { calcularParametrosKanban, holtDoubleExponential, regressaoLinear } = require('../services/kanban.math');
 const { getKanbanSeries } = require('../services/kanban.repo');
@@ -83,14 +84,43 @@ router.post('/', authenticate, authorize('admin', 'gerente_operacoes', 'supervis
   ], validate,
   async (req, res, next) => {
     try {
-      const { codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao } = req.body;
+      const { codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial } = req.body;
       const result = await query(
         `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido || 100, taxa_carregamento || 0.2, nivel_servico || 95, localizacao, req.user.id]
       );
-      // Criar kanban_parametros com SEM_DADOS
-      await query('INSERT INTO kanban_parametros (produto_id, faixa_atual) VALUES ($1, $2)', [result.rows[0].id, 'SEM_DADOS']);
+      const cmdInicial = Number(cmd_inicial || 0);
+      const leadTimeInicial = Number(lead_time_inicial || 0);
+      if (cmdInicial > 0 && leadTimeInicial > 0) {
+        const z = Z_TABLE[nivel_servico || 95] || Z_TABLE[95];
+        const sigmaDemanda = Math.max(1, cmdInicial * 0.15);
+        const sigmaLeadTime = Math.max(0.5, leadTimeInicial * 0.2);
+        const estoqueSeguranca = Math.ceil(z * Math.sqrt((leadTimeInicial * sigmaDemanda * sigmaDemanda) + (cmdInicial * cmdInicial * sigmaLeadTime * sigmaLeadTime)));
+        const pontoReposicao = Math.ceil((cmdInicial * leadTimeInicial) + estoqueSeguranca);
+        const demandaAnual = cmdInicial * 365;
+        const custoPedidoCalc = Number(custo_pedido || 100);
+        const taxaCalc = Number(taxa_carregamento || 0.2);
+        const custoUnitarioCalc = Number(custo_unitario || 0);
+        const custoManutencao = taxaCalc * custoUnitarioCalc;
+        const eoq = custoManutencao > 0 ? Math.ceil(Math.sqrt((2 * demandaAnual * custoPedidoCalc) / custoManutencao)) : 0;
+        const estoqueMaximo = estoqueSeguranca + eoq;
+        await query(`
+          INSERT INTO kanban_parametros (
+            produto_id, demanda_diaria_media, sigma_demanda_diaria, lead_time_previsto_dias,
+            lead_time_seguro_dias, sigma_lead_time, fator_z, estoque_seguranca,
+            ponto_reposicao, eoq, estoque_maximo, faixa_atual,
+            semanas_historico_usadas, pedidos_historico_usados, calculado_em
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0,0,NOW())`,
+          [
+            result.rows[0].id, cmdInicial, sigmaDemanda, leadTimeInicial,
+            leadTimeInicial + (z * sigmaLeadTime), sigmaLeadTime, z, estoqueSeguranca,
+            pontoReposicao, eoq, estoqueMaximo, 'VERDE',
+          ]
+        );
+      } else {
+        await query('INSERT INTO kanban_parametros (produto_id, faixa_atual) VALUES ($1, $2)', [result.rows[0].id, 'SEM_DADOS']);
+      }
       res.status(201).json(result.rows[0]);
     } catch (err) { next(err); }
   }
@@ -161,6 +191,44 @@ router.delete('/:id', authenticate, authorize('admin'), audit('DESATIVAR_PRODUTO
       const result = await query('UPDATE produtos SET ativo = false, atualizado_em = NOW() WHERE id = $1 RETURNING id', [req.params.id]);
       if (result.rows.length === 0) throw new NotFoundError('Produto');
       res.json({ message: 'Produto desativado' });
+    } catch (err) { next(err); }
+  }
+);
+
+// GET /api/v1/produtos/:id/fornecedores
+router.get('/:id/fornecedores', authenticate, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT pf.*, f.nome AS fornecedor_nome, f.cnpj, f.contato_email, f.contato_telefone
+       FROM produto_fornecedor pf
+       JOIN fornecedores f ON f.id = pf.fornecedor_id
+       WHERE pf.produto_id = $1
+       ORDER BY pf.prioridade ASC`,
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) { next(err); }
+});
+
+// POST /api/v1/produtos/:id/fornecedores
+router.post('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador'), audit('ADICIONAR_FORNECEDOR_PRODUTO', 'produto_fornecedor'),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias } = req.body;
+      if (!fornecedor_id) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'fornecedor_id obrigatorio', code: 400 });
+      const result = await query(
+        `INSERT INTO produto_fornecedor (produto_id, fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (produto_id, fornecedor_id) DO UPDATE SET
+           prioridade = EXCLUDED.prioridade,
+           preco_acordado = EXCLUDED.preco_acordado,
+           lead_time_nominal_dias = EXCLUDED.lead_time_nominal_dias,
+           ativo = true
+         RETURNING *`,
+        [id, fornecedor_id, prioridade || 1, preco_acordado, lead_time_nominal_dias]
+      );
+      res.status(201).json(result.rows[0]);
     } catch (err) { next(err); }
   }
 );

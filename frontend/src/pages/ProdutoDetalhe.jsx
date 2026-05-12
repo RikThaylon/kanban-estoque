@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, AlertCircle, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
@@ -41,6 +41,7 @@ const safe = (v, decimals = 4) => {
 
 const ProdutoDetalhe = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('kanban');
 
   const { data: produto, isLoading } = useQuery({
@@ -68,7 +69,7 @@ const ProdutoDetalhe = () => {
       try {
         const res = await api.get(`/produtos/${id}/fornecedores`);
         return res.data;
-      } catch { return []; }
+      } catch { return produto?.fornecedores || []; }
     },
     enabled: !!produto && activeTab === 'fornecedores',
   });
@@ -118,8 +119,8 @@ const ProdutoDetalhe = () => {
           <p className="text-navy-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary">Lançar Movimentação</button>
-          <button className="btn-primary">Emitir Pedido</button>
+          <button className="btn-secondary" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lancar Movimentacao</button>
+          <button className="btn-primary" onClick={() => navigate(`/pedidos?produto_id=${id}`)}>Emitir Pedido</button>
         </div>
       </div>
 
@@ -182,8 +183,8 @@ const ProdutoDetalhe = () => {
               <FormulaCard
                 title="Estoque de Segurança (ES)"
                 value={formatNumber(produto.estoque_seguranca)}
-                formula="Z × σd × √(LT)"
-                tooltip={`Z(${produto.nivel_servico}%) = ${safe(produto.fator_z, 2)}, Sigma D = ${safe(produto.sigma_demanda_diaria, 2)}`}
+                formula="Z x raiz(LT x sigma_d^2 + d^2 x sigma_LT^2)"
+                tooltip={`Z(${produto.nivel_servico}%) = ${safe(produto.fator_z, 2)}, sigma demanda = ${safe(produto.sigma_demanda_diaria, 2)}, sigma LT = ${safe(produto.sigma_lead_time, 2)}`}
               />
               <FormulaCard
                 title="Ponto de Reposição (PR)"

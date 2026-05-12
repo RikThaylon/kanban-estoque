@@ -62,6 +62,7 @@ const connectRedis = async () => {
     await redis.connect();
   } catch (err) {
     logger.error('Falha ao conectar Redis', { error: err.message });
+    if (env.NODE_ENV === 'production') throw err;
   }
 };
 

@@ -54,6 +54,7 @@ ALTER TABLE pedidos_compra
     'RASCUNHO',
     'AGUARDANDO_APROVACAO',     -- aguardando supervisor de turno
     'AGUARDANDO_GERENTE',       -- escalado para gerente de operações (valor > limite)
+    'AGUARDANDO_DIRETORIA',      -- escalado para diretoria
     'APROVADO',
     'EMITIDO',
     'EM_TRANSITO',
@@ -72,7 +73,7 @@ ALTER TABLE pedidos_compra
 
 CREATE INDEX IF NOT EXISTS idx_pedidos_dept ON pedidos_compra(departamento_id, status);
 CREATE INDEX IF NOT EXISTS idx_pedidos_status_aguardando
-  ON pedidos_compra(status) WHERE status IN ('AGUARDANDO_APROVACAO','AGUARDANDO_GERENTE');
+  ON pedidos_compra(status) WHERE status IN ('AGUARDANDO_APROVACAO','AGUARDANDO_GERENTE','AGUARDANDO_DIRETORIA');
 
 -- ── 5. Seed inicial de departamentos e máquinas (mockados) ──
 INSERT INTO departamentos (id, codigo, nome, descricao) VALUES

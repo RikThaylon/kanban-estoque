@@ -277,19 +277,17 @@ const ProdutoModal = ({ produto, onClose }) => {
       if (isEdit) {
         return api.patch(`/produtos/${produto.id}`, payload);
       } else {
-        const res = await api.post('/produtos', { ...payload, codigo: form.codigo });
+        const res = await api.post('/produtos', { ...payload, codigo: form.codigo, cmd_inicial: form.cmd_inicial, lead_time_inicial: form.lead_time_inicial });
         const novoProdutoId = res.data?.id || res.data?.data?.id;
 
         // Vincular fornecedor principal, se informado
         if (novoProdutoId && form.fornecedor_id) {
-          try {
-            await api.post(`/produtos/${novoProdutoId}/fornecedores`, {
-              fornecedor_id: form.fornecedor_id,
-              prioridade: 1,
-              preco_acordado: form.preco_acordado_fornecedor ? parseFloat(form.preco_acordado_fornecedor) : undefined,
-              lead_time_nominal_dias: form.lead_time_fornecedor ? parseInt(form.lead_time_fornecedor) : undefined,
-            });
-          } catch (_) { /* endpoint pode não existir ainda, ignora */ }
+          await api.post(`/produtos/${novoProdutoId}/fornecedores`, {
+            fornecedor_id: form.fornecedor_id,
+            prioridade: 1,
+            preco_acordado: form.preco_acordado_fornecedor ? parseFloat(form.preco_acordado_fornecedor) : undefined,
+            lead_time_nominal_dias: form.lead_time_fornecedor ? parseInt(form.lead_time_fornecedor) : undefined,
+          });
         }
 
         return res;
