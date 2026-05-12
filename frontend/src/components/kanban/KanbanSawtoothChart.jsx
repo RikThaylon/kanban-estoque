@@ -152,11 +152,23 @@ const KanbanSawtoothChart = ({
           clipPath="url(#chart-clip)"
         />
 
+        {/* Linha do histórico real (Linear) */}
+        {historico && historico.length > 0 && (
+          <polyline
+            points={historico.map(pt => `${toX(pt.dia).toFixed(1)},${toY(pt.estoque).toFixed(1)}`).join(' ')}
+            fill="none"
+            stroke="#6366f1"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            clipPath="url(#chart-clip)"
+          />
+        )}
+
         {/* Pontos históricos reais */}
-        {historico.map((pt, i) => (
+        {historico && historico.map((pt, i) => (
           <circle key={i}
             cx={toX(pt.dia)} cy={toY(pt.estoque)}
-            r="3" fill="#6366f1" opacity="0.8"
+            r="3" fill="#4f46e5" opacity="0.9"
             clipPath="url(#chart-clip)"
           />
         ))}
