@@ -6,6 +6,8 @@ const { env } = require('./config/env');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
+const { pool } = require('./config/database');
+const { redis } = require('./config/redis');
 
 const app = express();
 
@@ -57,7 +59,37 @@ app.use('/api', apiLimiter);
 
 // ── Health Check ──────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), env: env.NODE_ENV });
+  res.json({
+    status: 'ok',
+    service: env.BRAND_NAME + ' Kanban Estoque',
+    timestamp: new Date().toISOString(),
+    env: env.NODE_ENV,
+  });
+});
+
+app.get('/ready', async (req, res) => {
+  const checks = { postgres: false, redis: false };
+
+  try {
+    await pool.query('SELECT 1');
+    checks.postgres = true;
+  } catch (err) {
+    logger.error('Readiness Postgres falhou', { error: err.message });
+  }
+
+  try {
+    if (redis.isStub) {
+      checks.redis = env.NODE_ENV !== 'production';
+    } else {
+      await redis.ping();
+      checks.redis = true;
+    }
+  } catch (err) {
+    logger.error('Readiness Redis falhou', { error: err.message });
+  }
+
+  const ready = checks.postgres && checks.redis;
+  res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready', checks });
 });
 
 // ── API Routes ────────────────────────────────────────────

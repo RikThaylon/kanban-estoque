@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: brimajor-kanban-estoque-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm ci --prefix backend
+    startCommand: npm run migrate --prefix backend && npm start --prefix backend
+    healthCheckPath: /ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BRAND_NAME
+        value: BRIMAJOR
+      - key: REDIS_ENABLED
+        value: true
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+
+  - type: web
+    name: brimajor-kanban-estoque-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_WS_URL
+        sync: false

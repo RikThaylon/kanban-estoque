@@ -30,6 +30,14 @@ async function gerarNumeroPedido() {
 }
 
 // Transições válidas de status
+function podeAlterarStatusPedido(perfil, novoStatus) {
+  if (perfil === 'admin') return true;
+  if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) return podeAprovarNivel1(perfil);
+  if (['EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador'].includes(perfil);
+  if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'].includes(perfil);
+  return false;
+}
+
 const TRANSICOES = {
   // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
   'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'EMITIDO', 'CANCELADO'],
@@ -325,15 +333,23 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
         throw new AppError(`Transição inválida: ${statusAtual} → ${novoStatus}`, 400, 'TRANSICAO_INVALIDA');
       }
 
-      // Aprovacao: usar POST /:id/aprovar para hierarquia. Aqui so admin pode forcar APROVADO.
       if (novoStatus === 'APROVADO' && req.user.perfil !== 'admin') {
         throw new AppError('Use POST /:id/aprovar para aprovar pedidos', 400, 'USE_APROVAR_ENDPOINT');
+      }
+      if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) {
+        throw new AppError('Use POST /:id/receber para registrar recebimento com quantidade e NF', 400, 'USE_RECEBER_ENDPOINT');
+      }
+      if (!podeAlterarStatusPedido(req.user.perfil, novoStatus)) {
+        throw new AppError('Seu perfil nao pode alterar pedido para este status', 403, 'FORBIDDEN');
       }
 
       let extra = '';
       const params = [novoStatus, id];
-      if (novoStatus === 'EMITIDO') { extra = ', data_emissao = NOW()'; }
-      if (novoStatus === 'APROVADO') { extra = `, aprovado_por = '${req.user.id}'`; }
+      if (novoStatus === 'EMITIDO') extra = ', data_emissao = NOW()';
+      if (novoStatus === 'APROVADO') {
+        extra = ', aprovado_por = $3';
+        params.push(req.user.id);
+      }
 
       const result = await query(
         `UPDATE pedidos_compra SET status = $1, atualizado_em = NOW()${extra} WHERE id = $2 RETURNING *`, params

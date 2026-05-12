@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { env } = require('../config/env');
 
 // Login: 10 tentativas / 15 min por IP
 const loginLimiter = rateLimit({
@@ -13,7 +14,7 @@ const loginLimiter = rateLimit({
 // API geral: 200 req / 15 min por usuário
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: env.RATE_LIMIT_MAX,
   message: { error: 'RATE_LIMIT', message: 'Limite de requisições excedido.', code: 429 },
   standardHeaders: true,
   legacyHeaders: false,
