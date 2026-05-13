@@ -285,11 +285,11 @@ function classificacaoABC(produtos) {
   let acumulado = 0;
   return comValor.map(p => {
     const percentual = (p.valor_consumo / total) * 100;
-    acumulado += percentual;
     let classificacao_abc;
-    if (acumulado <= 80) classificacao_abc = 'A';
-    else if (acumulado <= 95) classificacao_abc = 'B';
+    if (acumulado < 80) classificacao_abc = 'A';
+    else if (acumulado < 95) classificacao_abc = 'B';
     else classificacao_abc = 'C';
+    acumulado += percentual;
     return { ...p, percentual, acumulado, classificacao_abc };
   });
 }

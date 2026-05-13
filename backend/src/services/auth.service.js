@@ -148,6 +148,13 @@ class AuthService {
     await query('UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1 AND revogado = false', [userId]);
   }
 
+  async revokeRefreshToken(refreshToken) {
+    if (!refreshToken) return;
+    const tokenHash = hashToken(refreshToken);
+    const legacyTokenHash = legacyHashToken(refreshToken);
+    await query('UPDATE refresh_tokens SET revogado = true WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
+  }
+
   /**
    * Busca dados do usuário autenticado
    */

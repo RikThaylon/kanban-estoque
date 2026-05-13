@@ -1,7 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, optionalAuth } = require('../middleware/auth');
 const { loginLimiter } = require('../middleware/rateLimiter');
 const authService = require('../services/auth.service');
 const { env } = require('../config/env');
@@ -66,9 +66,14 @@ router.post('/refresh',
   }
 );
 
-router.post('/logout', authenticate, async (req, res, next) => {
+router.post('/logout', optionalAuth, async (req, res, next) => {
   try {
-    await authService.logout(req.token, req.user.id);
+    const refreshToken = readCookie(req, REFRESH_COOKIE);
+    if (req.token && req.user?.id) {
+      await authService.logout(req.token, req.user.id);
+    } else {
+      await authService.revokeRefreshToken(refreshToken);
+    }
     res.clearCookie(REFRESH_COOKIE, { ...cookieOptions, maxAge: undefined });
     res.set('Cache-Control', 'no-store');
     res.json({ message: 'Logout realizado com sucesso' });
