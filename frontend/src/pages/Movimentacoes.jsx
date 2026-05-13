@@ -127,7 +127,7 @@ const Movimentacoes = () => {
       {/* Tabela */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="min-w-[760px] w-full text-sm">
             <thead className="bg-surface-50 text-navy-600 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left">Data</th>

@@ -14,6 +14,7 @@ const envSchema = z.object({
   REDIS_ENABLED: z.enum(['true', 'false']).default('true'),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
+  DATA_ENCRYPTION_SECRET: z.string().min(32).optional(),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
@@ -22,7 +23,8 @@ const envSchema = z.object({
 }).superRefine((value, ctx) => {
   if (value.NODE_ENV !== 'production') return;
   const placeholders = ['dev_jwt_secret', 'dev_refresh_secret', 'replace_in_production'];
-  for (const key of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+  for (const key of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATA_ENCRYPTION_SECRET']) {
+    if (!value[key]) continue;
     if (placeholders.some(token => value[key].toLowerCase().includes(token))) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

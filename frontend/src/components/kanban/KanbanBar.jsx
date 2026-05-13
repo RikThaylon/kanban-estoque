@@ -24,7 +24,7 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
       </div>
 
       {/* Eixo X com labels */}
-      <div className="relative h-6 mt-1 text-[10px] font-medium text-navy-500">
+      <div className="relative h-9 sm:h-6 mt-1 text-[9px] sm:text-[10px] font-medium text-navy-500">
         <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: '0%' }}>
           <div className="h-1.5 w-px bg-surface-300"></div>
           <span>0</span>
@@ -33,21 +33,21 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
         {es > 0 && (
           <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: `${zones[0].width}%` }}>
             <div className="h-1.5 w-px bg-surface-300"></div>
-            <span>{es} (ES)</span>
+          <span className="max-w-14 truncate">{es} (ES)</span>
           </div>
         )}
         
         {pr > 0 && (
-          <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: `${zones[0].width + zones[1].width}%` }}>
+          <div className="absolute top-4 sm:top-0 flex flex-col items-center -translate-x-1/2" style={{ left: `${zones[0].width + zones[1].width}%` }}>
             <div className="h-1.5 w-px bg-surface-300"></div>
-            <span>{pr} (PR)</span>
+            <span className="max-w-14 truncate">{pr} (PR)</span>
           </div>
         )}
         
         {emax > 0 && (
           <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: '100%' }}>
             <div className="h-1.5 w-px bg-surface-300"></div>
-            <span>{emax} (Emax)</span>
+          <span className="max-w-16 truncate">{emax} (Emax)</span>
           </div>
         )}
 

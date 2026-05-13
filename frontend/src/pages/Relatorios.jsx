@@ -228,7 +228,7 @@ const Relatorios = () => {
           <EmptyMsg msg="Sem dados para classificar" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[760px] w-full text-sm">
               <thead className="bg-surface-50 text-navy-600 text-xs uppercase tracking-wider">
                 <tr>
                   <th className="px-3 py-2 text-left">Posição</th>
@@ -295,7 +295,7 @@ const Relatorios = () => {
               </ResponsiveContainer>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="min-w-[760px] w-full text-sm">
                 <thead className="bg-surface-50 text-navy-600 text-xs uppercase tracking-wider">
                   <tr>
                     <th className="px-3 py-2 text-left">Mês de chegada</th>

@@ -1,46 +1,33 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+export const useAuthStore = create((set) => ({
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+  isSocketConnected: false,
+  authChecked: false,
 
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-      isSocketConnected: false,
+  setAuth: (user, accessToken) => set({
+    user,
+    accessToken,
+    isAuthenticated: !!accessToken,
+    authChecked: true,
+  }),
 
-      setAuth: (user, accessToken, refreshToken) => set({
-        user,
-        accessToken,
-        refreshToken,
-        isAuthenticated: !!accessToken,
-      }),
+  setTokens: (accessToken) => set({
+    accessToken,
+    isAuthenticated: !!accessToken,
+  }),
 
-      setTokens: (accessToken, refreshToken) => set({
-        accessToken,
-        refreshToken,
-      }),
+  setUser: (user) => set({ user }),
 
-      setUser: (user) => set({ user }),
+  setAuthChecked: (authChecked) => set({ authChecked }),
 
-      logout: () => set({
-        user: null,
-        accessToken: null,
-        refreshToken: null,
-        isAuthenticated: false,
-      }),
+  logout: () => set({
+    user: null,
+    accessToken: null,
+    isAuthenticated: false,
+    authChecked: true,
+  }),
 
-      setSocketConnected: (status) => set({ isSocketConnected: status }),
-    }),
-    {
-      name: 'kanban-auth-storage',
-      partialize: (state) => ({ 
-        user: state.user,
-        accessToken: state.accessToken, 
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated 
-      }),
-    }
-  )
-);
+  setSocketConnected: (status) => set({ isSocketConnected: status }),
+}));

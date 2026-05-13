@@ -95,10 +95,10 @@ const Produtos = () => {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <Filter className="w-5 h-5 text-navy-400" />
             <select
-              className="input-field w-40"
+              className="input-field w-full sm:w-44"
               value={faixaFiltro}
               onChange={e => { setFaixaFiltro(e.target.value); setPage(1); }}
             >
@@ -110,13 +110,65 @@ const Produtos = () => {
             </select>
           </div>
 
-          <button onClick={exportCSV} className="btn-secondary whitespace-nowrap">
+          <button onClick={exportCSV} className="btn-secondary whitespace-nowrap justify-center w-full sm:w-auto">
             <Download className="w-4 h-4" /> Exportar CSV
           </button>
         </div>
 
+        <div className="grid gap-3 md:hidden">
+          {isLoading ? (
+            <div className="p-6 text-center text-navy-400 bg-surface-50 rounded-lg">Carregando...</div>
+          ) : data?.data?.length === 0 ? (
+            <div className="p-6 text-center text-navy-400 bg-surface-50 rounded-lg">Nenhum produto encontrado.</div>
+          ) : (
+            data?.data.map((produto) => (
+              <article key={produto.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-navy-400">{produto.codigo}</p>
+                    <h2 className="font-bold text-navy-800 break-words">{produto.nome}</h2>
+                    <p className="text-xs text-navy-400 mt-0.5">{produto.categoria_nome}</p>
+                  </div>
+                  <FaixaBadge faixa={produto.faixa_atual} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+                  <div>
+                    <p className="text-xs text-navy-400">Estoque</p>
+                    <p className="font-bold text-navy-700">{formatNumber(produto.estoque_atual)} {produto.unidade}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">PR</p>
+                    <p className="font-bold text-navy-700">{formatNumber(produto.ponto_reposicao) || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-navy-400">Custo un.</p>
+                    <p className="font-bold text-navy-700">{formatMoney(produto.custo_unitario)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 mt-4">
+                  <Link to={`/produtos/${produto.id}`} className="btn-secondary justify-center">
+                    Detalhes
+                  </Link>
+                  {podeGerir && (
+                    <button onClick={() => setOpenModal(produto)} className="btn-secondary justify-center">
+                      <Edit3 className="w-4 h-4" /> Editar
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={() => { if (confirm(`Desativar ${produto.codigo}?`)) desativar.mutate(produto.id); }} className="btn-danger justify-center">
+                      <Trash2 className="w-4 h-4" /> Desativar
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
         {/* Tabela */}
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-surface-200 text-xs font-bold text-navy-400 uppercase tracking-wider">
@@ -410,7 +462,7 @@ const ProdutoModal = ({ produto, onClose }) => {
                 </div>
               )}
 
-              {/* Gráfico serrote */}
+              {/* Grafico linear interativo */}
               <div className="mt-4">
                 <p className="text-xs font-bold text-navy-500 mb-2">Visualização do ciclo Kanban estimado (3 ciclos)</p>
                 <KanbanSawtoothChart

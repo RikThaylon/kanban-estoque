@@ -1,15 +1,6 @@
 -- KANBAN ESTOQUE — SEED DATA (Migration 002)
--- 9 perfis hierarquicos. Login = username (sem email). Senhas pre-hasheadas com bcrypt cost 12.
--- Senhas:
---   admin       => Admin@123
---   plant       => Plant@123
---   geneng      => Geneng@123
---   processos   => Epc@123
---   producao    => Epd@123
---   gerente.op  => Gop@123
---   supervisor  => Sup@123
---   comprador   => Cmp@123
---   facilitador => Fac@123
+-- 9 perfis hierarquicos. Login = username (sem email).
+-- Senhas seed ficam armazenadas somente como hashes bcrypt cost 12.
 
 INSERT INTO usuarios (id, nome, username, senha_hash, perfil) VALUES
 ('a0000000-0000-0000-0000-000000000001', 'Administrador',           'admin',       '$2b$12$ZmvIhpxkNHGrxqVXEMwL7.R7D7c0OoqzKmp5jjdQUYcURT6zZCPfi', 'admin'),

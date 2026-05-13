@@ -29,6 +29,7 @@ if (typeof window !== 'undefined') {
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -68,7 +69,8 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Se o erro for 401 e não for um retry (evita loop infinito) e não for rota de login
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/login')) {
+    const isAuthEndpoint = originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/refresh');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       
       if (isRefreshing) {
         return new Promise(function(resolve, reject) {
@@ -84,16 +86,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = useAuthStore.getState().refreshToken;
-
-      if (!refreshToken) {
-        useAuthStore.getState().logout();
-        return Promise.reject(error);
-      }
-
       try {
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-        useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        useAuthStore.getState().setTokens(data.accessToken);
         
         api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
         originalRequest.headers['Authorization'] = `Bearer ${data.accessToken}`;

@@ -32,13 +32,11 @@ const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos
 
 // Protected Route Wrapper
 const ProtectedRoute = () => {
-  const { isAuthenticated, logout } = useAuthStore();
-  const { checkAuth } = useAuth();
+  const { isAuthenticated, authChecked } = useAuthStore();
+  const { checkAuth, logout } = useAuth();
   
   useEffect(() => {
-    if (isAuthenticated) {
-      checkAuth();
-    }
+    checkAuth();
   }, []);
 
   // Monitoramento de Inatividade (10 min)
@@ -64,6 +62,10 @@ const ProtectedRoute = () => {
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
   }, [isAuthenticated, logout]);
+
+  if (!authChecked) {
+    return <FullPageLoader />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

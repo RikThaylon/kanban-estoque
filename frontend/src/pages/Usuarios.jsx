@@ -145,7 +145,8 @@ const Usuarios = () => {
             <Loader2 className="w-6 h-6 animate-spin text-navy-400" />
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="min-w-[720px] w-full">
             <thead className="bg-surface-50 text-xs uppercase tracking-wide text-navy-400">
               <tr>
                 <th className="text-left px-4 py-3">Nome</th>
@@ -193,6 +194,7 @@ const Usuarios = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

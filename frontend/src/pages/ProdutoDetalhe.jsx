@@ -74,7 +74,7 @@ const ProdutoDetalhe = () => {
     enabled: !!produto && activeTab === 'fornecedores',
   });
 
-  // Histórico para o gráfico serrote (últimas movimentações)
+  // Historico para o grafico linear interativo.
   const historicoSerrote = useMemo(() => {
     if (!produto?.ultimas_movimentacoes?.length) return [];
     const movs = [...(produto.ultimas_movimentacoes || [])].reverse();
@@ -98,7 +98,7 @@ const ProdutoDetalhe = () => {
 
   const TABS = [
     { key: 'kanban', label: 'Kanban' },
-    { key: 'grafico', label: 'Gráfico Serrote' },
+    { key: 'grafico', label: 'Grafico linear' },
     { key: 'rastreamento', label: 'Rastreamento Matemático' },
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'fornecedores', label: 'Fornecedores' },
@@ -107,25 +107,25 @@ const ProdutoDetalhe = () => {
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-2">
-        <Link to="/produtos" className="p-2 rounded-lg hover:bg-surface-200 text-navy-500 transition-colors">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 mb-2">
+        <Link to="/produtos" className="p-2 rounded-lg hover:bg-surface-200 text-navy-500 transition-colors self-start">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-navy-800">{produto.nome}</h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-navy-800 break-words">{produto.nome}</h1>
             <FaixaBadge faixa={produto.faixa_atual} />
           </div>
           <p className="text-navy-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
-        <div className="flex gap-2">
-          <button className="btn-secondary" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lancar Movimentacao</button>
-          <button className="btn-primary" onClick={() => navigate(`/pedidos?produto_id=${id}`)}>Emitir Pedido</button>
+        <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
+          <button className="btn-secondary justify-center" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lancar Movimentacao</button>
+          <button className="btn-primary justify-center" onClick={() => navigate(`/pedidos?produto_id=${id}`)}>Emitir Pedido</button>
         </div>
       </div>
 
       {/* Main Info Card */}
-      <div className="card p-6">
+      <div className="card p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-surface-50 p-4 rounded-xl border border-surface-200">
             <p className="text-sm text-navy-500 font-medium mb-1">Estoque Atual</p>
@@ -206,21 +206,21 @@ const ProdutoDetalhe = () => {
             </div>
           )}
 
-          {/* ── Aba Gráfico Serrote ── */}
+          {/* Grafico linear interativo */}
           {activeTab === 'grafico' && (
             <div className="space-y-4">
               {temDadosKanban ? (
                 <>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-bold text-navy-800">Ciclo de Reposição Kanban</h3>
+                      <h3 className="font-bold text-navy-800">Ciclo de reposicao Kanban</h3>
                       <p className="text-sm text-navy-400 mt-0.5">
                         {historicoSerrote.length > 0
-                          ? '3 ciclos históricos (pontos roxos) + 3 ciclos estimados'
-                          : '6 ciclos estimados com base nos parâmetros calculados'}
+                          ? 'Historico real + ciclos estimados com tooltip por ponto'
+                          : 'Ciclos estimados com base nos parametros calculados'}
                       </p>
                     </div>
-                    <div className="text-right text-xs text-navy-400">
+                    <div className="text-left sm:text-right text-xs text-navy-400">
                       <div>CMD: <strong>{safe(produto.demanda_diaria_media, 2)}/dia</strong></div>
                       <div>LT: <strong>{safe(produto.lead_time_previsto_dias, 0)} dias</strong></div>
                     </div>
@@ -237,7 +237,7 @@ const ProdutoDetalhe = () => {
                   <div className="text-4xl">📊</div>
                   <p className="font-bold text-navy-700">Parâmetros Kanban ainda não calculados</p>
                   <p className="text-sm text-navy-400 max-w-md">
-                    O gráfico de ciclos será exibido após o sistema calcular ES, PR e EOQ a partir das movimentações e pedidos deste produto.
+                    O grafico de ciclos sera exibido apos o sistema calcular ES, PR e EOQ a partir das movimentacoes e pedidos deste produto.
                     Registre pelo menos algumas semanas de movimentação para o modelo estatístico entrar em ação.
                   </p>
                 </div>
@@ -305,7 +305,8 @@ const ProdutoDetalhe = () => {
           {/* ── Aba Movimentações ── */}
           {activeTab === 'movimentacoes' && (
             <div className="card p-0 overflow-hidden">
-              <table className="w-full text-left">
+              <div className="overflow-x-auto">
+              <table className="min-w-[560px] w-full text-left">
                 <thead className="bg-surface-50 border-b border-surface-200">
                   <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
                     <th className="p-4">Data</th>
@@ -337,6 +338,7 @@ const ProdutoDetalhe = () => {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -356,7 +358,8 @@ const ProdutoDetalhe = () => {
                 </div>
               ) : (
                 <div className="card p-0 overflow-hidden">
-                  <table className="w-full text-left">
+                  <div className="overflow-x-auto">
+                  <table className="min-w-[720px] w-full text-left">
                     <thead className="bg-surface-50 border-b border-surface-200">
                       <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
                         <th className="p-4">Fornecedor</th>
@@ -393,6 +396,7 @@ const ProdutoDetalhe = () => {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>

@@ -1,11 +1,11 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const { env } = require('../config/env');
 const { query } = require('../config/database');
 const { redis } = require('../config/redis');
 const { AuthError, AppError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const { hashToken, legacyHashToken } = require('../utils/sensitiveData');
 
 class AuthService {
   /**
@@ -72,7 +72,7 @@ class AuthService {
     const tokens = this.generateTokens(user);
 
     // Salvar refresh token no banco
-    const tokenHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
+    const tokenHash = hashToken(tokens.refreshToken);
     await query(
       'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
       [user.id, tokenHash, ip, userAgent]
@@ -102,10 +102,11 @@ class AuthService {
       throw new AuthError('Refresh token inválido');
     }
 
-    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const tokenHash = hashToken(refreshToken);
+    const legacyTokenHash = legacyHashToken(refreshToken);
     const result = await query(
-      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = $1 AND rt.revogado = false AND rt.expira_em > NOW()',
-      [tokenHash]
+      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.revogado = false AND rt.expira_em > NOW()',
+      [[tokenHash, legacyTokenHash]]
     );
 
     if (result.rows.length === 0) throw new AuthError('Refresh token inválido ou expirado');
@@ -113,13 +114,13 @@ class AuthService {
     if (!row.ativo) throw new AuthError('Usuário desativado');
 
     // Revogar token anterior (rotation)
-    await query('UPDATE refresh_tokens SET revogado = true WHERE token_hash = $1', [tokenHash]);
+    await query('UPDATE refresh_tokens SET revogado = true WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
 
     const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
     const tokens = this.generateTokens(user);
 
     // Salvar novo refresh token
-    const newHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
+    const newHash = hashToken(tokens.refreshToken);
     await query(
       'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
       [user.id, newHash, ip, userAgent]
@@ -137,7 +138,7 @@ class AuthService {
       if (decoded && decoded.exp) {
         const ttl = decoded.exp - Math.floor(Date.now() / 1000);
         if (ttl > 0) {
-          await redis.setex(`bl:${accessToken}`, ttl, '1');
+          await redis.setex(`bl:${hashToken(accessToken)}`, ttl, '1');
         }
       }
     } catch (err) {

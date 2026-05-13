@@ -11,7 +11,7 @@ const Header = () => {
   const { logout } = useAuth();
 
   return (
-    <header className="h-16 bg-white border-b border-surface-200 shadow-sm flex items-center justify-between px-3 sm:px-6 sticky top-0 z-10">
+    <header className="h-16 bg-white border-b border-surface-200 shadow-sm flex items-center justify-between px-3 sm:px-6 sticky top-0 z-10 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
           onClick={toggleSidebar}

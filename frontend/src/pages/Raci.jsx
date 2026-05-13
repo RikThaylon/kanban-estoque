@@ -236,7 +236,7 @@ const TabelaRaci = ({ problema }) => {
   return (
     <div className="space-y-5">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-[760px] w-full">
           <thead>
             <tr>
               <th className="text-left text-xs uppercase tracking-wide text-navy-400 pb-2">Papel</th>

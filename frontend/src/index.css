@@ -3,9 +3,25 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   * { @apply border-surface-200; }
   body {
     @apply bg-surface-50 text-navy-700 font-sans antialiased;
+    min-width: 320px;
+    overscroll-behavior-y: none;
+  }
+  #root {
+    min-height: 100dvh;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
   }
 }
 
@@ -38,6 +54,15 @@
   }
   .label {
     @apply block text-sm font-medium text-navy-600 mb-1;
+  }
+}
+
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger {
+    min-height: 44px;
   }
 }
 

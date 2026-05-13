@@ -3,6 +3,7 @@ const { env } = require('../config/env');
 const { redis } = require('../config/redis');
 const { AuthError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const { hashToken } = require('../utils/sensitiveData');
 
 /**
  * Middleware de autenticação JWT
@@ -18,7 +19,7 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     // Verificar blacklist no Redis
-    const isBlacklisted = await redis.get(`bl:${token}`);
+    const isBlacklisted = await redis.get(`bl:${hashToken(token)}`);
     if (isBlacklisted) {
       throw new AuthError('Token revogado');
     }
@@ -48,7 +49,7 @@ const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const isBlacklisted = await redis.get(`bl:${token}`);
+        const isBlacklisted = await redis.get(`bl:${hashToken(token)}`);
       if (!isBlacklisted) {
         const decoded = jwt.verify(token, env.JWT_SECRET);
         req.user = { id: decoded.id, email: decoded.email, perfil: decoded.perfil, nome: decoded.nome };

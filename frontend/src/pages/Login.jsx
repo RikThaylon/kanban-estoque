@@ -20,17 +20,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-navy-800 p-4 relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-navy-600 rounded-full blur-[100px] opacity-30 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-kanban-verde rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 relative z-10 animate-fade-in">
+    <div className="min-h-dvh flex items-center justify-center bg-navy-800 px-4 py-6 sm:p-6 relative overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 sm:p-8 relative z-10 animate-fade-in">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-kanban-verde rounded-xl flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
             K
           </div>
           <h1 className="text-2xl font-bold text-navy-800">Kanban Estoque</h1>
-          <p className="text-navy-400 text-sm mt-1">Gestão industrial inteligente</p>
+          <p className="text-navy-400 text-sm mt-1">Gestao industrial inteligente</p>
         </div>
 
         {error && (
@@ -43,7 +40,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-semibold text-navy-700 mb-1.5" htmlFor="username">
-              Usuário
+              Usuario
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -55,9 +52,12 @@ const Login = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2.5 border border-surface-200 rounded-xl text-navy-700 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde transition-all bg-surface-50 focus:bg-white"
-                placeholder="ex: admin"
+                placeholder="usuario"
                 required
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
                 disabled={loading}
               />
             </div>
@@ -77,7 +77,7 @@ const Login = () => {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2.5 border border-surface-200 rounded-xl text-navy-700 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde transition-all bg-surface-50 focus:bg-white"
-                placeholder="••••••••"
+                placeholder="Senha"
                 required
                 autoComplete="current-password"
                 disabled={loading}
@@ -93,23 +93,6 @@ const Login = () => {
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar no Sistema'}
           </button>
         </form>
-
-        <details className="mt-8 text-xs text-navy-400">
-          <summary className="cursor-pointer text-center hover:text-navy-600 select-none">
-            Usuários disponíveis (clique para expandir)
-          </summary>
-          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-navy-500">
-            <span>admin</span><span>Admin@123</span>
-            <span>plant</span><span>Plant@123</span>
-            <span>geneng</span><span>Geneng@123</span>
-            <span>processos</span><span>Epc@123</span>
-            <span>producao</span><span>Epd@123</span>
-            <span>gerente.op</span><span>Gop@123</span>
-            <span>supervisor</span><span>Sup@123</span>
-            <span>comprador</span><span>Cmp@123</span>
-            <span>facilitador</span><span>Fac@123</span>
-          </div>
-        </details>
       </div>
     </div>
   );

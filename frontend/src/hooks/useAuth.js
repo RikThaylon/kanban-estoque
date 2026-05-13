@@ -4,7 +4,7 @@ import api from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 
 export const useAuth = () => {
-  const { user, isAuthenticated, setAuth, logout: storeLogout } = useAuthStore();
+  const { user, isAuthenticated, setAuth, logout: storeLogout, setAuthChecked } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -13,9 +13,9 @@ export const useAuth = () => {
     setError(null);
     try {
       const response = await api.post('/auth/login', { username, senha });
-      const { accessToken, refreshToken, usuario } = response.data;
+      const { accessToken, usuario } = response.data;
 
-      setAuth(usuario, accessToken, refreshToken);
+      setAuth(usuario, accessToken);
       connectSocket();
 
       return true;
@@ -41,10 +41,16 @@ export const useAuth = () => {
   };
 
   const checkAuth = async () => {
-    if (!isAuthenticated) return false;
     try {
-      const response = await api.get('/auth/me');
-      useAuthStore.getState().setUser(response.data);
+      if (!useAuthStore.getState().accessToken) {
+        const refreshed = await api.post('/auth/refresh');
+        const { accessToken, usuario } = refreshed.data;
+        useAuthStore.getState().setAuth(usuario, accessToken);
+      } else {
+        const response = await api.get('/auth/me');
+        useAuthStore.getState().setUser(response.data);
+        setAuthChecked(true);
+      }
       connectSocket();
       return true;
     } catch (err) {
@@ -54,6 +60,7 @@ export const useAuth = () => {
         storeLogout();
         disconnectSocket();
       }
+      setAuthChecked(true);
       return false;
     }
   };
