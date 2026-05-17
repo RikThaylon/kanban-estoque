@@ -418,7 +418,7 @@ router.post('/:id/receber', authenticate,
 
       // Recalcular Kanban
       const io = req.app.get('io');
-      recalcularKanban(pedido.produto_id, io).catch(() => {});
+      recalcularKanban(pedido.produto_id, io);
 
       res.json({ message: 'Recebimento registrado', status: novoStatus, quantidade_total_recebida: totalRecebido });
     } catch (err) {

@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { recalcularKanban } = require('../services/kanban.calc');
+const { _recalcularKanbanSync: recalcularKanban } = require('../services/kanban.calc');
 const logger = require('../utils/logger');
 
 /**

@@ -169,9 +169,7 @@ router.post('/',
       await client.query('COMMIT');
 
       const io = req.app.get('io');
-      recalcularKanban(produto_id, io).catch(err =>
-        logger.error('Erro ao recalcular Kanban', { error: err.message })
-      );
+      recalcularKanban(produto_id, io);
       if (io) {
         io.emit('estoque:atualizado', {
           produto_id,
@@ -253,9 +251,7 @@ router.post('/:id/aprovar',
       await client.query('COMMIT');
 
       const io = req.app.get('io');
-      recalcularKanban(mov.produto_id, io).catch(err =>
-        logger.error('Erro ao recalcular Kanban após aprovação', { error: err.message })
-      );
+      recalcularKanban(mov.produto_id, io);
       if (io) {
         io.emit('movimentacao:aprovada', { movimentacao_id: id, produto_id: mov.produto_id });
         io.emit('estoque:atualizado', {
