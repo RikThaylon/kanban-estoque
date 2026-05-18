@@ -15,6 +15,7 @@ const Relatorios = React.lazy(() => import('./pages/Relatorios'));
 const Maquinas = React.lazy(() => import('./pages/Maquinas'));
 const Usuarios = React.lazy(() => import('./pages/Usuarios'));
 const Fornecedores = React.lazy(() => import('./pages/Fornecedores'));
+const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
 
@@ -94,6 +95,7 @@ function App() {
               <Route path="/maquinas" element={<Maquinas />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/fornecedores" element={<Fornecedores />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
               <Route path="/raci" element={<Raci />} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>

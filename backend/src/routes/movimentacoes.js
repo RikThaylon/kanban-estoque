@@ -9,6 +9,7 @@ const { query, getClient } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { AppError, NotFoundError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
+const { dispatchRecalculoKanban } = require('../services/recalculo.dispatcher');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -169,7 +170,7 @@ router.post('/',
       await client.query('COMMIT');
 
       const io = req.app.get('io');
-      recalcularKanban(produto_id, io);
+      dispatchRecalculoKanban(recalcularKanban, produto_id, io, logger);
       if (io) {
         io.emit('estoque:atualizado', {
           produto_id,
@@ -251,7 +252,7 @@ router.post('/:id/aprovar',
       await client.query('COMMIT');
 
       const io = req.app.get('io');
-      recalcularKanban(mov.produto_id, io);
+      dispatchRecalculoKanban(recalcularKanban, mov.produto_id, io, logger);
       if (io) {
         io.emit('movimentacao:aprovada', { movimentacao_id: id, produto_id: mov.produto_id });
         io.emit('estoque:atualizado', {

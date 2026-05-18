@@ -173,6 +173,7 @@ const Pedidos = () => {
                 <th className="p-4">Número</th>
                 <th className="p-4">Data</th>
                 <th className="p-4">Produto</th>
+                <th className="p-4">Maquina</th>
                 <th className="p-4">Fornecedor</th>
                 <th className="p-4 text-right">Qtd</th>
                 <th className="p-4 text-right">Total</th>
@@ -181,8 +182,8 @@ const Pedidos = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
-              {isLoading && <tr><td colSpan="8" className="p-8 text-center">Carregando...</td></tr>}
-              {!isLoading && data?.data?.length === 0 && <tr><td colSpan="8" className="p-8 text-center text-navy-400">Nenhum pedido encontrado.</td></tr>}
+              {isLoading && <tr><td colSpan="9" className="p-8 text-center">Carregando...</td></tr>}
+              {!isLoading && data?.data?.length === 0 && <tr><td colSpan="9" className="p-8 text-center text-navy-400">Nenhum pedido encontrado.</td></tr>}
               {!isLoading && data?.data?.map(pedido => (
                 <tr key={pedido.id} className="hover:bg-surface-50">
                   <td className="p-4 font-mono text-sm font-bold text-navy-700">{pedido.numero}</td>
@@ -190,6 +191,14 @@ const Pedidos = () => {
                   <td className="p-4">
                     <div className="font-bold text-navy-800 text-sm">{pedido.produto_codigo}</div>
                     <div className="text-xs text-navy-400 truncate max-w-[200px]">{pedido.produto_nome}</div>
+                  </td>
+                  <td className="p-4 text-sm text-navy-600">
+                    {pedido.maquina_codigo ? (
+                      <div className="max-w-[160px]">
+                        <div className="font-mono font-medium text-navy-700">{pedido.maquina_codigo}</div>
+                        <div className="text-xs text-navy-400 truncate">{pedido.departamento_nome || pedido.maquina_nome}</div>
+                      </div>
+                    ) : '—'}
                   </td>
                   <td className="p-4 text-sm text-navy-600 truncate max-w-[150px]">{pedido.fornecedor_nome}</td>
                   <td className="p-4 text-right font-medium text-navy-700 whitespace-nowrap">
@@ -238,6 +247,11 @@ const Pedidos = () => {
               <div>
                 <div className="text-sm font-semibold text-navy-800">{pedido.produto_codigo} — {pedido.produto_nome}</div>
                 <div className="text-xs text-navy-500">{pedido.fornecedor_nome}</div>
+                {pedido.maquina_codigo && (
+                  <div className="text-xs text-navy-500">
+                    {pedido.maquina_codigo} - {pedido.departamento_nome || pedido.maquina_nome}
+                  </div>
+                )}
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-navy-600">Qtd: <strong>{pedido.quantidade_pedida}</strong></span>
@@ -291,7 +305,10 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
   const podeAprovarN3 = PERFIS_APROVADORES_N3.includes(user?.perfil);
 
   let podeAprovar = false;
-  if (pedido.status === 'AGUARDANDO_APROVACAO') podeAprovar = podeAprovarN1;
+  if (pedido.status === 'AGUARDANDO_APROVACAO') {
+    podeAprovar = podeAprovarN1
+      && (user?.perfil !== 'supervisor_turno' || !pedido.aprovador_n1_id || pedido.aprovador_n1_id === user?.id);
+  }
   else if (pedido.status === 'AGUARDANDO_GERENTE') podeAprovar = podeAprovarN2;
   else if (pedido.status === 'AGUARDANDO_DIRETORIA') podeAprovar = podeAprovarN3;
 
@@ -375,6 +392,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
   const [quantidade, setQuantidade] = useState(template?.quantidade_pedida || '');
   const [precoUnit, setPrecoUnit] = useState(template?.preco_unitario || '');
   const [dataPrevista, setDataPrevista] = useState('');
+  const [maquinaId, setMaquinaId] = useState('');
   const [erro, setErro] = useState('');
 
   const { data: produtosRes } = useQuery({
@@ -382,6 +400,28 @@ const NovoPedidoModal = ({ template, onClose }) => {
     queryFn: async () => (await api.get('/produtos', { params: { limit: 20, busca } })).data,
     enabled: busca.length >= 2 && !produtoId,
   });
+
+  const { data: maquinasProduto, isLoading: carregandoMaquinas } = useQuery({
+    queryKey: ['maquinas', 'produto', produtoId],
+    queryFn: async () => (await api.get('/maquinas', { params: { produto_id: produtoId } })).data,
+    enabled: !!produtoId,
+  });
+
+  useEffect(() => {
+    if (!produtoId) {
+      setMaquinaId('');
+      return;
+    }
+
+    const maquinas = maquinasProduto || [];
+    if (maquinas.length === 1) {
+      setMaquinaId(maquinas[0].id);
+      return;
+    }
+    if (maquinaId && !maquinas.some((m) => m.id === maquinaId)) {
+      setMaquinaId('');
+    }
+  }, [produtoId, maquinasProduto, maquinaId]);
 
   const { data: fornecedores } = useQuery({
     queryKey: ['fornecedores'],
@@ -414,6 +454,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
       quantidade_pedida: parseFloat(quantidade),
       preco_unitario: precoUnit ? parseFloat(precoUnit) : undefined,
       data_prevista: dataPrevista || undefined,
+      maquina_id: maquinaId || undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
@@ -426,6 +467,9 @@ const NovoPedidoModal = ({ template, onClose }) => {
     e.preventDefault();
     setErro('');
     if (!produtoId) return setErro('Selecione um produto');
+    if (carregandoMaquinas) return setErro('Aguarde carregar as maquinas vinculadas');
+    if ((maquinasProduto || []).length === 0) return setErro('Produto sem maquina vinculada. Vincule o item em Maquinas antes de solicitar compra.');
+    if (!maquinaId) return setErro('Selecione a maquina que precisa de reposicao');
     if (!fornecedorId) return setErro('Selecione um fornecedor');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
     criar.mutate();
@@ -445,7 +489,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
             <input
               type="text"
               value={busca}
-              onChange={e => { setBusca(e.target.value); setProdutoId(''); }}
+              onChange={e => { setBusca(e.target.value); setProdutoId(''); setMaquinaId(''); }}
               placeholder="Digite código ou nome..."
               className="input w-full"
               disabled={!!template}
@@ -458,6 +502,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
                     key={p.id} type="button"
                     onClick={() => {
                       setProdutoId(p.id);
+                      setMaquinaId('');
                       setBusca(`${p.codigo} — ${p.nome}`);
                       // Auto-preenche o preço unitário com o custo cadastrado no produto
                       if (p.custo_unitario && !precoUnit) {
@@ -474,6 +519,31 @@ const NovoPedidoModal = ({ template, onClose }) => {
               </div>
             )}
           </div>
+
+          {produtoId && (
+            <div>
+              <label className="block text-sm font-medium text-navy-700 mb-1">Maquina solicitante</label>
+              {carregandoMaquinas ? (
+                <div className="input w-full text-navy-400">Carregando maquinas...</div>
+              ) : (maquinasProduto || []).length > 0 ? (
+                <select value={maquinaId} onChange={e => setMaquinaId(e.target.value)} className="input w-full" required>
+                  <option value="">Selecione...</option>
+                  {(maquinasProduto || []).map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.codigo} - {m.nome}{m.departamento_nome ? ` - ${m.departamento_nome}` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md p-3">
+                  Produto sem maquina vinculada. Cadastre o vinculo em Maquinas antes de criar a solicitacao.
+                </div>
+              )}
+              {(maquinasProduto || []).length > 1 && (
+                <p className="text-xs text-navy-500 mt-1">Este item e usado em N maquinas; escolha a maquina correta para rotear o aprovador.</p>
+              )}
+            </div>
+          )}
 
           {/* Fornecedor */}
           <div>
@@ -625,7 +695,9 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
               <DetailRow label="Produto" value={`${p.produto_codigo} — ${p.produto_nome}`} />
               <DetailRow label="Fornecedor" value={p.fornecedor_nome} />
               {p.fornecedor_cnpj && <DetailRow label="CNPJ" value={p.fornecedor_cnpj} />}
+              {p.maquina_codigo && <DetailRow label="Maquina" value={`${p.maquina_codigo} - ${p.maquina_nome}`} />}
               {p.departamento_nome && <DetailRow label="Departamento" value={`${p.departamento_codigo} — ${p.departamento_nome}`} />}
+              {p.aprovador_n1_nome && <DetailRow label="Supervisor responsavel" value={p.aprovador_n1_nome} />}
               {p.motivo_rejeicao && <DetailRow label="Motivo rejeição" value={<span className="text-rose-700">{p.motivo_rejeicao}</span>} />}
               {p.rejeitado_por_nome && <DetailRow label="Rejeitado por" value={p.rejeitado_por_nome} />}
               <DetailRow label="Quantidade" value={p.quantidade_pedida} />

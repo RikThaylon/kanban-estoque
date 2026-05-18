@@ -15,9 +15,10 @@ const PERFIS_VINCULAR = ['admin', 'plant_manager', 'gerente_operacoes', 'supervi
 /** Lista máquinas (com departamento e contagem de produtos) */
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const { departamento_id } = req.query;
+    const { departamento_id, produto_id } = req.query;
     const params = []; let where = 'WHERE m.ativo = true';
     if (departamento_id) { params.push(departamento_id); where += ` AND m.departamento_id = $${params.length}`; }
+    if (produto_id) { params.push(produto_id); where += ` AND EXISTS (SELECT 1 FROM maquina_produto mpf WHERE mpf.maquina_id = m.id AND mpf.produto_id = $${params.length})`; }
     const result = await query(`
       SELECT m.*, d.nome AS departamento_nome, d.codigo AS departamento_codigo,
         (SELECT COUNT(*) FROM maquina_produto mp WHERE mp.maquina_id = m.id) AS total_produtos
