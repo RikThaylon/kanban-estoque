@@ -4,11 +4,11 @@ const FaixaBadge = ({ faixa, className = '' }) => {
   const getStyles = () => {
     switch (faixa) {
       case 'VERDE':
-        return 'bg-kanban-verde-light text-kanban-verde border-kanban-verde/20';
+        return 'bg-kanban-verde-light text-kanban-verde border-kanban-verde/25';
       case 'AMARELO':
-        return 'bg-kanban-amarelo-light text-kanban-amarelo border-kanban-amarelo/20';
+        return 'bg-kanban-amarelo-light text-kanban-amarelo border-kanban-amarelo/25';
       case 'VERMELHO':
-        return 'bg-kanban-vermelho-light text-kanban-vermelho border-kanban-vermelho/20';
+        return 'bg-kanban-vermelho-light text-kanban-vermelho border-kanban-vermelho/25';
       default:
         return 'bg-surface-100 text-navy-500 border-surface-200';
     }
@@ -24,7 +24,7 @@ const FaixaBadge = ({ faixa, className = '' }) => {
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStyles()} ${className}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black border ${getStyles()} ${className}`}>
       {getLabel()}
     </span>
   );

@@ -25,13 +25,13 @@ const Layout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen">
       <Sidebar />
 
       {/* Backdrop para mobile (clica fora pra fechar) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-navy-900/40 z-10 lg:hidden"
+          className="fixed inset-0 bg-steel-900/55 backdrop-blur-sm z-10 lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -39,7 +39,7 @@ const Layout = () => {
 
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
         <Header />
-        <main className="flex-1 overflow-x-hidden bg-surface-50 px-3 py-4 sm:p-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
+        <main className="flex-1 overflow-x-hidden px-3 py-4 sm:p-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

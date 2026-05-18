@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Lock, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const Login = () => {
@@ -20,80 +20,115 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-navy-800 px-4 py-6 sm:p-6 relative overflow-hidden">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 sm:p-8 relative z-10 animate-fade-in">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-kanban-verde rounded-xl flex items-center justify-center text-white font-bold text-3xl shadow-lg mb-4">
-            K
+    <div className="min-h-dvh grid lg:grid-cols-[1fr_480px] bg-steel-900 text-white overflow-hidden">
+      <section className="hidden lg:flex relative p-10 xl:p-14 industrial-surface text-steel-900 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(215,240,91,0.18),transparent_38%,rgba(13,143,89,0.16))]" />
+        <div className="relative z-10 flex flex-col justify-between w-full">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-md border border-steel-700/15 bg-white/70 px-3 py-2 text-xs font-bold uppercase text-steel-700">
+              <span className="h-2 w-2 rounded-full bg-signal-green" />
+              Linha de estoque viva
+            </div>
+            <h1 className="mt-8 max-w-2xl font-display text-5xl xl:text-6xl font-black leading-[1.02] text-steel-900">
+              Controle industrial com ritmo de turno.
+            </h1>
+            <p className="mt-5 max-w-xl text-base text-steel-600">
+              Kanban, compras, maquinas e aprovacoes em uma interface feita para decisao rapida no chao de fabrica.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-navy-800">Kanban Estoque</h1>
-          <p className="text-navy-400 text-sm mt-1">Gestao industrial inteligente</p>
+
+          <div className="grid grid-cols-3 gap-3 max-w-2xl">
+            {[
+              ['ES', 'Estoque seguro'],
+              ['PR', 'Reposicao'],
+              ['EOQ', 'Compra ideal'],
+            ].map(([code, label]) => (
+              <div key={code} className="rounded-md border border-steel-700/12 bg-white/72 p-4 shadow-panel">
+                <div className="font-mono text-2xl font-black text-steel-900">{code}</div>
+                <div className="mt-1 text-xs font-bold uppercase text-steel-500">{label}</div>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-3 animate-slide-in">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-navy-700 mb-1.5" htmlFor="username">
-              Usuario
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-navy-300" />
-              </div>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2.5 border border-surface-200 rounded-xl text-navy-700 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde transition-all bg-surface-50 focus:bg-white"
-                placeholder="usuario"
-                required
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck="false"
-                disabled={loading}
-              />
+      <main className="flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
+        <div className="w-full max-w-md animate-fade-in">
+          <div className="mb-8 text-center lg:text-left">
+            <div className="mx-auto lg:mx-0 w-12 h-12 rounded-md bg-accent flex items-center justify-center text-steel-900 font-display font-black text-2xl shadow-[0_14px_32px_rgba(215,240,91,0.20)]">
+              K
             </div>
+            <h2 className="mt-5 font-display text-3xl font-black text-white">Kanban Estoque</h2>
+            <p className="mt-2 text-sm text-white/55">Acesso operacional seguro</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-navy-700 mb-1.5" htmlFor="senha">
-              Senha
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-navy-300" />
+          <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5 sm:p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+            {error && (
+              <div className="mb-5 p-4 bg-signal-red/12 border border-signal-red/30 rounded-md flex items-start gap-3 animate-slide-in">
+                <AlertCircle className="w-5 h-5 text-red-200 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-50">{error}</p>
               </div>
-              <input
-                id="senha"
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2.5 border border-surface-200 rounded-xl text-navy-700 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde transition-all bg-surface-50 focus:bg-white"
-                placeholder="Senha"
-                required
-                autoComplete="current-password"
-                disabled={loading}
-              />
-            </div>
-          </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading || !username || !senha}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-navy-700 hover:bg-navy-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all mt-4"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar no Sistema'}
-          </button>
-        </form>
-      </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold uppercase text-white/60 mb-2" htmlFor="username">
+                  Usuario
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-white/35" />
+                  </div>
+                  <input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="block w-full rounded-md border border-white/12 bg-white/8 pl-10 pr-3 py-3 text-white placeholder:text-white/30 focus:border-accent focus:bg-white/12 focus:ring-0"
+                    placeholder="usuario"
+                    required
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-white/60 mb-2" htmlFor="senha">
+                  Senha
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-white/35" />
+                  </div>
+                  <input
+                    id="senha"
+                    type="password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    className="block w-full rounded-md border border-white/12 bg-white/8 pl-10 pr-3 py-3 text-white placeholder:text-white/30 focus:border-accent focus:bg-white/12 focus:ring-0"
+                    placeholder="senha"
+                    required
+                    autoComplete="current-password"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !username || !senha}
+                className="btn-primary w-full mt-2"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar no sistema'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

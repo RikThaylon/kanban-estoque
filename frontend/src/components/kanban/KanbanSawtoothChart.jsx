@@ -50,14 +50,14 @@ const CustomTooltip = ({ active, payload, label }) => {
   const event = visible.find(item => item.payload?.evento)?.payload?.evento;
 
   return (
-    <div className="rounded-lg border border-surface-200 bg-white px-3 py-2 shadow-xl text-xs">
-      <div className="font-bold text-navy-800 mb-1">Dia {formatValue(label)}</div>
-      {event && <div className="text-navy-400 mb-1">{event}</div>}
+    <div className="rounded-md border border-steel-700/15 bg-white px-3 py-2 shadow-panel text-xs">
+      <div className="font-bold text-steel-900 mb-1">Dia {formatValue(label)}</div>
+      {event && <div className="text-steel-500 mb-1">{event}</div>}
       <div className="space-y-1">
         {visible.map(item => (
           <div key={item.dataKey} className="flex items-center justify-between gap-4">
             <span className="font-medium" style={{ color: item.color }}>{item.name}</span>
-            <span className="font-bold text-navy-700">{formatValue(item.value)}</span>
+            <span className="font-bold text-steel-800">{formatValue(item.value)}</span>
           </div>
         ))}
       </div>
@@ -110,11 +110,11 @@ const KanbanSawtoothChart = ({
   if (!valido) {
     return (
       <div
-        className="flex items-center justify-center bg-surface-50 border border-dashed border-surface-300 rounded-xl p-6 text-center text-navy-400 text-sm"
+        className="flex items-center justify-center industrial-surface border border-dashed border-steel-300 rounded-md p-6 text-center text-steel-500 text-sm"
         style={{ minHeight: height }}
       >
         <div>
-          <div className="font-bold text-navy-600">Dados Kanban incompletos</div>
+          <div className="font-bold text-steel-700">Dados Kanban incompletos</div>
           <div className="text-xs mt-1 opacity-80">Informe consumo diario, lead time, PR e estoque maximo.</div>
         </div>
       </div>
@@ -122,11 +122,11 @@ const KanbanSawtoothChart = ({
   }
 
   return (
-    <div className="w-full rounded-xl border border-surface-200 bg-white shadow-sm">
+    <div className="w-full rounded-md border border-steel-700/15 bg-white/90 shadow-panel">
       <div className="h-[260px] sm:h-[320px] w-full p-2 sm:p-4" style={{ minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8EDF3" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#D4DDD6" />
             <ReferenceArea y1={0} y2={es} fill="#FEE2E2" fillOpacity={0.55} />
             <ReferenceArea y1={es} y2={pr} fill="#FEF3C7" fillOpacity={0.55} />
             <ReferenceArea y1={pr} y2={emax} fill="#D1FAE5" fillOpacity={0.45} />
@@ -138,25 +138,25 @@ const KanbanSawtoothChart = ({
               type="number"
               domain={['dataMin', 'dataMax']}
               tickFormatter={(value) => `${Math.round(value)}d`}
-              tick={{ fill: '#7090AC', fontSize: 11 }}
+              tick={{ fill: '#5D716B', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               domain={[0, yMax]}
               tickFormatter={formatValue}
-              tick={{ fill: '#7090AC', fontSize: 11 }}
+              tick={{ fill: '#5D716B', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
               width={48}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#0F2D4A', strokeDasharray: '4 4' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#102322', strokeDasharray: '4 4' }} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
             <Line
               name="Estoque estimado"
               type="linear"
               dataKey="estoqueEstimado"
-              stroke="#0F2D4A"
+              stroke="#102322"
               strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 6 }}
@@ -166,7 +166,7 @@ const KanbanSawtoothChart = ({
               name="Estoque real"
               type="linear"
               dataKey="estoqueReal"
-              stroke="#6366F1"
+              stroke="#2D6CDF"
               strokeWidth={2}
               dot={{ r: 3 }}
               activeDot={{ r: 6 }}
@@ -176,7 +176,7 @@ const KanbanSawtoothChart = ({
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-4 px-3 pb-3 text-[11px] sm:text-xs text-navy-500 border-t border-surface-100 pt-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-4 px-3 pb-3 text-[11px] sm:text-xs text-steel-500 border-t border-steel-700/10 pt-2">
         <span><strong>ES={formatValue(es)}</strong> seguranca</span>
         <span><strong>PR={formatValue(pr)}</strong> reposicao</span>
         <span><strong>EM={formatValue(emax)}</strong> maximo</span>

@@ -17,36 +17,36 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
   return (
     <div className={`w-full ${className}`}>
       {/* Régua visual */}
-      <div className="relative h-4 rounded-full overflow-hidden flex shadow-inner bg-surface-100 border border-surface-200">
+      <div className="relative h-4 rounded-md overflow-hidden flex shadow-inner bg-surface-100 border border-steel-700/15">
         <div className="h-full bg-kanban-vermelho" style={{ width: `${zones[0].width}%` }}></div>
         <div className="h-full bg-kanban-amarelo" style={{ width: `${zones[1].width}%` }}></div>
         <div className="h-full bg-kanban-verde" style={{ width: `${zones[2].width}%` }}></div>
       </div>
 
       {/* Eixo X com labels */}
-      <div className="relative h-9 sm:h-6 mt-1 text-[9px] sm:text-[10px] font-medium text-navy-500">
+      <div className="relative h-9 sm:h-6 mt-1 text-[9px] sm:text-[10px] font-bold text-steel-500">
         <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: '0%' }}>
-          <div className="h-1.5 w-px bg-surface-300"></div>
+          <div className="h-1.5 w-px bg-steel-300"></div>
           <span>0</span>
         </div>
         
         {es > 0 && (
           <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: `${zones[0].width}%` }}>
-            <div className="h-1.5 w-px bg-surface-300"></div>
+            <div className="h-1.5 w-px bg-steel-300"></div>
           <span className="max-w-14 truncate">{es} (ES)</span>
           </div>
         )}
         
         {pr > 0 && (
           <div className="absolute top-4 sm:top-0 flex flex-col items-center -translate-x-1/2" style={{ left: `${zones[0].width + zones[1].width}%` }}>
-            <div className="h-1.5 w-px bg-surface-300"></div>
+            <div className="h-1.5 w-px bg-steel-300"></div>
             <span className="max-w-14 truncate">{pr} (PR)</span>
           </div>
         )}
         
         {emax > 0 && (
           <div className="absolute top-0 flex flex-col items-center -translate-x-1/2" style={{ left: '100%' }}>
-            <div className="h-1.5 w-px bg-surface-300"></div>
+            <div className="h-1.5 w-px bg-steel-300"></div>
           <span className="max-w-16 truncate">{emax} (Emax)</span>
           </div>
         )}
@@ -56,7 +56,7 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
           className="absolute top-[-24px] flex flex-col items-center -translate-x-1/2 z-10 transition-all duration-500" 
           style={{ left: `${markerPosition}%` }}
         >
-          <div className={`px-1.5 py-0.5 rounded text-white text-[10px] font-bold shadow-sm whitespace-nowrap ${faixaColor}`}>
+          <div className={`px-1.5 py-0.5 rounded-md text-white text-[10px] font-black shadow-sm whitespace-nowrap ${faixaColor}`}>
             Atual: {estoqueAtual}
           </div>
           <div className={`w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent ${faixaColor.replace('bg-', 'border-t-')}`}></div>

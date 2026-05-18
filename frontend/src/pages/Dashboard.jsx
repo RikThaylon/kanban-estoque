@@ -68,28 +68,30 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="page-intro">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800 tracking-tight">Dashboard Kanban</h1>
-          <p className="text-navy-400 text-sm mt-1">Visão geral do sistema de controle de estoque</p>
+          <p className="page-kicker">Centro de comando</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-steel-900">Dashboard Kanban</h1>
+          <p className="text-steel-500 text-sm mt-1">Visao geral do sistema de controle de estoque</p>
         </div>
-        <div className="bg-white px-4 py-2 rounded-lg border border-surface-200 shadow-sm text-sm font-medium text-navy-600">
-          Valor em Estoque: <span className="font-bold text-navy-800 ml-1">{formatMoney(resumo?.valor_estoque_total)}</span>
+        <div className="metric-card px-4 py-3 text-sm font-bold text-steel-700 w-full sm:w-auto">
+          <span className="text-steel-500">Valor em estoque</span>
+          <span className="block text-xl text-steel-950">{formatMoney(resumo?.valor_estoque_total)}</span>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, idx) => (
-          <Link key={idx} to={kpi.link} className="card p-5 hover:border-navy-300 transition-colors group">
+          <Link key={idx} to={kpi.link} className="metric-card p-5 hover:border-steel-400 transition-colors group">
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${kpi.bg}`}>
+              <div className={`w-10 h-10 rounded-md flex items-center justify-center ${kpi.bg}`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
               </div>
-              <ArrowRight className="w-4 h-4 text-surface-300 group-hover:text-navy-400 transition-colors" />
+              <ArrowRight className="w-4 h-4 text-steel-300 group-hover:text-steel-700 transition-colors" />
             </div>
-            <h3 className="text-3xl font-bold text-navy-800 leading-none mb-1">{kpi.value}</h3>
-            <p className="text-sm text-navy-500 font-medium">{kpi.title}</p>
+            <h3 className="text-3xl font-black text-steel-950 leading-none mb-1">{kpi.value}</h3>
+            <p className="text-sm text-steel-500 font-bold">{kpi.title}</p>
           </Link>
         ))}
       </div>

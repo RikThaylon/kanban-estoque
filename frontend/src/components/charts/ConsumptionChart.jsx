@@ -4,16 +4,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const ConsumptionChart = ({ data }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center bg-surface-50 rounded-lg border border-dashed border-surface-300">
-        <p className="text-navy-400">Sem dados de consumo disponíveis</p>
+      <div className="h-64 flex items-center justify-center industrial-surface rounded-md border border-dashed border-steel-300">
+        <p className="text-steel-500 font-bold">Sem dados de consumo disponiveis</p>
       </div>
     );
   }
 
-  // Formatar dados para o gráfico
   const formattedData = data.map(d => ({
     name: new Date(d.semana).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-    consumo: parseFloat(d.consumo)
+    consumo: parseFloat(d.consumo),
   }));
 
   return (
@@ -23,25 +22,25 @@ const ConsumptionChart = ({ data }) => {
           data={formattedData}
           margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8EDF3" />
-          <XAxis 
-            dataKey="name" 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: '#7090AC', fontSize: 12 }} 
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#D4DDD6" />
+          <XAxis
+            dataKey="name"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#5D716B', fontSize: 12, fontWeight: 700 }}
             dy={10}
           />
-          <YAxis 
-            axisLine={false} 
-            tickLine={false} 
-            tick={{ fill: '#7090AC', fontSize: 12 }}
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#5D716B', fontSize: 12, fontWeight: 700 }}
           />
-          <Tooltip 
-            cursor={{ fill: '#F4F7FA' }}
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            labelStyle={{ color: '#0F2D4A', fontWeight: 'bold', marginBottom: '4px' }}
+          <Tooltip
+            cursor={{ fill: 'rgba(215, 240, 91, 0.16)' }}
+            contentStyle={{ borderRadius: '8px', border: '1px solid rgba(46,65,62,0.16)', boxShadow: '0 18px 42px rgba(7,24,32,0.12)' }}
+            labelStyle={{ color: '#102322', fontWeight: 'bold', marginBottom: '4px' }}
           />
-          <Bar dataKey="consumo" fill="#2E6286" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="consumo" fill="#365E6E" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

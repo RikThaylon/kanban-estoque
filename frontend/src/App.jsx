@@ -21,10 +21,10 @@ const Layout = React.lazy(() => import('./components/layout/Layout'));
 
 // Loading Fallback
 const FullPageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-surface-50">
+  <div className="min-h-screen flex items-center justify-center">
     <div className="flex flex-col items-center">
-      <div className="w-10 h-10 border-4 border-navy-200 border-t-navy-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-navy-600 font-medium">Carregando sistema...</p>
+      <div className="w-10 h-10 border-4 border-steel-200 border-t-accent rounded-full animate-spin mb-4"></div>
+      <p className="text-steel-700 font-bold">Carregando sistema...</p>
     </div>
   </div>
 );
