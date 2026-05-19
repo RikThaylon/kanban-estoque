@@ -4,6 +4,7 @@ import { Plus, CheckCircle, X, Check, Send, PackageCheck, Clock, Eye, Ban } from
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatMoney, formatDate } from '../utils/formatters';
+import { isReadOnlyPerfil } from '../utils/permissoes';
 
 const STATUS_STYLES = {
   RASCUNHO: 'bg-gray-100 text-gray-700',
@@ -25,6 +26,7 @@ const PERFIS_APROVADORES_N3 = ['admin', 'plant_manager'];
 
 const Pedidos = () => {
   const { user } = useAuthStore();
+  const readOnly = isReadOnlyPerfil(user?.perfil);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFiltro, setStatusFiltro] = useState('');
@@ -99,9 +101,11 @@ const Pedidos = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
           <p className="text-navy-400 text-sm">Abastecimento baseado nas sugestões Kanban</p>
         </div>
-        <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
-          <Plus className="w-4 h-4" /> Novo Pedido
-        </button>
+        {!readOnly && (
+          <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
+            <Plus className="w-4 h-4" /> Novo Pedido
+          </button>
+        )}
       </div>
 
       {/* Sugestões de Compra */}
@@ -132,7 +136,7 @@ const Pedidos = () => {
                   </div>
                   <button
                     onClick={() => handleGerarSugestao(sug)}
-                    disabled={!sug.fornecedor_id || !sug.eoq}
+                    disabled={readOnly || !sug.fornecedor_id || !sug.eoq}
                     className="w-full py-2 bg-navy-50 hover:bg-navy-100 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed text-navy-700 font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
                     title={!sug.fornecedor_id ? 'Sem fornecedor padrão cadastrado' : !sug.eoq ? 'Sem EOQ calculado' : ''}
                   >
@@ -312,6 +316,7 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
   const podeAprovarN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
   const podeAprovarN2 = PERFIS_APROVADORES_N2.includes(user?.perfil);
   const podeAprovarN3 = PERFIS_APROVADORES_N3.includes(user?.perfil);
+  const readOnly = isReadOnlyPerfil(user?.perfil);
 
   let podeAprovar = false;
   if (pedido.status === 'AGUARDANDO_APROVACAO') {
@@ -321,10 +326,11 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
   else if (pedido.status === 'AGUARDANDO_GERENTE') podeAprovar = podeAprovarN2;
   else if (pedido.status === 'AGUARDANDO_DIRETORIA') podeAprovar = podeAprovarN3;
 
+  podeAprovar = !readOnly && podeAprovar;
   const podeRejeitar = podeAprovar;
-  const podeEmitir = pedido.status === 'APROVADO' && ['admin', 'comprador'].includes(user?.perfil);
-  const podeReceber = ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
-  const podeCancelar = !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
+  const podeEmitir = !readOnly && pedido.status === 'APROVADO' && ['admin', 'comprador'].includes(user?.perfil);
+  const podeReceber = !readOnly && ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
+  const podeCancelar = !readOnly && !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 justify-center">

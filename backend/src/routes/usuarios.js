@@ -13,7 +13,7 @@ const { NotFoundError } = require('../utils/errors');
 const router = express.Router();
 
 // Lista usuarios — admin e visualizadores podem listar; demais nao
-router.get('/', authenticate, authorize('admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'),
+router.get('/', authenticate, authorize('admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes', 'visualizador'),
   async (req, res, next) => {
     try {
       const { limit, offset, page } = parsePagination(req.query);

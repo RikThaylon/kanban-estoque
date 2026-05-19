@@ -8,6 +8,7 @@ const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
   getPermissoesOperacionais,
+  PAGINAS_SISTEMA,
   salvarConfiguracoes,
   serializePerfis,
 } = require('../services/configuracoes.service');
@@ -81,14 +82,27 @@ router.patch('/permissoes',
     body('cadastrar_item.*').isIn(PERFIS_VALIDOS).withMessage('Cargo invalido em cadastrar_item'),
     body('editar_curva_abc').isArray().withMessage('editar_curva_abc deve ser uma lista de cargos'),
     body('editar_curva_abc.*').isIn(PERFIS_VALIDOS).withMessage('Cargo invalido em editar_curva_abc'),
+    body('paginas').optional().isObject().withMessage('paginas deve ser um mapa de pagina para cargos'),
+    ...PAGINAS_SISTEMA.flatMap((pagina) => [
+      body(`paginas.${pagina}`).optional().isArray().withMessage(`${pagina} deve ser uma lista de cargos`),
+      body(`paginas.${pagina}.*`).optional().isIn(PERFIS_VALIDOS).withMessage(`Cargo invalido em ${pagina}`),
+    ]),
   ],
   validate,
   async (req, res, next) => {
     try {
-      await salvarConfiguracoes({
+      const configuracoes = {
         'permissoes.cadastrar_item': serializePerfis(req.body.cadastrar_item),
         'permissoes.editar_curva_abc': serializePerfis(req.body.editar_curva_abc),
-      }, req.user.id);
+      };
+
+      for (const pagina of PAGINAS_SISTEMA) {
+        if (req.body.paginas?.[pagina]) {
+          configuracoes[`permissoes.paginas.${pagina}`] = serializePerfis(req.body.paginas[pagina]);
+        }
+      }
+
+      await salvarConfiguracoes(configuracoes, req.user.id);
 
       const permissoes = await getPermissoesOperacionais();
       res.json({

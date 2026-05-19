@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ChevronRight, Search, ArrowDown, AlertTriangle,
   CreditCard, Lock, Scale, Timer, Layers, Workflow,
-  Search as SearchIcon, Plug, Calculator, Truck, GitBranch, Save,
+  Search as SearchIcon, Plug, Calculator, Truck, GitBranch, Save, Plus, Trash2,
 } from 'lucide-react';
 import { PROBLEMAS, PAPEIS, CATEGORIAS } from '../data/raci.data';
 import { useAuthStore } from '../stores/authStore';
@@ -23,10 +23,10 @@ const ICONES = {
 };
 
 const LETRA_INFO = {
-  R: { label: 'Responsável', cor: 'bg-emerald-500 text-white', desc: 'Executa a ação' },
+  R: { label: 'Responsavel', cor: 'bg-emerald-500 text-white', desc: 'Executa a acao' },
   A: { label: 'Aprovador',   cor: 'bg-red-500 text-white',     desc: 'Responde pelo resultado' },
   C: { label: 'Consultado',  cor: 'bg-amber-400 text-white',   desc: 'Opina antes' },
-  I: { label: 'Informado',   cor: 'bg-blue-400 text-white',    desc: 'Recebe ciência' },
+  I: { label: 'Informado',   cor: 'bg-blue-400 text-white',    desc: 'Recebe ciencia' },
 };
 
 const Raci = () => {
@@ -71,6 +71,28 @@ const Raci = () => {
     });
   };
 
+  const novoProblema = () => {
+    const id = `custom-${Date.now()}`;
+    const problema = {
+      id,
+      titulo: 'Novo problema',
+      categoria: CATEGORIAS[0]?.key || 'geral',
+      descricao: 'Descreva o problema e quando esta matriz deve ser usada.',
+      iconeKey: 'workflow',
+      fluxo: [{ titulo: 'Nova etapa', descricao: 'Descreva a etapa.', papel: 'facilitador' }],
+      raci: Object.fromEntries(PAPEIS.map((papel) => [papel.key, ''])),
+    };
+    setProblemas((prev) => [problema, ...prev]);
+    setProblemaAberto(problema);
+    setAba('fluxo');
+  };
+
+  const excluirProblema = (id) => {
+    if (!window.confirm('Excluir este item da matriz RACI?')) return;
+    setProblemas((prev) => prev.filter((p) => p.id !== id));
+    setProblemaAberto(null);
+  };
+
   const abrir = (problema) => {
     setProblemaAberto(problema);
     setAba('fluxo');
@@ -80,11 +102,18 @@ const Raci = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-navy-800">Matriz RACI — Mapa de problemas</h1>
-        <p className="text-navy-400 text-sm">
-          Clique em qualquer caixa para ver o fluxograma e a matriz RACI específica daquele problema.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-800">Matriz RACI - Mapa de problemas</h1>
+          <p className="text-navy-400 text-sm">
+            Clique em qualquer caixa para ver o fluxograma e a matriz RACI especifica daquele problema.
+          </p>
+        </div>
+        {isAdmin && (
+          <button onClick={novoProblema} className="btn-primary justify-center">
+            <Plus className="w-4 h-4 mr-2" /> Novo item
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -123,19 +152,18 @@ const Raci = () => {
           return (
             <motion.button
               key={p.id}
-              layoutId={`card-${p.id}`}
               onClick={() => abrir(p)}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
               className={`relative text-left rounded-2xl border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
             >
-              <motion.div layoutId={`icon-${p.id}`} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
+              <motion.div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
                 <Icone className="w-5 h-5 text-navy-700" />
               </motion.div>
-              <motion.h3 layoutId={`title-${p.id}`} className="font-bold text-navy-800 leading-tight mb-1">
+              <motion.h3 className="font-bold text-navy-800 leading-tight mb-1">
                 {p.titulo}
               </motion.h3>
-              <motion.p layoutId={`desc-${p.id}`} className="text-xs text-navy-500 line-clamp-2">
+              <motion.p className="text-xs text-navy-500 line-clamp-2">
                 {p.descricao}
               </motion.p>
               <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-navy-600">
@@ -146,7 +174,7 @@ const Raci = () => {
         })}
         {filtrados.length === 0 && (
           <div className="col-span-full text-center py-12 text-navy-400">
-            Nenhum problema corresponde à busca.
+            Nenhum problema corresponde a busca.
           </div>
         )}
       </div>
@@ -161,8 +189,7 @@ const Raci = () => {
             onClick={() => setProblemaAberto(null)}
           >
             <motion.div
-              layoutId={`card-${problemaAberto.id}`}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl my-8 overflow-hidden"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white">
@@ -172,12 +199,41 @@ const Raci = () => {
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <motion.div layoutId={`icon-${problemaAberto.id}`} className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-3">
+                <motion.div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-3">
                   {Icone && <Icone className="w-7 h-7 text-navy-700" />}
                 </motion.div>
-                <motion.h2 layoutId={`title-${problemaAberto.id}`} className="text-2xl font-bold leading-tight">
-                  {problemaAberto.titulo}
-                </motion.h2>
+                {isAdmin ? (
+                  <div className="grid gap-3 pr-12 sm:grid-cols-[1fr_220px_auto]">
+                    <input
+                      value={problemaAberto.titulo}
+                      onChange={(e) => atualizarProblema(problemaAberto.id, { ...problemaAberto, titulo: e.target.value })}
+                      className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-2xl font-bold text-white placeholder:text-white/50"
+                    />
+                    <select
+                      value={problemaAberto.categoria}
+                      onChange={(e) => atualizarProblema(problemaAberto.id, { ...problemaAberto, categoria: e.target.value })}
+                      className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      {CATEGORIAS.map((categoria) => (
+                        <option key={categoria.key} value={categoria.key} className="text-navy-800">
+                          {categoria.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => excluirProblema(problemaAberto.id)}
+                      className="h-11 w-11 rounded-md bg-red-500/20 text-white hover:bg-red-500/30 flex items-center justify-center"
+                      title="Excluir item"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <motion.h2 className="text-2xl font-bold leading-tight">
+                    {problemaAberto.titulo}
+                  </motion.h2>
+                )}
                 {isAdmin ? (
                   <textarea
                     value={problemaAberto.descricao}
@@ -186,7 +242,7 @@ const Raci = () => {
                     rows={2}
                   />
                 ) : (
-                  <motion.p layoutId={`desc-${problemaAberto.id}`} className="text-sm text-navy-200 mt-1">
+                  <motion.p className="text-sm text-navy-200 mt-1">
                     {problemaAberto.descricao}
                   </motion.p>
                 )}
@@ -218,6 +274,14 @@ const Raci = () => {
                       ...p,
                       fluxo: p.fluxo.map((step, i) => i === index ? { ...step, ...changes } : step),
                     }))}
+                    onAddStep={() => atualizarProblema(problemaAberto.id, (p) => ({
+                      ...p,
+                      fluxo: [...p.fluxo, { titulo: 'Nova etapa', descricao: 'Descreva a etapa.', papel: 'facilitador' }],
+                    }))}
+                    onRemoveStep={(index) => atualizarProblema(problemaAberto.id, (p) => ({
+                      ...p,
+                      fluxo: p.fluxo.filter((_, i) => i !== index),
+                    }))}
                   />
                 )}
                 {aba === 'tabela' && (
@@ -248,7 +312,7 @@ const TabButton = ({ active, onClick, icon: Icon, children }) => (
   </button>
 );
 
-const Fluxograma = ({ problema, canEdit, onChangeStep }) => {
+const Fluxograma = ({ problema, canEdit, onChangeStep, onAddStep, onRemoveStep }) => {
   return (
     <div className="space-y-3">
       {problema.fluxo.map((step, i) => {
@@ -265,31 +329,50 @@ const Fluxograma = ({ problema, canEdit, onChangeStep }) => {
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-start gap-2 flex-wrap">
-                  <h4 className="font-semibold text-navy-800">{step.titulo}</h4>
-                  {papel && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${papel.cor}`}>
-                      {papel.label}
-                    </span>
-                  )}
-                </div>
                 {canEdit ? (
-                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_180px]">
+                  <div className="grid gap-2">
+                    <div className="grid gap-2 sm:grid-cols-[1fr_180px_40px]">
+                      <input
+                        value={step.titulo}
+                        onChange={(e) => onChangeStep(i, { titulo: e.target.value })}
+                        className="input text-sm font-semibold"
+                      />
+                      <select
+                        value={step.papel}
+                        onChange={(e) => onChangeStep(i, { papel: e.target.value })}
+                        className="input text-sm"
+                      >
+                        {PAPEIS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                      </select>
+                      {problema.fluxo.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveStep(i)}
+                          className="h-10 w-10 rounded-md text-red-600 hover:bg-red-50 flex items-center justify-center"
+                          title="Excluir etapa"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                     <input
                       value={step.descricao}
                       onChange={(e) => onChangeStep(i, { descricao: e.target.value })}
                       className="input text-sm"
                     />
-                    <select
-                      value={step.papel}
-                      onChange={(e) => onChangeStep(i, { papel: e.target.value })}
-                      className="input text-sm"
-                    >
-                      {PAPEIS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-                    </select>
                   </div>
                 ) : (
-                  <p className="text-sm text-navy-500 mt-1">{step.descricao}</p>
+                  <>
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <h4 className="font-semibold text-navy-800">{step.titulo}</h4>
+                      {papel && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${papel.cor}`}>
+                          {papel.label}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-navy-500 mt-1">{step.descricao}</p>
+                  </>
                 )}
               </div>
             </motion.div>
@@ -306,6 +389,11 @@ const Fluxograma = ({ problema, canEdit, onChangeStep }) => {
           </React.Fragment>
         );
       })}
+      {canEdit && (
+        <button type="button" onClick={onAddStep} className="btn-secondary justify-center w-full">
+          <Plus className="w-4 h-4 mr-2" /> Adicionar etapa
+        </button>
+      )}
     </div>
   );
 };
@@ -318,7 +406,7 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
           <thead>
             <tr>
               <th className="text-left text-xs uppercase tracking-wide text-navy-400 pb-2">Papel</th>
-              <th className="text-center text-xs uppercase tracking-wide text-navy-400 pb-2 w-20">Função</th>
+              <th className="text-center text-xs uppercase tracking-wide text-navy-400 pb-2 w-20">Funcao</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-100">

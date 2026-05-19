@@ -4,6 +4,7 @@ import { ArrowDownCircle, ArrowUpCircle, Edit3, RefreshCw, Plus, Check, X, Clock
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatNumber, formatDateTime } from '../utils/formatters';
+import { isReadOnlyPerfil } from '../utils/permissoes';
 
 const TIPOS = [
   { value: 'ENTRADA', label: 'Entrada', icon: ArrowDownCircle, color: 'text-green-600', bg: 'bg-green-50' },
@@ -27,6 +28,7 @@ const Movimentacoes = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isAprovador = PERFIS_APROVADORES.includes(user?.perfil);
+  const readOnly = isReadOnlyPerfil(user?.perfil);
 
   const [tab, setTab] = useState('todas'); // 'todas' | 'pendentes'
   const [filterTipo, setFilterTipo] = useState('');
@@ -83,9 +85,11 @@ const Movimentacoes = () => {
           <h1 className="text-2xl font-bold text-navy-800 tracking-tight">Movimentações de Estoque</h1>
           <p className="text-navy-400 text-sm mt-1">Entradas, saídas, ajustes e transferências</p>
         </div>
-        <button onClick={() => setOpenNova(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nova movimentação
-        </button>
+        {!readOnly && (
+          <button onClick={() => setOpenNova(true)} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nova movimentação
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -178,7 +182,7 @@ const Movimentacoes = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {m.status === 'PENDENTE' && isAprovador && (
+                      {m.status === 'PENDENTE' && isAprovador && !readOnly && (
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => aprovar.mutate(m.id)}

@@ -1,5 +1,5 @@
-/**
- * Testes unitários para RBAC (Role-Based Access Control)
+﻿/**
+ * Testes unitÃ¡rios para RBAC (Role-Based Access Control)
  * @module tests/unit/rbac.test
  */
 
@@ -18,25 +18,27 @@ const {
 
 describe('RBAC Module', () => {
   describe('Constantes', () => {
-    it('deve ter 9 perfis válidos', () => {
-      expect(PERFIS_VALIDOS).toHaveLength(9);
+    it('deve ter 9 perfis vÃ¡lidos', () => {
+      expect(PERFIS_VALIDOS).toHaveLength(10);
       expect(PERFIS_VALIDOS).toContain('admin');
       expect(PERFIS_VALIDOS).toContain('plant_manager');
       expect(PERFIS_VALIDOS).toContain('gerente_operacoes');
       expect(PERFIS_VALIDOS).toContain('supervisor_turno');
       expect(PERFIS_VALIDOS).toContain('comprador');
       expect(PERFIS_VALIDOS).toContain('facilitador');
+      expect(PERFIS_VALIDOS).toContain('visualizador');
     });
 
     it('deve classificar visualizadores corretamente', () => {
       expect(PERFIS_VISUALIZADORES).toContain('plant_manager');
       expect(PERFIS_VISUALIZADORES).toContain('gerente_engenharia');
       expect(PERFIS_VISUALIZADORES).toContain('eng_processos');
+      expect(PERFIS_VISUALIZADORES).toContain('visualizador');
       expect(PERFIS_VISUALIZADORES).not.toContain('admin');
       expect(PERFIS_VISUALIZADORES).not.toContain('comprador');
     });
 
-    it('deve ter 3 níveis de aprovação', () => {
+    it('deve ter 3 nÃ­veis de aprovaÃ§Ã£o', () => {
       expect(PERFIS_APROVADORES.nivel1).toBeDefined();
       expect(PERFIS_APROVADORES.nivel2).toBeDefined();
       expect(PERFIS_APROVADORES.nivel3).toBeDefined();
@@ -64,7 +66,7 @@ describe('RBAC Module', () => {
       expect(PERFIS_EXECUTORES).toEqual(['comprador', 'facilitador']);
     });
 
-    it('todos os perfis válidos devem ter permissões definidas', () => {
+    it('todos os perfis vÃ¡lidos devem ter permissÃµes definidas', () => {
       for (const perfil of PERFIS_VALIDOS) {
         expect(PERMISSIONS[perfil]).toBeDefined();
         expect(Array.isArray(PERMISSIONS[perfil])).toBe(true);
@@ -72,7 +74,7 @@ describe('RBAC Module', () => {
       }
     });
 
-    it('admin deve ter permissão wildcard', () => {
+    it('admin deve ter permissÃ£o wildcard', () => {
       expect(PERMISSIONS.admin).toEqual(['*']);
     });
   });
@@ -82,6 +84,7 @@ describe('RBAC Module', () => {
       expect(isVisualizador('plant_manager')).toBe(true);
       expect(isVisualizador('gerente_engenharia')).toBe(true);
       expect(isVisualizador('eng_processos')).toBe(true);
+      expect(isVisualizador('visualizador')).toBe(true);
     });
 
     it('deve retornar false para perfis executores', () => {
@@ -166,7 +169,7 @@ describe('RBAC Module', () => {
       expect(mockNext).toHaveBeenCalledWith();
     });
 
-    it('deve negar perfil não listado', () => {
+    it('deve negar perfil nÃ£o listado', () => {
       const middleware = authorize('comprador');
       middleware(mockReq('facilitador'), mockRes(), mockNext);
       expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
@@ -174,7 +177,7 @@ describe('RBAC Module', () => {
       }));
     });
 
-    it('deve negar quando não há usuário autenticado', () => {
+    it('deve negar quando nÃ£o hÃ¡ usuÃ¡rio autenticado', () => {
       const middleware = authorize('admin');
       middleware({ user: null }, mockRes(), mockNext);
       expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
@@ -182,7 +185,7 @@ describe('RBAC Module', () => {
       }));
     });
 
-    it('deve aceitar múltiplos perfis', () => {
+    it('deve aceitar mÃºltiplos perfis', () => {
       const middleware = authorize('supervisor_turno', 'gerente_operacoes', 'comprador');
       middleware(mockReq('gerente_operacoes'), mockRes(), mockNext);
       expect(mockNext).toHaveBeenCalledWith();

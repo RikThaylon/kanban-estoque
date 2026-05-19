@@ -5,11 +5,41 @@ const CONFIG_DEFAULTS = {
   'pedidos.limite_gerente': 50000,
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
+  'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
+  'permissoes.paginas.produtos': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
+  'permissoes.paginas.movimentacoes': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
+  'permissoes.paginas.pedidos': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
+  'permissoes.paginas.fornecedores': 'admin,comprador',
+  'permissoes.paginas.configuracoes': 'admin',
+  'permissoes.paginas.maquinas': 'admin,gerente_operacoes,supervisor_turno,eng_producao',
+  'permissoes.paginas.alertas': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
+  'permissoes.paginas.raci': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
+  'permissoes.paginas.relatorios': 'admin,gerente_operacoes,gerente_engenharia,plant_manager,comprador,visualizador',
+  'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
 };
+
+const PAGINAS_SISTEMA = [
+  'dashboard',
+  'produtos',
+  'movimentacoes',
+  'pedidos',
+  'fornecedores',
+  'configuracoes',
+  'maquinas',
+  'alertas',
+  'raci',
+  'relatorios',
+  'usuarios',
+];
 
 const PERMISSOES_CHAVES = {
   cadastrarItem: 'permissoes.cadastrar_item',
   editarCurvaAbc: 'permissoes.editar_curva_abc',
+};
+
+const PERMISSAO_TO_CHAVE = {
+  cadastrar_item: PERMISSOES_CHAVES.cadastrarItem,
+  editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
 };
 
 function parsePerfis(valor) {
@@ -41,21 +71,33 @@ async function getLimitesAprovacaoPedido() {
 }
 
 async function getPermissoesOperacionais() {
-  const [cadastrarItem, editarCurvaAbc] = await Promise.all([
+  const [cadastrarItem, editarCurvaAbc, ...paginasValues] = await Promise.all([
     getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
     getConfiguracao(PERMISSOES_CHAVES.editarCurvaAbc, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarCurvaAbc]),
+    ...PAGINAS_SISTEMA.map((pagina) => getConfiguracao(
+      `permissoes.paginas.${pagina}`,
+      CONFIG_DEFAULTS[`permissoes.paginas.${pagina}`] || ''
+    )),
   ]);
+
+  const paginas = {};
+  PAGINAS_SISTEMA.forEach((pagina, index) => {
+    paginas[pagina] = parsePerfis(paginasValues[index]);
+  });
 
   return {
     cadastrar_item: parsePerfis(cadastrarItem),
     editar_curva_abc: parsePerfis(editarCurvaAbc),
+    paginas,
   };
 }
 
 async function perfilPode(perfil, permissao) {
   if (perfil === 'admin') return true;
-  const permissoes = await getPermissoesOperacionais();
-  return permissoes[permissao]?.includes(perfil) || false;
+  const chave = PERMISSAO_TO_CHAVE[permissao];
+  if (!chave) return false;
+  const valor = await getConfiguracao(chave, CONFIG_DEFAULTS[chave]);
+  return parsePerfis(valor).includes(perfil);
 }
 
 async function salvarConfiguracoes(configuracoes, usuarioId) {
@@ -76,6 +118,7 @@ async function salvarConfiguracoes(configuracoes, usuarioId) {
 module.exports = {
   CONFIG_DEFAULTS,
   PERMISSOES_CHAVES,
+  PAGINAS_SISTEMA,
   getConfiguracao,
   getLimitesAprovacaoPedido,
   getPermissoesOperacionais,

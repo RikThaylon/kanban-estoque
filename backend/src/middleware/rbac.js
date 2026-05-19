@@ -11,10 +11,11 @@ const PERFIS_VALIDOS = [
   'supervisor_turno',
   'comprador',
   'facilitador',
+  'visualizador',
 ];
 
 // Cargos que sao apenas visualizadores (read-only nas operacoes do sistema)
-const PERFIS_VISUALIZADORES = ['plant_manager', 'gerente_engenharia', 'eng_processos'];
+const PERFIS_VISUALIZADORES = ['plant_manager', 'gerente_engenharia', 'eng_processos', 'visualizador'];
 
 // Cargos que aprovam (em ordem hierarquica)
 const PERFIS_APROVADORES = {
@@ -40,6 +41,7 @@ const PERMISSIONS = {
   supervisor_turno: ['*:read', 'pedidos:aprovar', 'pedidos:*', 'movimentacoes:*'],
   comprador: ['produtos:read', 'movimentacoes:read', 'pedidos:*', 'dashboard:read', 'alertas:read', 'relatorios:read'],
   facilitador: ['produtos:read', 'movimentacoes:*', 'pedidos:read', 'dashboard:read', 'alertas:read'],
+  visualizador: ['dashboard:read', 'produtos:read', 'alertas:read', 'raci:read', 'relatorios:read'],
 };
 
 /**

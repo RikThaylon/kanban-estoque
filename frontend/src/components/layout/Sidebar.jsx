@@ -16,28 +16,33 @@ import {
 } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../services/api';
+import { perfilTemPagina } from '../../utils/permissoes';
 
 const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
   const { user } = useAuthStore();
+  const { data: permissoes } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+  });
 
   const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['*'] },
-    { path: '/produtos', icon: Package, label: 'Produtos', roles: ['*'] },
-    { path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentacoes', roles: ['*'] },
-    { path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra', roles: ['*'] },
-    { path: '/fornecedores', icon: Truck, label: 'Fornecedores', roles: ['admin'] },
-    { path: '/configuracoes', icon: Settings, label: 'Configuracoes', roles: ['admin'] },
-    { path: '/maquinas', icon: Cog, label: 'Maquinas', roles: ['*'] },
-    { path: '/alertas', icon: AlertTriangle, label: 'Alertas', roles: ['*'] },
-    { path: '/raci', icon: GitBranch, label: 'Matriz RACI', roles: ['*'] },
-    { path: '/relatorios', icon: BarChart2, label: 'Relatorios', roles: ['admin', 'gerente_operacoes', 'gerente_engenharia', 'plant_manager', 'comprador'] },
-    { path: '/usuarios', icon: Users, label: 'Usuarios', roles: ['admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'] },
+    { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { key: 'produtos', path: '/produtos', icon: Package, label: 'Produtos' },
+    { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentacoes' },
+    { key: 'pedidos', path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra' },
+    { key: 'fornecedores', path: '/fornecedores', icon: Truck, label: 'Fornecedores' },
+    { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configuracoes' },
+    { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Maquinas' },
+    { key: 'alertas', path: '/alertas', icon: AlertTriangle, label: 'Alertas' },
+    { key: 'raci', path: '/raci', icon: GitBranch, label: 'Matriz RACI' },
+    { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatorios' },
+    { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuarios' },
   ];
 
-  const filteredItems = menuItems.filter(item =>
-    item.roles.includes('*') || item.roles.includes(user?.perfil) || user?.perfil === 'admin'
-  );
+  const filteredItems = menuItems.filter(item => perfilTemPagina(permissoes, user?.perfil, item.key));
 
   const widthClass = sidebarOpen ? 'w-64' : 'w-20';
   const mobileTranslate = sidebarOpen ? 'translate-x-0' : '-translate-x-full';
