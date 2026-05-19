@@ -14,6 +14,7 @@ const PERFIS = [
   { value: 'supervisor_turno',   label: 'Supervisor de Turno',    tipo: 'aprovador1' },
   { value: 'comprador',          label: 'Comprador',              tipo: 'executor' },
   { value: 'facilitador',        label: 'Facilitador Kanban',     tipo: 'executor' },
+  { value: 'visualizador',       label: 'Visualizador',           tipo: 'visualizador' },
 ];
 
 const corPorTipo = {

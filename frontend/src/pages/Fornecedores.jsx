@@ -37,14 +37,6 @@ const Fornecedores = () => {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="p-8 text-center text-red-600 font-bold bg-red-50 rounded-lg">
-        Acesso restrito. Apenas administradores podem gerenciar fornecedores.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -52,9 +44,11 @@ const Fornecedores = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Fornecedores</h1>
           <p className="text-navy-400 text-sm">Gestão de parceiros comerciais e prestadores</p>
         </div>
-        <button onClick={handleNew} className="btn-primary w-full sm:w-auto justify-center">
-          <Plus className="w-4 h-4 mr-2" /> Novo Fornecedor
-        </button>
+        {isAdmin && (
+          <button onClick={handleNew} className="btn-primary w-full sm:w-auto justify-center">
+            <Plus className="w-4 h-4 mr-2" /> Novo Fornecedor
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -67,14 +61,16 @@ const Fornecedores = () => {
         ) : (
           fornecedores?.map(forn => (
             <div key={forn.id} className="bg-white rounded-xl border border-surface-200 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
-              <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(forn)} className="p-1.5 text-navy-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(forn.id, forn.nome)} className="p-1.5 text-navy-400 hover:text-red-600 hover:bg-red-50 rounded" title="Desativar">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              {isAdmin && (
+                <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => handleEdit(forn)} className="p-1.5 text-navy-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(forn.id, forn.nome)} className="p-1.5 text-navy-400 hover:text-red-600 hover:bg-red-50 rounded" title="Desativar">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">

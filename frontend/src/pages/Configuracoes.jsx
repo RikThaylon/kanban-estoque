@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Save, Settings, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
+import { PAGINA_LABELS, PAGINAS_SISTEMA, PERFIL_LABELS } from '../utils/permissoes';
 
 const Configuracoes = () => {
   const queryClient = useQueryClient();
@@ -13,6 +14,7 @@ const Configuracoes = () => {
   const [permissoes, setPermissoes] = useState({
     cadastrar_item: [],
     editar_curva_abc: [],
+    paginas: {},
   });
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -41,6 +43,7 @@ const Configuracoes = () => {
       setPermissoes({
         cadastrar_item: permissoesData.cadastrar_item || [],
         editar_curva_abc: permissoesData.editar_curva_abc || [],
+        paginas: permissoesData.paginas || {},
       });
     }
   }, [permissoesData]);
@@ -62,7 +65,11 @@ const Configuracoes = () => {
   });
 
   const salvarPermissoes = useMutation({
-    mutationFn: () => api.patch('/configuracoes/permissoes', permissoes),
+    mutationFn: () => api.patch('/configuracoes/permissoes', {
+      cadastrar_item: permissoes.cadastrar_item || [],
+      editar_curva_abc: permissoes.editar_curva_abc || [],
+      paginas: permissoes.paginas || {},
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'permissoes'] });
       setErro('');
@@ -97,6 +104,21 @@ const Configuracoes = () => {
         [campo]: atual.includes(perfil)
           ? atual.filter((p) => p !== perfil)
           : [...atual, perfil],
+      };
+    });
+  };
+
+  const togglePaginaPerfil = (pagina, perfil) => {
+    setPermissoes((prev) => {
+      const atual = prev.paginas?.[pagina] || [];
+      return {
+        ...prev,
+        paginas: {
+          ...(prev.paginas || {}),
+          [pagina]: atual.includes(perfil)
+            ? atual.filter((p) => p !== perfil)
+            : [...atual, perfil],
+        },
       };
     });
   };
@@ -199,6 +221,42 @@ const Configuracoes = () => {
             disabled={carregandoPermissoes}
             onToggle={(perfil) => togglePerfil('cadastrar_item', perfil)}
           />
+
+          <div>
+            <h3 className="text-sm font-bold text-navy-800 mb-3">Acesso por pagina</h3>
+            <div className="overflow-x-auto rounded-md border border-surface-200">
+              <table className="min-w-[920px] w-full text-sm">
+                <thead className="bg-surface-50 text-xs uppercase text-navy-400">
+                  <tr>
+                    <th className="p-3 text-left">Pagina</th>
+                    {(permissoesData?.perfis || []).filter((perfil) => perfil !== 'admin').map((perfil) => (
+                      <th key={perfil} className="p-3 text-center font-bold">{PERFIL_LABELS[perfil] || perfil}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-100 bg-white">
+                  {PAGINAS_SISTEMA.map((pagina) => (
+                    <tr key={pagina}>
+                      <td className="p-3 font-semibold text-navy-700">{PAGINA_LABELS[pagina] || pagina}</td>
+                      {(permissoesData?.perfis || []).filter((perfil) => perfil !== 'admin').map((perfil) => (
+                        <td key={`${pagina}-${perfil}`} className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={(permissoes.paginas?.[pagina] || []).includes(perfil)}
+                            disabled={carregandoPermissoes}
+                            onChange={() => togglePaginaPerfil(pagina, perfil)}
+                            className="h-4 w-4 rounded border-surface-300 text-navy-700 focus:ring-navy-500"
+                            aria-label={`${PAGINA_LABELS[pagina] || pagina} para ${PERFIL_LABELS[perfil] || perfil}`}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-navy-500 mt-2">Admin sempre acessa todas as paginas, mesmo quando nao aparece na matriz.</p>
+          </div>
           <PermissionGroup
             title="Editar curva ABC"
             value={permissoes.editar_curva_abc}
@@ -217,17 +275,6 @@ const Configuracoes = () => {
       </form>
     </div>
   );
-};
-
-const PERFIL_LABELS = {
-  plant_manager: 'Plant manager',
-  gerente_engenharia: 'Gerente engenharia',
-  eng_processos: 'Eng. processos',
-  eng_producao: 'Eng. producao',
-  gerente_operacoes: 'Gerente operacoes',
-  supervisor_turno: 'Supervisor turno',
-  comprador: 'Comprador',
-  facilitador: 'Facilitador',
 };
 
 const PermissionGroup = ({ title, value, perfis, disabled, onToggle }) => (

@@ -57,6 +57,13 @@ const USERS = {
     perfil: 'eng_processos',
     email: 'eng@test.com',
   },
+  visualizador: {
+    id: '00000000-0000-4000-a000-000000000008',
+    username: 'visualizador_test',
+    nome: 'Visualizador Teste',
+    perfil: 'visualizador',
+    email: 'visualizador@test.com',
+  },
 };
 
 /**

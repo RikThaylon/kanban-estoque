@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import { useAuth } from './hooks/useAuth';
+import api from './services/api';
+import { perfilTemPagina } from './utils/permissoes';
 
 // Lazy load pages
 const Login = React.lazy(() => import('./pages/Login'));
@@ -75,6 +78,24 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
+const PageRoute = ({ pagina, children }) => {
+  const { user } = useAuthStore();
+  const { data: permissoes, isLoading } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+  });
+
+  if (isLoading) return <FullPageLoader />;
+  if (!perfilTemPagina(permissoes, user?.perfil, pagina)) {
+    return (
+      <div className="p-8 text-center text-navy-500">
+        Voce nao tem acesso a esta pagina.
+      </div>
+    );
+  }
+  return children;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -85,18 +106,18 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/produtos" element={<Produtos />} />
-              <Route path="/produtos/:id" element={<ProdutoDetalhe />} />
-              <Route path="/movimentacoes" element={<Movimentacoes />} />
-              <Route path="/pedidos" element={<Pedidos />} />
-              <Route path="/alertas" element={<Alertas />} />
-              <Route path="/relatorios" element={<Relatorios />} />
-              <Route path="/maquinas" element={<Maquinas />} />
-              <Route path="/usuarios" element={<Usuarios />} />
-              <Route path="/fornecedores" element={<Fornecedores />} />
-              <Route path="/configuracoes" element={<Configuracoes />} />
-              <Route path="/raci" element={<Raci />} />
+              <Route path="/dashboard" element={<PageRoute pagina="dashboard"><Dashboard /></PageRoute>} />
+              <Route path="/produtos" element={<PageRoute pagina="produtos"><Produtos /></PageRoute>} />
+              <Route path="/produtos/:id" element={<PageRoute pagina="produtos"><ProdutoDetalhe /></PageRoute>} />
+              <Route path="/movimentacoes" element={<PageRoute pagina="movimentacoes"><Movimentacoes /></PageRoute>} />
+              <Route path="/pedidos" element={<PageRoute pagina="pedidos"><Pedidos /></PageRoute>} />
+              <Route path="/alertas" element={<PageRoute pagina="alertas"><Alertas /></PageRoute>} />
+              <Route path="/relatorios" element={<PageRoute pagina="relatorios"><Relatorios /></PageRoute>} />
+              <Route path="/maquinas" element={<PageRoute pagina="maquinas"><Maquinas /></PageRoute>} />
+              <Route path="/usuarios" element={<PageRoute pagina="usuarios"><Usuarios /></PageRoute>} />
+              <Route path="/fornecedores" element={<PageRoute pagina="fornecedores"><Fornecedores /></PageRoute>} />
+              <Route path="/configuracoes" element={<PageRoute pagina="configuracoes"><Configuracoes /></PageRoute>} />
+              <Route path="/raci" element={<PageRoute pagina="raci"><Raci /></PageRoute>} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>
           </Route>

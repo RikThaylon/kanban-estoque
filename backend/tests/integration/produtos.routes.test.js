@@ -53,7 +53,6 @@ describe('Produtos Routes', () => {
     });
     it('comprador deve criar produto por permissao padrao', async () => {
       query.mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
         .mockResolvedValueOnce({rows:[]});
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('comprador')).send(body);
