@@ -4,12 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: { 50: '#EEF3F6', 100: '#D9E4EA', 200: '#B6C9D3', 300: '#8BA8B6', 400: '#5D7F8E', 500: '#365E6E', 600: '#254B5A', 700: '#173746', 800: '#0E2733', 900: '#071820' },
+        navy: { 50: '#F7F7F7', 100: '#E8E8E8', 200: '#CFCFCF', 300: '#AFAFAF', 400: '#808080', 500: '#5C5C5C', 600: '#3D3D3D', 700: '#262626', 800: '#161616', 900: '#050505' },
         kanban: { verde: '#157A4E', 'verde-light': '#DDF8E8', amarelo: '#C07714', 'amarelo-light': '#FFF1C9', vermelho: '#C73333', 'vermelho-light': '#FFE1E1' },
-        surface: { 50: '#F3F5F2', 100: '#E7ECE7', 200: '#CED9D3', 300: '#AEBDB7' },
-        steel: { 50: '#F7F8F5', 100: '#E9EEE8', 200: '#D4DDD6', 300: '#AAB9B2', 400: '#72857D', 500: '#435852', 600: '#2E413E', 700: '#1F302F', 800: '#142322', 900: '#0A1515' },
-        signal: { blue: '#2D6CDF', cyan: '#1A8A9E', green: '#0D8F59', amber: '#C57B13', red: '#C73535' },
-        accent: '#D7F05B',
+        surface: { 50: '#FFFFFF', 100: '#F4F4F4', 200: '#E1E1E1', 300: '#C7C7C7' },
+        steel: { 50: '#FFFFFF', 100: '#F4F4F4', 200: '#E1E1E1', 300: '#C7C7C7', 400: '#8A8A8A', 500: '#5C5C5C', 600: '#3D3D3D', 700: '#262626', 800: '#161616', 900: '#050505' },
+        signal: { blue: '#265ECF', cyan: '#177A8C', green: '#087A4A', amber: '#B86C0C', red: '#D71920' },
+        accent: '#D71920',
       },
       fontFamily: {
         sans: ['Aptos', 'Bahnschrift', 'Segoe UI', 'system-ui', 'sans-serif'],

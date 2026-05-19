@@ -126,7 +126,7 @@ const KanbanSawtoothChart = ({
       <div className="h-[260px] sm:h-[320px] w-full p-2 sm:p-4" style={{ minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#D4DDD6" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E1E1" />
             <ReferenceArea y1={0} y2={es} fill="#FEE2E2" fillOpacity={0.55} />
             <ReferenceArea y1={es} y2={pr} fill="#FEF3C7" fillOpacity={0.55} />
             <ReferenceArea y1={pr} y2={emax} fill="#D1FAE5" fillOpacity={0.45} />
@@ -138,25 +138,25 @@ const KanbanSawtoothChart = ({
               type="number"
               domain={['dataMin', 'dataMax']}
               tickFormatter={(value) => `${Math.round(value)}d`}
-              tick={{ fill: '#5D716B', fontSize: 11, fontWeight: 700 }}
+              tick={{ fill: '#555555', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               domain={[0, yMax]}
               tickFormatter={formatValue}
-              tick={{ fill: '#5D716B', fontSize: 11, fontWeight: 700 }}
+              tick={{ fill: '#555555', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
               width={48}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#102322', strokeDasharray: '4 4' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#050505', strokeDasharray: '4 4' }} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
             <Line
               name="Estoque estimado"
               type="linear"
               dataKey="estoqueEstimado"
-              stroke="#102322"
+              stroke="#050505"
               strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 6 }}

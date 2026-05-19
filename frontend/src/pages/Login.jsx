@@ -22,11 +22,11 @@ const Login = () => {
   return (
     <div className="min-h-dvh grid lg:grid-cols-[1fr_480px] bg-steel-900 text-white overflow-hidden">
       <section className="hidden lg:flex relative p-10 xl:p-14 industrial-surface text-steel-900 overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(215,240,91,0.18),transparent_38%,rgba(13,143,89,0.16))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(215,25,32,0.14),transparent_38%,rgba(5,5,5,0.06))]" />
         <div className="relative z-10 flex flex-col justify-between w-full">
           <div>
             <div className="inline-flex items-center gap-2 rounded-md border border-steel-700/15 bg-white/70 px-3 py-2 text-xs font-bold uppercase text-steel-700">
-              <span className="h-2 w-2 rounded-full bg-signal-green" />
+              <span className="h-2 w-2 rounded-full bg-accent" />
               Linha de estoque viva
             </div>
             <h1 className="mt-8 max-w-2xl font-display text-5xl xl:text-6xl font-black leading-[1.02] text-steel-900">
@@ -55,7 +55,7 @@ const Login = () => {
       <main className="flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
         <div className="w-full max-w-md animate-fade-in">
           <div className="mb-8 text-center lg:text-left">
-            <div className="mx-auto lg:mx-0 w-12 h-12 rounded-md bg-accent flex items-center justify-center text-steel-900 font-display font-black text-2xl shadow-[0_14px_32px_rgba(215,240,91,0.20)]">
+            <div className="mx-auto lg:mx-0 w-12 h-12 rounded-md bg-accent flex items-center justify-center text-white font-display font-black text-2xl shadow-[0_14px_32px_rgba(215,25,32,0.28)]">
               K
             </div>
             <h2 className="mt-5 font-display text-3xl font-black text-white">Kanban Estoque</h2>

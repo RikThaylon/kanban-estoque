@@ -45,8 +45,8 @@ const Sidebar = () => {
   return (
     <aside
       className={`fixed top-0 left-0 h-screen text-white transition-all duration-300 z-20 flex flex-col
-        bg-[linear-gradient(180deg,#071820_0%,#0d2627_54%,#091313_100%)]
-        border-r border-white/10 shadow-[18px_0_48px_rgba(7,24,32,0.22)]
+        bg-[linear-gradient(180deg,#050505_0%,#161616_54%,#050505_100%)]
+        border-r border-white/10 shadow-[18px_0_48px_rgba(5,5,5,0.28)]
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
@@ -54,7 +54,7 @@ const Sidebar = () => {
     >
       <div className="h-16 flex items-center justify-between border-b border-white/10 px-4">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-          <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center shrink-0 font-display font-black text-lg text-steel-900 shadow-[0_0_0_1px_rgba(255,255,255,0.20),0_10px_24px_rgba(215,240,91,0.18)]">
+          <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center shrink-0 font-display font-black text-lg text-white shadow-[0_0_0_1px_rgba(255,255,255,0.20),0_10px_24px_rgba(215,25,32,0.28)]">
             K
           </div>
           {sidebarOpen && (
@@ -82,7 +82,7 @@ const Sidebar = () => {
             className={({ isActive }) => `
               relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all overflow-hidden whitespace-nowrap
               ${isActive
-                ? 'bg-white/[0.12] text-white font-bold shadow-[inset_3px_0_0_#d7f05b]'
+                ? 'bg-accent/20 text-white font-bold shadow-[inset_3px_0_0_#d71920]'
                 : 'text-white/[0.62] hover:bg-white/[0.08] hover:text-white'}
             `}
             title={!sidebarOpen ? item.label : ''}

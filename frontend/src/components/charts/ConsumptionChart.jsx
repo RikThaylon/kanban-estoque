@@ -22,25 +22,25 @@ const ConsumptionChart = ({ data }) => {
           data={formattedData}
           margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#D4DDD6" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E1E1" />
           <XAxis
             dataKey="name"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#5D716B', fontSize: 12, fontWeight: 700 }}
+            tick={{ fill: '#555555', fontSize: 12, fontWeight: 700 }}
             dy={10}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#5D716B', fontSize: 12, fontWeight: 700 }}
+            tick={{ fill: '#555555', fontSize: 12, fontWeight: 700 }}
           />
           <Tooltip
-            cursor={{ fill: 'rgba(215, 240, 91, 0.16)' }}
-            contentStyle={{ borderRadius: '8px', border: '1px solid rgba(46,65,62,0.16)', boxShadow: '0 18px 42px rgba(7,24,32,0.12)' }}
-            labelStyle={{ color: '#102322', fontWeight: 'bold', marginBottom: '4px' }}
+            cursor={{ fill: 'rgba(215, 25, 32, 0.10)' }}
+            contentStyle={{ borderRadius: '8px', border: '1px solid rgba(5,5,5,0.16)', boxShadow: '0 18px 42px rgba(5,5,5,0.12)' }}
+            labelStyle={{ color: '#050505', fontWeight: 'bold', marginBottom: '4px' }}
           />
-          <Bar dataKey="consumo" fill="#365E6E" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="consumo" fill="#D71920" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

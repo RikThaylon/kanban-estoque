@@ -5,7 +5,7 @@ const FormulaCard = ({ title, value, formula, tooltip }) => {
     <div className="card p-4 transition-all relative group hover:border-steel-400">
       <h3 className="text-xs font-bold uppercase text-steel-500 mb-1">{title}</h3>
       <div className="text-2xl font-black text-steel-950 mb-2">{value}</div>
-      <div className="bg-steel-900 text-accent p-2 rounded-md text-xs font-mono overflow-x-auto border border-steel-700/20">
+      <div className="bg-steel-900 text-white p-2 rounded-md text-xs font-mono overflow-x-auto border border-accent/35">
         {formula}
       </div>
       
