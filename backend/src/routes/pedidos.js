@@ -36,14 +36,14 @@ async function gerarNumeroPedido() {
 function podeAlterarStatusPedido(perfil, novoStatus) {
   if (perfil === 'admin') return true;
   if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) return podeAprovarNivel1(perfil);
-  if (['EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador'].includes(perfil);
+  if (['EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) return perfil === 'comprador';
   if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'].includes(perfil);
   return false;
 }
 
 const TRANSICOES = {
   // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
-  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'EMITIDO', 'CANCELADO'],
+  'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO'],
   'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
   'AGUARDANDO_GERENTE': ['AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
   'AGUARDANDO_DIRETORIA': ['APROVADO', 'CANCELADO', 'REJEITADO'],
@@ -104,7 +104,13 @@ router.get('/sugestoes', authenticate, async (req, res, next) => {
                ELSE NULL END AS dias_cobertura
       FROM produtos p
       JOIN kanban_parametros kp ON kp.produto_id = p.id
-      LEFT JOIN produto_fornecedor pf ON pf.produto_id = p.id AND pf.prioridade = 1
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM produto_fornecedor pfx
+        WHERE pfx.produto_id = p.id AND pfx.ativo = true
+        ORDER BY pfx.lead_time_nominal_dias ASC NULLS LAST, pfx.prioridade ASC
+        LIMIT 1
+      ) pf ON true
       LEFT JOIN fornecedores f ON f.id = pf.fornecedor_id
       WHERE p.ativo = true AND kp.faixa_atual IN ('AMARELO', 'VERMELHO')
       ORDER BY
@@ -123,7 +129,7 @@ router.post('/', authenticate,
   createLimiter, audit('CRIAR_PEDIDO', 'pedidos_compra'),
   [
     body('produto_id').matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('produto_id inválido'),
-    body('fornecedor_id').matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('fornecedor_id inválido'),
+    body('fornecedor_id').optional({ nullable: true, checkFalsy: true }).matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('fornecedor_id invalido'),
     body('maquina_id').optional({ nullable: true, checkFalsy: true }).matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('maquina_id inválido'),
     body('departamento_id').optional({ nullable: true, checkFalsy: true }).matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('departamento_id inválido'),
     body('quantidade_pedida').isFloat({ gt: 0 }),
@@ -143,6 +149,10 @@ router.post('/', authenticate,
       } = req.body;
       const numero = await gerarNumeroPedido();
       const custoTotal = preco_unitario ? (preco_unitario * quantidade_pedida) : null;
+
+      if (fornecedor_id && !['admin', 'comprador'].includes(req.user.perfil)) {
+        throw new AppError('Apenas comprador escolhe fornecedor da solicitacao', 403, 'FORNECEDOR_RESTRITO_COMPRADOR');
+      }
 
       const kpRes = await query('SELECT faixa_atual, ponto_reposicao FROM kanban_parametros WHERE produto_id = $1', [produto_id]);
       const prodRes = await query('SELECT estoque_atual FROM produtos WHERE id = $1', [produto_id]);
@@ -321,13 +331,17 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
 // PATCH /api/v1/pedidos/:id/status
 router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedidos_compra'),
-  [body('status').isString().notEmpty()], validate,
+  [
+    body('status').isString().notEmpty(),
+    body('numero_oc_externa').optional().trim().isLength({ min: 1, max: 80 }),
+    body('fornecedor_id').optional({ nullable: true, checkFalsy: true }).matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('fornecedor_id invalido'),
+  ], validate,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { status: novoStatus } = req.body;
+      const { status: novoStatus, numero_oc_externa, fornecedor_id } = req.body;
 
-      const pedRes = await query('SELECT status FROM pedidos_compra WHERE id = $1', [id]);
+      const pedRes = await query('SELECT status, fornecedor_id FROM pedidos_compra WHERE id = $1', [id]);
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
 
       const statusAtual = pedRes.rows[0].status;
@@ -344,10 +358,21 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
       if (!podeAlterarStatusPedido(req.user.perfil, novoStatus)) {
         throw new AppError('Seu perfil nao pode alterar pedido para este status', 403, 'FORBIDDEN');
       }
+      if (novoStatus === 'EMITIDO') {
+        if (!numero_oc_externa) {
+          throw new AppError('Informe o numero da OC criada no sistema externo', 400, 'OC_EXTERNA_OBRIGATORIA');
+        }
+        if (!fornecedor_id && !pedRes.rows[0].fornecedor_id) {
+          throw new AppError('Comprador deve escolher o fornecedor antes de marcar como emitido', 400, 'FORNECEDOR_OBRIGATORIO');
+        }
+      }
 
       let extra = '';
       const params = [novoStatus, id];
-      if (novoStatus === 'EMITIDO') extra = ', data_emissao = NOW()';
+      if (novoStatus === 'EMITIDO') {
+        extra = ', data_emissao = NOW(), numero_oc_externa = $3, fornecedor_id = COALESCE($4, fornecedor_id), fornecedor_escolhido_por = $5, fornecedor_escolhido_em = NOW()';
+        params.push(numero_oc_externa, fornecedor_id || null, req.user.id);
+      }
       if (novoStatus === 'APROVADO') {
         extra = ', aprovado_por = $3';
         params.push(req.user.id);

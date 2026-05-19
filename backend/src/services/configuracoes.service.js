@@ -3,7 +3,24 @@ const { query } = require('../config/database');
 const CONFIG_DEFAULTS = {
   'pedidos.limite_supervisor': 5000,
   'pedidos.limite_gerente': 50000,
+  'permissoes.cadastrar_item': 'comprador',
+  'permissoes.editar_curva_abc': 'eng_producao',
 };
+
+const PERMISSOES_CHAVES = {
+  cadastrarItem: 'permissoes.cadastrar_item',
+  editarCurvaAbc: 'permissoes.editar_curva_abc',
+};
+
+function parsePerfis(valor) {
+  if (Array.isArray(valor)) return valor.filter(Boolean);
+  if (!valor) return [];
+  return String(valor).split(',').map((perfil) => perfil.trim()).filter(Boolean);
+}
+
+function serializePerfis(perfis) {
+  return [...new Set(parsePerfis(perfis))].join(',');
+}
 
 async function getConfiguracao(chave, fallback = null) {
   const result = await query('SELECT valor FROM configuracoes_sistema WHERE chave = $1', [chave]);
@@ -23,6 +40,24 @@ async function getLimitesAprovacaoPedido() {
   };
 }
 
+async function getPermissoesOperacionais() {
+  const [cadastrarItem, editarCurvaAbc] = await Promise.all([
+    getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
+    getConfiguracao(PERMISSOES_CHAVES.editarCurvaAbc, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarCurvaAbc]),
+  ]);
+
+  return {
+    cadastrar_item: parsePerfis(cadastrarItem),
+    editar_curva_abc: parsePerfis(editarCurvaAbc),
+  };
+}
+
+async function perfilPode(perfil, permissao) {
+  if (perfil === 'admin') return true;
+  const permissoes = await getPermissoesOperacionais();
+  return permissoes[permissao]?.includes(perfil) || false;
+}
+
 async function salvarConfiguracoes(configuracoes, usuarioId) {
   const entries = Object.entries(configuracoes);
   for (const [chave, valor] of entries) {
@@ -39,7 +74,12 @@ async function salvarConfiguracoes(configuracoes, usuarioId) {
 }
 
 module.exports = {
+  CONFIG_DEFAULTS,
+  PERMISSOES_CHAVES,
   getConfiguracao,
   getLimitesAprovacaoPedido,
+  getPermissoesOperacionais,
+  perfilPode,
+  serializePerfis,
   salvarConfiguracoes,
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Save, Settings } from 'lucide-react';
+import { AlertTriangle, Save, Settings, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
 
@@ -10,12 +10,21 @@ const Configuracoes = () => {
     limite_supervisor: '',
     limite_gerente: '',
   });
+  const [permissoes, setPermissoes] = useState({
+    cadastrar_item: [],
+    editar_curva_abc: [],
+  });
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['configuracoes', 'pedidos'],
     queryFn: async () => (await api.get('/configuracoes/pedidos')).data,
+  });
+
+  const { data: permissoesData, isLoading: carregandoPermissoes } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
   });
 
   useEffect(() => {
@@ -26,6 +35,15 @@ const Configuracoes = () => {
       });
     }
   }, [data]);
+
+  useEffect(() => {
+    if (permissoesData) {
+      setPermissoes({
+        cadastrar_item: permissoesData.cadastrar_item || [],
+        editar_curva_abc: permissoesData.editar_curva_abc || [],
+      });
+    }
+  }, [permissoesData]);
 
   const salvar = useMutation({
     mutationFn: () => api.patch('/configuracoes/pedidos', {
@@ -43,6 +61,19 @@ const Configuracoes = () => {
     },
   });
 
+  const salvarPermissoes = useMutation({
+    mutationFn: () => api.patch('/configuracoes/permissoes', permissoes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configuracoes', 'permissoes'] });
+      setErro('');
+      setSucesso('Permissoes salvas.');
+    },
+    onError: (e) => {
+      setSucesso('');
+      setErro(e.message || 'Erro ao salvar permissoes');
+    },
+  });
+
   const supervisor = Number(form.limite_supervisor) || 0;
   const gerente = Number(form.limite_gerente) || 0;
   const invalido = supervisor < 0 || gerente < 0 || gerente < supervisor;
@@ -56,6 +87,18 @@ const Configuracoes = () => {
       return;
     }
     salvar.mutate();
+  };
+
+  const togglePerfil = (campo, perfil) => {
+    setPermissoes((prev) => {
+      const atual = prev[campo] || [];
+      return {
+        ...prev,
+        [campo]: atual.includes(perfil)
+          ? atual.filter((p) => p !== perfil)
+          : [...atual, perfil],
+      };
+    });
   };
 
   return (
@@ -133,8 +176,78 @@ const Configuracoes = () => {
           </div>
         </div>
       </form>
+
+      <form
+        onSubmit={(event) => { event.preventDefault(); setErro(''); setSucesso(''); salvarPermissoes.mutate(); }}
+        className="card p-0 overflow-hidden"
+      >
+        <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
+          <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-navy-700" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-bold text-navy-800">Permissoes por cargo</h2>
+            <p className="text-xs text-navy-500">Admin sempre tem acesso total; marque os demais cargos autorizados.</p>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5 space-y-5">
+          <PermissionGroup
+            title="Cadastrar item"
+            value={permissoes.cadastrar_item}
+            perfis={permissoesData?.perfis || []}
+            disabled={carregandoPermissoes}
+            onToggle={(perfil) => togglePerfil('cadastrar_item', perfil)}
+          />
+          <PermissionGroup
+            title="Editar curva ABC"
+            value={permissoes.editar_curva_abc}
+            perfis={permissoesData?.perfis || []}
+            disabled={carregandoPermissoes}
+            onToggle={(perfil) => togglePerfil('editar_curva_abc', perfil)}
+          />
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <button type="submit" disabled={salvarPermissoes.isPending || carregandoPermissoes} className="btn-primary justify-center">
+              <Save className="w-4 h-4" />
+              {salvarPermissoes.isPending ? 'Salvando...' : 'Salvar permissoes'}
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   );
 };
+
+const PERFIL_LABELS = {
+  plant_manager: 'Plant manager',
+  gerente_engenharia: 'Gerente engenharia',
+  eng_processos: 'Eng. processos',
+  eng_producao: 'Eng. producao',
+  gerente_operacoes: 'Gerente operacoes',
+  supervisor_turno: 'Supervisor turno',
+  comprador: 'Comprador',
+  facilitador: 'Facilitador',
+};
+
+const PermissionGroup = ({ title, value, perfis, disabled, onToggle }) => (
+  <div>
+    <h3 className="text-sm font-bold text-navy-800 mb-3">{title}</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+      {perfis.filter((perfil) => perfil !== 'admin').map((perfil) => (
+        <label key={perfil} className="flex items-center gap-2 rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-navy-700">
+          <input
+            type="checkbox"
+            checked={value.includes(perfil)}
+            disabled={disabled}
+            onChange={() => onToggle(perfil)}
+            className="h-4 w-4 rounded border-surface-300 text-navy-700 focus:ring-navy-500"
+          />
+          <span>{PERFIL_LABELS[perfil] || perfil}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+);
 
 export default Configuracoes;

@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, AlertCircle, AlertTriangle, Save } from 'lucide-react';
 import api from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
 import KanbanSawtoothChart from '../components/kanban/KanbanSawtoothChart';
 import FaixaBadge from '../components/kanban/FaixaBadge';
@@ -42,7 +43,10 @@ const safe = (v, decimals = 4) => {
 const ProdutoDetalhe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('kanban');
+  const [abcDraft, setAbcDraft] = useState('');
 
   const { data: produto, isLoading } = useQuery({
     queryKey: ['produto', id],
@@ -60,6 +64,16 @@ const ProdutoDetalhe = () => {
     },
     enabled: !!produto && activeTab === 'rastreamento',
     retry: false,
+  });
+
+  const { data: permissoes } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+  });
+
+  const salvarAbc = useMutation({
+    mutationFn: (classificacao_abc) => api.patch(`/produtos/${id}/classificacao-abc`, { classificacao_abc }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['produto', id] }),
   });
 
   // Dados dos fornecedores vinculados ao produto
@@ -93,6 +107,8 @@ const ProdutoDetalhe = () => {
   const es = parseFloat(produto.estoque_seguranca) || 0;
   const pr = parseFloat(produto.ponto_reposicao) || 0;
   const emax = parseFloat(produto.estoque_maximo) || 0;
+  const podeEditarAbc = user?.perfil === 'admin' || (permissoes?.editar_curva_abc || ['eng_producao']).includes(user?.perfil);
+  const abcValue = abcDraft || produto.classificacao_abc || '';
 
   const temDadosKanban = emax > 0 && pr > 0;
 
@@ -137,7 +153,31 @@ const ProdutoDetalhe = () => {
           </div>
           <div>
             <p className="text-sm text-navy-500 font-medium mb-1">Classificação ABC</p>
-            <div className="text-xl font-bold text-navy-700">Curva {produto.classificacao_abc || '-'}</div>
+            {podeEditarAbc ? (
+              <div className="flex items-center gap-2">
+                <select
+                  className="input max-w-[120px]"
+                  value={abcValue}
+                  onChange={(e) => setAbcDraft(e.target.value)}
+                >
+                  <option value="">-</option>
+                  <option value="A">Curva A</option>
+                  <option value="B">Curva B</option>
+                  <option value="C">Curva C</option>
+                </select>
+                <button
+                  type="button"
+                  className="btn-secondary px-3"
+                  disabled={!abcValue || abcValue === produto.classificacao_abc || salvarAbc.isPending}
+                  onClick={() => salvarAbc.mutate(abcValue)}
+                  title="Salvar curva ABC"
+                >
+                  <Save className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="text-xl font-bold text-navy-700">Curva {produto.classificacao_abc || '-'}</div>
+            )}
           </div>
           <div>
             <p className="text-sm text-navy-500 font-medium mb-1">Localização</p>

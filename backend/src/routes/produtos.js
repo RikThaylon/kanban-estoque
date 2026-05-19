@@ -12,8 +12,36 @@ const { Z_TABLE } = require('../services/kanban.math');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { calcularParametrosKanban, holtDoubleExponential, regressaoLinear } = require('../services/kanban.math');
 const { getKanbanSeries } = require('../services/kanban.repo');
+const { perfilPode } = require('../services/configuracoes.service');
 
 const router = express.Router();
+
+function calcularFaixaManual(estoqueAtual, estoqueSeguranca, pontoReposicao) {
+  const es = Number(estoqueSeguranca);
+  const pr = Number(pontoReposicao);
+  if (!Number.isFinite(es) || !Number.isFinite(pr)) return 'SEM_DADOS';
+  if (Number(estoqueAtual || 0) <= es) return 'VERMELHO';
+  if (Number(estoqueAtual || 0) <= pr) return 'AMARELO';
+  return 'VERDE';
+}
+
+const autorizarCadastroProduto = async (req, res, next) => {
+  try {
+    if (await perfilPode(req.user.perfil, 'cadastrar_item')) return next();
+    throw new AppError('Seu cargo nao pode cadastrar itens', 403, 'PERMISSAO_CADASTRAR_ITEM');
+  } catch (err) {
+    next(err);
+  }
+};
+
+const autorizarEditarCurvaAbc = async (req, res, next) => {
+  try {
+    if (await perfilPode(req.user.perfil, 'editar_curva_abc')) return next();
+    throw new AppError('Seu cargo nao pode alterar curva ABC', 403, 'PERMISSAO_EDITAR_CURVA_ABC');
+  } catch (err) {
+    next(err);
+  }
+};
 
 // GET /api/v1/produtos
 router.get('/', authenticate, async (req, res, next) => {
@@ -72,7 +100,7 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 // POST /api/v1/produtos
-router.post('/', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno'), createLimiter, audit('CRIAR_PRODUTO', 'produtos'),
+router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('CRIAR_PRODUTO', 'produtos'),
   [
     body('codigo').trim().isLength({ min: 1, max: 50 }).withMessage('Código obrigatório (max 50)'),
     body('nome').trim().isLength({ min: 1, max: 200 }).withMessage('Nome obrigatório (max 200)'),
@@ -84,42 +112,56 @@ router.post('/', authenticate, authorize('admin', 'gerente_operacoes', 'supervis
   ], validate,
   async (req, res, next) => {
     try {
-      const { codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial } = req.body;
+      const {
+        codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido,
+        taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
+        estoque_seguranca_manual, ponto_reposicao_manual, eoq_manual, estoque_maximo_manual,
+      } = req.body;
       const result = await query(
         `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido || 100, taxa_carregamento || 0.2, nivel_servico || 95, localizacao, req.user.id]
       );
+      const manual = {
+        es: estoque_seguranca_manual !== undefined && estoque_seguranca_manual !== '' ? Number(estoque_seguranca_manual) : null,
+        pr: ponto_reposicao_manual !== undefined && ponto_reposicao_manual !== '' ? Number(ponto_reposicao_manual) : null,
+        eoq: eoq_manual !== undefined && eoq_manual !== '' ? Number(eoq_manual) : null,
+        emax: estoque_maximo_manual !== undefined && estoque_maximo_manual !== '' ? Number(estoque_maximo_manual) : null,
+      };
+      const temManualKanban = Object.values(manual).some((v) => Number.isFinite(v));
       const cmdInicial = Number(cmd_inicial || 0);
       const leadTimeInicial = Number(lead_time_inicial || 0);
-      if (cmdInicial > 0 && leadTimeInicial > 0) {
-        const z = Z_TABLE[nivel_servico || 95] || Z_TABLE[95];
-        const sigmaDemanda = Math.max(1, cmdInicial * 0.15);
-        const sigmaLeadTime = Math.max(0.5, leadTimeInicial * 0.2);
-        const estoqueSeguranca = Math.ceil(z * Math.sqrt((leadTimeInicial * sigmaDemanda * sigmaDemanda) + (cmdInicial * cmdInicial * sigmaLeadTime * sigmaLeadTime)));
-        const pontoReposicao = Math.ceil((cmdInicial * leadTimeInicial) + estoqueSeguranca);
-        const demandaAnual = cmdInicial * 365;
-        const custoPedidoCalc = Number(custo_pedido || 100);
-        const taxaCalc = Number(taxa_carregamento || 0.2);
-        const custoUnitarioCalc = Number(custo_unitario || 0);
-        const custoManutencao = taxaCalc * custoUnitarioCalc;
-        const eoq = custoManutencao > 0 ? Math.ceil(Math.sqrt((2 * demandaAnual * custoPedidoCalc) / custoManutencao)) : 0;
-        const estoqueMaximo = estoqueSeguranca + eoq;
+
+      if (temManualKanban) {
+        const faixaManual = calcularFaixaManual(0, manual.es, manual.pr);
         await query(`
           INSERT INTO kanban_parametros (
-            produto_id, demanda_diaria_media, sigma_demanda_diaria, lead_time_previsto_dias,
-            lead_time_seguro_dias, sigma_lead_time, fator_z, estoque_seguranca,
-            ponto_reposicao, eoq, estoque_maximo, faixa_atual,
+            produto_id, demanda_diaria_media, lead_time_previsto_dias,
+            estoque_seguranca, ponto_reposicao, eoq, estoque_maximo, faixa_atual,
             semanas_historico_usadas, pedidos_historico_usados, calculado_em
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0,0,NOW())`,
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,0,NOW())`,
           [
-            result.rows[0].id, cmdInicial, sigmaDemanda, leadTimeInicial,
-            leadTimeInicial + (z * sigmaLeadTime), sigmaLeadTime, z, estoqueSeguranca,
-            pontoReposicao, eoq, estoqueMaximo, 'VERDE',
+            result.rows[0].id,
+            cmdInicial > 0 ? cmdInicial : null,
+            leadTimeInicial > 0 ? leadTimeInicial : null,
+            Number.isFinite(manual.es) ? manual.es : null,
+            Number.isFinite(manual.pr) ? manual.pr : null,
+            Number.isFinite(manual.eoq) ? manual.eoq : null,
+            Number.isFinite(manual.emax) ? manual.emax : null,
+            faixaManual,
           ]
         );
       } else {
-        await query('INSERT INTO kanban_parametros (produto_id, faixa_atual) VALUES ($1, $2)', [result.rows[0].id, 'SEM_DADOS']);
+        await query(
+          `INSERT INTO kanban_parametros (produto_id, demanda_diaria_media, lead_time_previsto_dias, faixa_atual)
+           VALUES ($1, $2, $3, $4)`,
+          [
+            result.rows[0].id,
+            cmdInicial > 0 ? cmdInicial : null,
+            leadTimeInicial > 0 ? leadTimeInicial : null,
+            'SEM_DADOS',
+          ]
+        );
       }
       res.status(201).json(result.rows[0]);
     } catch (err) { next(err); }
@@ -178,6 +220,25 @@ router.patch('/:id', authenticate, authorize('admin', 'gerente_operacoes', 'supe
       fields.push(`atualizado_em = NOW()`);
       values.push(id);
       const result = await query(`UPDATE produtos SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values);
+      if (result.rows.length === 0) throw new NotFoundError('Produto');
+      res.json(result.rows[0]);
+    } catch (err) { next(err); }
+  }
+);
+
+// PATCH /api/v1/produtos/:id/classificacao-abc
+router.patch('/:id/classificacao-abc', authenticate, autorizarEditarCurvaAbc, audit('ATUALIZAR_CURVA_ABC', 'produtos'),
+  [
+    body('classificacao_abc').isIn(['A', 'B', 'C']).withMessage('classificacao_abc deve ser A, B ou C'),
+    body('motivo').optional().trim().isLength({ max: 1000 }),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const result = await query(
+        'UPDATE produtos SET classificacao_abc = $1, atualizado_em = NOW() WHERE id = $2 AND ativo = true RETURNING *',
+        [req.body.classificacao_abc, req.params.id]
+      );
       if (result.rows.length === 0) throw new NotFoundError('Produto');
       res.json(result.rows[0]);
     } catch (err) { next(err); }
@@ -290,10 +351,11 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
     if (prodRes.rows.length === 0) throw new NotFoundError('Produto');
     const produto = prodRes.rows[0];
 
-    const { demandaSemanalSeries, leadTimeSeries } = await getKanbanSeries(id);
+    const { demandaSemanalSeries, leadTimeSeries, leadTimeFornecedor } = await getKanbanSeries(id);
 
     const result = calcularParametrosKanban({
       demandaSemanalSeries, leadTimeSeries,
+      leadTimeFornecedor,
       custoUnitario: parseFloat(produto.custo_unitario),
       custoPedido: parseFloat(produto.custo_pedido),
       taxaCarregamento: parseFloat(produto.taxa_carregamento),

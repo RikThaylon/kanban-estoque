@@ -7,8 +7,11 @@ const { validate } = require('../middleware/validate');
 const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
+  getPermissoesOperacionais,
   salvarConfiguracoes,
+  serializePerfis,
 } = require('../services/configuracoes.service');
+const { PERFIS_VALIDOS } = require('../middleware/rbac');
 
 const router = express.Router();
 
@@ -50,6 +53,47 @@ router.patch('/pedidos',
       res.json({
         limite_supervisor: limiteSupervisor,
         limite_gerente: limiteGerente,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get('/permissoes', authenticate, async (req, res, next) => {
+  try {
+    const permissoes = await getPermissoesOperacionais();
+    res.json({
+      perfis: PERFIS_VALIDOS,
+      ...permissoes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/permissoes',
+  authenticate,
+  authorize('admin'),
+  audit('ATUALIZAR_CONFIGURACOES_PERMISSOES', 'configuracoes_sistema'),
+  [
+    body('cadastrar_item').isArray().withMessage('cadastrar_item deve ser uma lista de cargos'),
+    body('cadastrar_item.*').isIn(PERFIS_VALIDOS).withMessage('Cargo invalido em cadastrar_item'),
+    body('editar_curva_abc').isArray().withMessage('editar_curva_abc deve ser uma lista de cargos'),
+    body('editar_curva_abc.*').isIn(PERFIS_VALIDOS).withMessage('Cargo invalido em editar_curva_abc'),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      await salvarConfiguracoes({
+        'permissoes.cadastrar_item': serializePerfis(req.body.cadastrar_item),
+        'permissoes.editar_curva_abc': serializePerfis(req.body.editar_curva_abc),
+      }, req.user.id);
+
+      const permissoes = await getPermissoesOperacionais();
+      res.json({
+        perfis: PERFIS_VALIDOS,
+        ...permissoes,
       });
     } catch (err) {
       next(err);

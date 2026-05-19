@@ -32,6 +32,7 @@ const Pedidos = () => {
   const [openReceber, setOpenReceber] = useState(null);
   const [openDetalhe, setOpenDetalhe] = useState(null);
   const [openRejeitar, setOpenRejeitar] = useState(null);
+  const [openEmitir, setOpenEmitir] = useState(null);
   const [pedidoTemplate, setPedidoTemplate] = useState(null);
 
   const isAprovadorN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
@@ -53,8 +54,15 @@ const Pedidos = () => {
   });
 
   const emitir = useMutation({
-    mutationFn: (id) => api.patch(`/pedidos/${id}/status`, { status: 'EMITIDO' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+    mutationFn: ({ id, numero_oc_externa, fornecedor_id }) => api.patch(`/pedidos/${id}/status`, {
+      status: 'EMITIDO',
+      numero_oc_externa,
+      fornecedor_id,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      setOpenEmitir(null);
+    },
   });
 
   const cancelar = useMutation({
@@ -216,7 +224,7 @@ const Pedidos = () => {
                         pedido={pedido}
                         user={user}
                         onAprovar={() => aprovar.mutate(pedido.id)}
-                        onEmitir={() => emitir.mutate(pedido.id)}
+                        onEmitir={() => setOpenEmitir(pedido)}
                         onReceber={() => setOpenReceber(pedido)}
                         onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
                         onDetalhe={() => setOpenDetalhe(pedido)}
@@ -262,7 +270,7 @@ const Pedidos = () => {
                 user={user}
                 onAprovar={() => aprovar.mutate(pedido.id)}
                 onRejeitar={() => setOpenRejeitar(pedido)}
-                onEmitir={() => emitir.mutate(pedido.id)}
+                onEmitir={() => setOpenEmitir(pedido)}
                 onReceber={() => setOpenReceber(pedido)}
                 onCancelar={() => { if (confirm('Cancelar este pedido?')) cancelar.mutate(pedido.id); }}
                 onDetalhe={() => setOpenDetalhe(pedido)}
@@ -286,6 +294,7 @@ const Pedidos = () => {
       {openNovo && <NovoPedidoModal template={pedidoTemplate} onClose={() => { setOpenNovo(false); setPedidoTemplate(null); }} />}
       {openReceber && <ReceberPedidoModal pedido={openReceber} onClose={() => setOpenReceber(null)} />}
       {openDetalhe && <DetalhePedidoModal pedido={openDetalhe} onClose={() => setOpenDetalhe(null)} />}
+      {openEmitir && <EmitirPedidoModal pedido={openEmitir} onClose={() => setOpenEmitir(null)} onConfirm={(payload) => emitir.mutate(payload)} loading={emitir.isPending} />}
       {openRejeitar && <RejeitarPedidoModal pedido={openRejeitar} onClose={() => setOpenRejeitar(null)} onConfirm={(motivo) => rejeitar.mutate({ id: openRejeitar.id, motivo })} loading={rejeitar.isPending} />}
     </div>
   );
@@ -313,7 +322,7 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
   else if (pedido.status === 'AGUARDANDO_DIRETORIA') podeAprovar = podeAprovarN3;
 
   const podeRejeitar = podeAprovar;
-  const podeEmitir = pedido.status === 'APROVADO' || pedido.status === 'RASCUNHO';
+  const podeEmitir = pedido.status === 'APROVADO' && ['admin', 'comprador'].includes(user?.perfil);
   const podeReceber = ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
   const podeCancelar = !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
 
@@ -386,6 +395,8 @@ const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
 // ─── Modal: Novo Pedido ─────────────────────────────────────────────────────
 const NovoPedidoModal = ({ template, onClose }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const podeEscolherFornecedor = ['admin', 'comprador'].includes(user?.perfil);
   const [busca, setBusca] = useState(template?.produto_codigo ? `${template.produto_codigo} — ${template.produto_nome}` : '');
   const [produtoId, setProdutoId] = useState(template?.produto_id || '');
   const [fornecedorId, setFornecedorId] = useState(template?.fornecedor_id || '');
@@ -450,7 +461,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
   const criar = useMutation({
     mutationFn: () => api.post('/pedidos', {
       produto_id: produtoId,
-      fornecedor_id: fornecedorId,
+      fornecedor_id: podeEscolherFornecedor ? (fornecedorId || undefined) : undefined,
       quantidade_pedida: parseFloat(quantidade),
       preco_unitario: precoUnit ? parseFloat(precoUnit) : undefined,
       data_prevista: dataPrevista || undefined,
@@ -470,7 +481,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
     if (carregandoMaquinas) return setErro('Aguarde carregar as maquinas vinculadas');
     if ((maquinasProduto || []).length === 0) return setErro('Produto sem maquina vinculada. Vincule o item em Maquinas antes de solicitar compra.');
     if (!maquinaId) return setErro('Selecione a maquina que precisa de reposicao');
-    if (!fornecedorId) return setErro('Selecione um fornecedor');
+    if (podeEscolherFornecedor && !fornecedorId) return setErro('Selecione um fornecedor');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
     criar.mutate();
   };
@@ -546,6 +557,7 @@ const NovoPedidoModal = ({ template, onClose }) => {
           )}
 
           {/* Fornecedor */}
+          {podeEscolherFornecedor && (
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1">Fornecedor</label>
             {fornecedoresLista.length > 0 ? (
@@ -564,9 +576,10 @@ const NovoPedidoModal = ({ template, onClose }) => {
               />
             )}
             {template?.fornecedor_nome && (
-              <p className="text-xs text-navy-500 mt-1">Sugerido: {template.fornecedor_nome}</p>
+              <p className="text-xs text-navy-500 mt-1">Sugerido: {template.fornecedor_nome} por menor LT</p>
             )}
           </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -608,6 +621,65 @@ const NovoPedidoModal = ({ template, onClose }) => {
 };
 
 // ─── Modal: Receber Pedido ──────────────────────────────────────────────────
+const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
+  const [numeroOc, setNumeroOc] = useState(pedido.numero_oc_externa || '');
+  const [fornecedorId, setFornecedorId] = useState(pedido.fornecedor_id || '');
+  const [erro, setErro] = useState('');
+
+  const { data: fornecedores } = useQuery({
+    queryKey: ['fornecedores'],
+    queryFn: async () => (await api.get('/fornecedores')).data,
+  });
+
+  const fornecedoresLista = useMemo(() => {
+    if (Array.isArray(fornecedores)) return fornecedores;
+    if (fornecedores?.data) return fornecedores.data;
+    return [];
+  }, [fornecedores]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setErro('');
+    if (!fornecedorId) return setErro('Selecione o fornecedor escolhido pelo comprador');
+    if (!numeroOc.trim()) return setErro('Informe o numero da OC externa');
+    onConfirm({ id: pedido.id, fornecedor_id: fornecedorId, numero_oc_externa: numeroOc.trim() });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+        <div className="p-5 border-b border-surface-200 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-navy-800">Registrar OC externa</h2>
+          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
+            <strong>{pedido.numero}</strong> - {pedido.produto_codigo} - {pedido.produto_nome}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-navy-700 mb-1">Fornecedor escolhido</label>
+            <select value={fornecedorId} onChange={e => setFornecedorId(e.target.value)} className="input w-full" required>
+              <option value="">Selecione...</option>
+              {fornecedoresLista.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-navy-700 mb-1">Numero da OC externa</label>
+            <input value={numeroOc} onChange={e => setNumeroOc(e.target.value)} className="input w-full font-mono" required autoFocus />
+          </div>
+          {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary justify-center">Cancelar</button>
+            <button type="submit" disabled={loading} className="btn-primary justify-center">
+              {loading ? 'Emitindo...' : 'Marcar como emitido'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const ReceberPedidoModal = ({ pedido, onClose }) => {
   const queryClient = useQueryClient();
   const restante = parseFloat(pedido.quantidade_pedida) - parseFloat(pedido.quantidade_recebida || 0);
@@ -692,6 +764,7 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
             <>
               <DetailRow label="Número" value={<span className="font-mono">{p.numero}</span>} />
               <DetailRow label="Status" value={<span className={`px-2 py-0.5 rounded text-xs font-bold ${STATUS_STYLES[p.status]}`}>{p.status.replace(/_/g, ' ')}</span>} />
+              {p.numero_oc_externa && <DetailRow label="OC externa" value={<span className="font-mono">{p.numero_oc_externa}</span>} />}
               <DetailRow label="Produto" value={`${p.produto_codigo} — ${p.produto_nome}`} />
               <DetailRow label="Fornecedor" value={p.fornecedor_nome} />
               {p.fornecedor_cnpj && <DetailRow label="CNPJ" value={p.fornecedor_cnpj} />}

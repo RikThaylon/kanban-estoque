@@ -55,7 +55,9 @@ describe('Pedidos Routes', () => {
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]}) // gerarNumeroPedido
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]}) // kanban_parametros
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]}) // produto
-        .mockResolvedValueOnce({rows:[]}) // maquina_produto (dept inference)
+        .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]}) // maquina_produto
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-1',numero:'PC-202605-0001',status:'RASCUNHO'}]}); // INSERT
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201); expect(res.body.status).toBe('RASCUNHO');
@@ -65,6 +67,8 @@ describe('Pedidos Routes', () => {
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
+        .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-2',status:'AGUARDANDO_APROVACAO'}]});
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('comprador'))
@@ -76,6 +80,8 @@ describe('Pedidos Routes', () => {
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
+        .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-3',status:'AGUARDANDO_GERENTE'}]});
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('comprador'))
@@ -94,6 +100,8 @@ describe('Pedidos Routes', () => {
     const pid = '44444444-4444-4444-b444-444444444444';
     it('sup turno deve aprovar AGUARDANDO_APROVACAO (custo baixo)', async () => {
       query.mockResolvedValueOnce({rows:[{id:pid,status:'AGUARDANDO_APROVACAO',custo_total:1000,criado_por:USERS.comprador.id}]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:pid,numero:'PC-0001',status:'APROVADO'}]});
       const res = await request(app).post(`/api/v1/pedidos/${pid}/aprovar`).set('Authorization',authHeader('supervisor_turno'));
       expect(res.status).toBe(200);
@@ -101,6 +109,8 @@ describe('Pedidos Routes', () => {
 
     it('sup turno deve escalar AGUARDANDO_APROVACAO >= R$5000 para AGUARDANDO_GERENTE', async () => {
       query.mockResolvedValueOnce({rows:[{id:pid,status:'AGUARDANDO_APROVACAO',custo_total:8000,criado_por:USERS.comprador.id}]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:pid,numero:'PC-0001',status:'AGUARDANDO_GERENTE'}]});
       const res = await request(app).post(`/api/v1/pedidos/${pid}/aprovar`).set('Authorization',authHeader('supervisor_turno'));
       expect(res.status).toBe(200);

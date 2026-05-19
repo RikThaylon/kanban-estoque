@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ChevronRight, Search, ArrowDown, AlertTriangle,
   CreditCard, Lock, Scale, Timer, Layers, Workflow,
-  Search as SearchIcon, Plug, Calculator, Truck, GitBranch,
+  Search as SearchIcon, Plug, Calculator, Truck, GitBranch, Save,
 } from 'lucide-react';
 import { PROBLEMAS, PAPEIS, CATEGORIAS } from '../data/raci.data';
+import { useAuthStore } from '../stores/authStore';
 
 const ICONES = {
   card: CreditCard,
@@ -29,19 +30,46 @@ const LETRA_INFO = {
 };
 
 const Raci = () => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.perfil === 'admin';
+  const [problemas, setProblemas] = useState(() => {
+    try {
+      const saved = localStorage.getItem('raci.custom');
+      return saved ? JSON.parse(saved) : PROBLEMAS;
+    } catch {
+      return PROBLEMAS;
+    }
+  });
   const [busca, setBusca] = useState('');
   const [categoriaSel, setCategoriaSel] = useState('todas');
   const [problemaAberto, setProblemaAberto] = useState(null);
   const [aba, setAba] = useState('fluxo'); // 'fluxo' | 'tabela'
 
   const filtrados = useMemo(() => {
-    return PROBLEMAS.filter((p) => {
+    return problemas.filter((p) => {
       const matchCat = categoriaSel === 'todas' || p.categoria === categoriaSel;
       const matchBusca = !busca || p.titulo.toLowerCase().includes(busca.toLowerCase()) ||
                          p.descricao.toLowerCase().includes(busca.toLowerCase());
       return matchCat && matchBusca;
     });
-  }, [busca, categoriaSel]);
+  }, [problemas, busca, categoriaSel]);
+
+  useEffect(() => {
+    localStorage.setItem('raci.custom', JSON.stringify(problemas));
+  }, [problemas]);
+
+  const atualizarProblema = (id, updater) => {
+    setProblemas((prev) => {
+      let atualizado = null;
+      const next = prev.map((p) => {
+        if (p.id !== id) return p;
+        atualizado = typeof updater === 'function' ? updater(p) : { ...p, ...updater };
+        return atualizado;
+      });
+      if (atualizado) setProblemaAberto(atualizado);
+      return next;
+    });
+  };
 
   const abrir = (problema) => {
     setProblemaAberto(problema);
@@ -150,9 +178,24 @@ const Raci = () => {
                 <motion.h2 layoutId={`title-${problemaAberto.id}`} className="text-2xl font-bold leading-tight">
                   {problemaAberto.titulo}
                 </motion.h2>
-                <motion.p layoutId={`desc-${problemaAberto.id}`} className="text-sm text-navy-200 mt-1">
-                  {problemaAberto.descricao}
-                </motion.p>
+                {isAdmin ? (
+                  <textarea
+                    value={problemaAberto.descricao}
+                    onChange={(e) => atualizarProblema(problemaAberto.id, { ...problemaAberto, descricao: e.target.value })}
+                    className="mt-3 w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50"
+                    rows={2}
+                  />
+                ) : (
+                  <motion.p layoutId={`desc-${problemaAberto.id}`} className="text-sm text-navy-200 mt-1">
+                    {problemaAberto.descricao}
+                  </motion.p>
+                )}
+                {isAdmin && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-navy-100">
+                    <Save className="w-3.5 h-3.5" />
+                    Alteracoes salvas neste navegador
+                  </div>
+                )}
               </div>
 
               <div className="border-b border-surface-200 px-6">
@@ -167,8 +210,26 @@ const Raci = () => {
               </div>
 
               <div className="p-6">
-                {aba === 'fluxo' && <Fluxograma problema={problemaAberto} />}
-                {aba === 'tabela' && <TabelaRaci problema={problemaAberto} />}
+                {aba === 'fluxo' && (
+                  <Fluxograma
+                    problema={problemaAberto}
+                    canEdit={isAdmin}
+                    onChangeStep={(index, changes) => atualizarProblema(problemaAberto.id, (p) => ({
+                      ...p,
+                      fluxo: p.fluxo.map((step, i) => i === index ? { ...step, ...changes } : step),
+                    }))}
+                  />
+                )}
+                {aba === 'tabela' && (
+                  <TabelaRaci
+                    problema={problemaAberto}
+                    canEdit={isAdmin}
+                    onChangeLetra={(papel, letra) => atualizarProblema(problemaAberto.id, (p) => ({
+                      ...p,
+                      raci: { ...p.raci, [papel]: letra },
+                    }))}
+                  />
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -187,7 +248,7 @@ const TabButton = ({ active, onClick, icon: Icon, children }) => (
   </button>
 );
 
-const Fluxograma = ({ problema }) => {
+const Fluxograma = ({ problema, canEdit, onChangeStep }) => {
   return (
     <div className="space-y-3">
       {problema.fluxo.map((step, i) => {
@@ -212,7 +273,24 @@ const Fluxograma = ({ problema }) => {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-navy-500 mt-1">{step.descricao}</p>
+                {canEdit ? (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_180px]">
+                    <input
+                      value={step.descricao}
+                      onChange={(e) => onChangeStep(i, { descricao: e.target.value })}
+                      className="input text-sm"
+                    />
+                    <select
+                      value={step.papel}
+                      onChange={(e) => onChangeStep(i, { papel: e.target.value })}
+                      className="input text-sm"
+                    >
+                      {PAPEIS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <p className="text-sm text-navy-500 mt-1">{step.descricao}</p>
+                )}
               </div>
             </motion.div>
             {i < problema.fluxo.length - 1 && (
@@ -232,7 +310,7 @@ const Fluxograma = ({ problema }) => {
   );
 };
 
-const TabelaRaci = ({ problema }) => {
+const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
   return (
     <div className="space-y-5">
       <div className="overflow-x-auto">
@@ -258,7 +336,19 @@ const TabelaRaci = ({ problema }) => {
                     </div>
                   </td>
                   <td className="py-2.5 text-center">
-                    {letra && (
+                    {canEdit ? (
+                      <select
+                        value={letra || ''}
+                        onChange={(e) => onChangeLetra(papel.key, e.target.value)}
+                        className="input mx-auto h-9 w-20 text-center font-bold"
+                      >
+                        <option value="">-</option>
+                        <option value="R">R</option>
+                        <option value="A">A</option>
+                        <option value="C">C</option>
+                        <option value="I">I</option>
+                      </select>
+                    ) : letra && (
                       <div className="inline-flex items-center gap-2">
                         <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${info.cor}`}>
                           {letra}

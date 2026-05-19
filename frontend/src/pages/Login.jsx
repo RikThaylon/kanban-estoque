@@ -20,7 +20,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-dvh grid lg:grid-cols-[1fr_480px] bg-steel-900 text-white overflow-hidden">
+    <div className="min-h-dvh grid lg:grid-cols-[1fr_480px] bg-surface-100 text-navy-900 overflow-hidden">
       <section className="hidden lg:flex relative p-10 xl:p-14 industrial-surface text-steel-900 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(215,25,32,0.14),transparent_38%,rgba(5,5,5,0.06))]" />
         <div className="relative z-10 flex flex-col justify-between w-full">
@@ -52,39 +52,39 @@ const Login = () => {
         </div>
       </section>
 
-      <main className="flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
+      <main className="flex min-h-dvh items-center justify-center bg-white px-4 py-8 sm:px-6">
         <div className="w-full max-w-md animate-fade-in">
           <div className="mb-8 text-center lg:text-left">
             <div className="mx-auto lg:mx-0 w-12 h-12 rounded-md bg-accent flex items-center justify-center text-white font-display font-black text-2xl shadow-[0_14px_32px_rgba(215,25,32,0.28)]">
               K
             </div>
-            <h2 className="mt-5 font-display text-3xl font-black text-white">Kanban Estoque</h2>
-            <p className="mt-2 text-sm text-white/55">Acesso operacional seguro</p>
+            <h2 className="mt-5 font-display text-3xl font-black text-navy-900">Kanban Estoque</h2>
+            <p className="mt-2 text-sm font-medium text-navy-500">Acesso operacional seguro</p>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/[0.06] p-5 sm:p-6 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+          <div className="rounded-lg border border-surface-200 bg-white p-5 sm:p-6 shadow-panel">
             {error && (
-              <div className="mb-5 p-4 bg-signal-red/12 border border-signal-red/30 rounded-md flex items-start gap-3 animate-slide-in">
-                <AlertCircle className="w-5 h-5 text-red-200 shrink-0 mt-0.5" />
-                <p className="text-sm text-red-50">{error}</p>
+              <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-md flex items-start gap-3 animate-slide-in">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase text-white/60 mb-2" htmlFor="username">
+                <label className="block text-xs font-bold uppercase text-navy-600 mb-2" htmlFor="username">
                   Usuario
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-white/35" />
+                    <User className="h-5 w-5 text-navy-400" />
                   </div>
                   <input
                     id="username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="block w-full rounded-md border border-white/12 bg-white/8 pl-10 pr-3 py-3 text-white placeholder:text-white/30 focus:border-accent focus:bg-white/12 focus:ring-0"
+                    className="block w-full rounded-md border border-surface-300 bg-white pl-10 pr-3 py-3 text-navy-900 placeholder:text-navy-300 focus:border-accent focus:ring-2 focus:ring-accent/20"
                     placeholder="usuario"
                     required
                     autoComplete="username"
@@ -97,19 +97,19 @@ const Login = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-white/60 mb-2" htmlFor="senha">
+                <label className="block text-xs font-bold uppercase text-navy-600 mb-2" htmlFor="senha">
                   Senha
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-white/35" />
+                    <Lock className="h-5 w-5 text-navy-400" />
                   </div>
                   <input
                     id="senha"
                     type="password"
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
-                    className="block w-full rounded-md border border-white/12 bg-white/8 pl-10 pr-3 py-3 text-white placeholder:text-white/30 focus:border-accent focus:bg-white/12 focus:ring-0"
+                    className="block w-full rounded-md border border-surface-300 bg-white pl-10 pr-3 py-3 text-navy-900 placeholder:text-navy-300 focus:border-accent focus:ring-2 focus:ring-accent/20"
                     placeholder="senha"
                     required
                     autoComplete="current-password"

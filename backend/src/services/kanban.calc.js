@@ -3,6 +3,21 @@ const { calcularParametrosKanban } = require('./kanban.math');
 const { getKanbanSeries } = require('./kanban.repo');
 const logger = require('../utils/logger');
 
+function toNumberOrNull(value) {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function calcularFaixaPorParametros(estoqueAtual, estoqueSeguranca, pontoReposicao) {
+  const es = toNumberOrNull(estoqueSeguranca);
+  const pr = toNumberOrNull(pontoReposicao);
+  if (es === null || pr === null) return 'SEM_DADOS';
+  if (estoqueAtual <= es) return 'VERMELHO';
+  if (estoqueAtual <= pr) return 'AMARELO';
+  return 'VERDE';
+}
+
 /**
  * Orquestra o recálculo dos parâmetros Kanban para um produto
  * @param {string} produtoId - UUID do produto
@@ -19,12 +34,13 @@ async function recalcularKanban(produtoId, io = null) {
   const produto = prodRes.rows[0];
 
   // Obter séries temporais via repositório
-  const { demandaSemanalSeries, leadTimeSeries } = await getKanbanSeries(produtoId);
+  const { demandaSemanalSeries, leadTimeSeries, leadTimeFornecedor } = await getKanbanSeries(produtoId);
 
   // Calcular parâmetros
   const result = calcularParametrosKanban({
     demandaSemanalSeries,
     leadTimeSeries,
+    leadTimeFornecedor,
     custoUnitario: parseFloat(produto.custo_unitario),
     custoPedido: parseFloat(produto.custo_pedido),
     taxaCarregamento: parseFloat(produto.taxa_carregamento),
@@ -33,8 +49,18 @@ async function recalcularKanban(produtoId, io = null) {
   });
 
   // Buscar faixa anterior
-  const kpRes = await query('SELECT faixa_atual FROM kanban_parametros WHERE produto_id = $1', [produtoId]);
+  const kpRes = await query('SELECT * FROM kanban_parametros WHERE produto_id = $1', [produtoId]);
+  const parametrosAtuais = kpRes.rows[0] || {};
   const faixaAnterior = kpRes.rows[0]?.faixa_atual || 'SEM_DADOS';
+  const estoqueAtual = parseFloat(produto.estoque_atual);
+
+  if (result.insuficiente_historico) {
+    result.ES = toNumberOrNull(parametrosAtuais.estoque_seguranca);
+    result.PR = toNumberOrNull(parametrosAtuais.ponto_reposicao);
+    result.EOQ = toNumberOrNull(parametrosAtuais.eoq);
+    result.Emax = toNumberOrNull(parametrosAtuais.estoque_maximo);
+    result.faixa = calcularFaixaPorParametros(estoqueAtual, result.ES, result.PR);
+  }
 
   // Upsert kanban_parametros
   await query(`
@@ -61,12 +87,12 @@ async function recalcularKanban(produtoId, io = null) {
       proximo_calculo = NOW() + INTERVAL '12 hours'
   `, [
     produtoId,
-    result.intermediarios.demandaDiariaMedia || 0,
-    result.intermediarios.sigmaD || 0,
-    result.intermediarios.ltPrevisto || 0,
-    result.intermediarios.ltSeguro || 0,
-    result.intermediarios.sigmaLT || 0,
-    result.intermediarios.Z || 0,
+    result.intermediarios.demandaDiariaMedia ?? parametrosAtuais.demanda_diaria_media ?? null,
+    result.intermediarios.sigmaD ?? parametrosAtuais.sigma_demanda_diaria ?? null,
+    result.intermediarios.ltPrevisto ?? parametrosAtuais.lead_time_previsto_dias ?? leadTimeFornecedor ?? null,
+    result.intermediarios.ltSeguro ?? parametrosAtuais.lead_time_seguro_dias ?? leadTimeFornecedor ?? null,
+    result.intermediarios.sigmaLT ?? parametrosAtuais.sigma_lead_time ?? null,
+    result.intermediarios.Z ?? parametrosAtuais.fator_z ?? null,
     result.ES,
     result.PR,
     result.EOQ,

@@ -138,6 +138,7 @@ function regressaoLinear(leadTimes) {
 function calcularParametrosKanban({
   demandaSemanalSeries,
   leadTimeSeries,
+  leadTimeFornecedor,
   custoUnitario,
   custoPedido,
   taxaCarregamento,
@@ -153,16 +154,18 @@ function calcularParametrosKanban({
       faixa: 'SEM_DADOS',
       diasCobertura: null,
       alertas: ['Dados insuficientes: mínimo 3 semanas de consumo'],
+      insuficiente_historico: true,
       intermediarios: {},
     };
   }
 
-  if (!leadTimeSeries || leadTimeSeries.length < 2) {
+  if ((!leadTimeSeries || leadTimeSeries.length < 2) && !leadTimeFornecedor) {
     return {
       ES: 0, PR: 0, EOQ: 0, Emax: 0,
       faixa: 'SEM_DADOS',
       diasCobertura: null,
       alertas: ['Dados insuficientes: mínimo 2 lead times'],
+      insuficiente_historico: true,
       intermediarios: {},
     };
   }
@@ -176,7 +179,10 @@ function calcularParametrosKanban({
   const sigmaD = holt.sigma / Math.sqrt(7);
 
   // 2. Regressão → lead time previsto e seu desvio
-  const reg = regressaoLinear(leadTimeSeries);
+  const usandoLeadTimeFornecedor = (!leadTimeSeries || leadTimeSeries.length < 2) && leadTimeFornecedor;
+  const reg = usandoLeadTimeFornecedor
+    ? { previsao: Number(leadTimeFornecedor), sigma: 0, intercepto: Number(leadTimeFornecedor), inclinacao: 0, r2: 0 }
+    : regressaoLinear(leadTimeSeries);
   const ltPrevisto = Math.max(1, reg.previsao);
   const sigmaLT = reg.sigma;
   // ltSeguro mantido apenas para exposição de buffer no rastreamento
@@ -245,6 +251,7 @@ function calcularParametrosKanban({
         intercepto: reg.intercepto,
         inclinacao: reg.inclinacao,
         r2: reg.r2,
+        fonte: usandoLeadTimeFornecedor ? 'fornecedor' : 'historico',
       },
       demandaDiariaMedia,
       sigmaD,

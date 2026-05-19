@@ -51,9 +51,13 @@ describe('Produtos Routes', () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
     });
-    it('comprador não deve criar produto', async () => {
+    it('comprador deve criar produto por permissao padrao', async () => {
+      query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
+        .mockResolvedValueOnce({rows:[]});
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('comprador')).send(body);
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(201);
     });
     it('deve validar campos obrigatórios', async () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send({});
@@ -105,7 +109,8 @@ describe('Produtos Routes', () => {
     it('deve retornar rastreamento com conferência simples', async () => {
       query.mockResolvedValueOnce({rows:[{custo_unitario:45,custo_pedido:150,taxa_carregamento:0.2,nivel_servico:95,estoque_atual:100}]})
         .mockResolvedValueOnce({rows:Array(12).fill({semana:'2025-01-01',consumo:24.5})})
-        .mockResolvedValueOnce({rows:[{lead_time_real_dias:7},{lead_time_real_dias:8}]});
+        .mockResolvedValueOnce({rows:[{lead_time_real_dias:7},{lead_time_real_dias:8}]})
+        .mockResolvedValueOnce({rows:[]});
       const res = await request(app).get('/api/v1/produtos/p1/rastreamento-calculo').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200);
       expect(res.body.conferencia_simples).toBeDefined();

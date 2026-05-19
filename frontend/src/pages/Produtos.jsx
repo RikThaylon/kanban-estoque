@@ -32,6 +32,11 @@ const Produtos = () => {
   const queryClient = useQueryClient();
   const podeGerir = PERFIS_GESTAO.includes(user?.perfil);
   const isAdmin = user?.perfil === 'admin';
+  const { data: permissoes } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+  });
+  const podeCadastrar = isAdmin || (permissoes?.cadastrar_item || ['comprador']).includes(user?.perfil);
   const [page, setPage] = useState(1);
   const [busca, setBusca] = useState('');
   const [faixaFiltro, setFaixaFiltro] = useState('');
@@ -75,7 +80,7 @@ const Produtos = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800 tracking-tight">Catálogo de Produtos</h1>
           <p className="text-navy-400 text-sm mt-1">Gerencie os itens do estoque e acompanhe as faixas Kanban</p>
         </div>
-        {podeGerir && (
+        {podeCadastrar && (
           <button onClick={() => setOpenModal('novo')} className="btn-primary w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" /> Novo produto
           </button>
@@ -273,6 +278,10 @@ const ProdutoModal = ({ produto, onClose }) => {
     // Parâmetros iniciais Kanban (só no cadastro)
     cmd_inicial: '',
     lead_time_inicial: '',
+    estoque_seguranca_manual: '',
+    ponto_reposicao_manual: '',
+    eoq_manual: '',
+    estoque_maximo_manual: '',
     // Fornecedor principal (só no cadastro)
     fornecedor_id: '',
     preco_acordado_fornecedor: '',
@@ -329,7 +338,16 @@ const ProdutoModal = ({ produto, onClose }) => {
       if (isEdit) {
         return api.patch(`/produtos/${produto.id}`, payload);
       } else {
-        const res = await api.post('/produtos', { ...payload, codigo: form.codigo, cmd_inicial: form.cmd_inicial, lead_time_inicial: form.lead_time_inicial });
+        const res = await api.post('/produtos', {
+          ...payload,
+          codigo: form.codigo,
+          cmd_inicial: form.cmd_inicial,
+          lead_time_inicial: form.lead_time_inicial,
+          estoque_seguranca_manual: form.estoque_seguranca_manual,
+          ponto_reposicao_manual: form.ponto_reposicao_manual,
+          eoq_manual: form.eoq_manual,
+          estoque_maximo_manual: form.estoque_maximo_manual,
+        });
         const novoProdutoId = res.data?.id || res.data?.data?.id;
 
         // Vincular fornecedor principal, se informado
@@ -441,6 +459,29 @@ const ProdutoModal = ({ produto, onClose }) => {
                   </Label>
                   <input className="input font-mono" type="number" step="1" min="0" placeholder="Ex: 15"
                     value={form.lead_time_inicial} onChange={e => f('lead_time_inicial', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                <div>
+                  <Label>ES manual</Label>
+                  <input className="input font-mono" type="number" step="0.0001" min="0"
+                    value={form.estoque_seguranca_manual} onChange={e => f('estoque_seguranca_manual', e.target.value)} />
+                </div>
+                <div>
+                  <Label>PR manual</Label>
+                  <input className="input font-mono" type="number" step="0.0001" min="0"
+                    value={form.ponto_reposicao_manual} onChange={e => f('ponto_reposicao_manual', e.target.value)} />
+                </div>
+                <div>
+                  <Label>EOQ manual</Label>
+                  <input className="input font-mono" type="number" step="0.0001" min="0"
+                    value={form.eoq_manual} onChange={e => f('eoq_manual', e.target.value)} />
+                </div>
+                <div>
+                  <Label>Emax manual</Label>
+                  <input className="input font-mono" type="number" step="0.0001" min="0"
+                    value={form.estoque_maximo_manual} onChange={e => f('estoque_maximo_manual', e.target.value)} />
                 </div>
               </div>
 
