@@ -75,7 +75,7 @@ router.patch('/kanban',
   authorize('admin'),
   audit('ATUALIZAR_CONFIGURACOES_KANBAN', 'configuracoes_sistema'),
   [
-    body('nivel_servico_padrao').isIn([90, 95, 98, 99]).withMessage('Nivel de servico deve ser 90, 95, 98 ou 99'),
+    body('nivel_servico_padrao').isIn(['90', '95', '98', '99']).withMessage('Nivel de servico deve ser 90, 95, 98 ou 99'),
     body('ciclos_estimativa_inicial').isInt({ min: 3, max: 10 }).withMessage('Ciclos deve ficar entre 3 e 10'),
   ],
   validate,

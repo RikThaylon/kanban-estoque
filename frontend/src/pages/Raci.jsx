@@ -185,29 +185,29 @@ const Raci = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-40 overflow-y-auto p-3 sm:p-6"
             onClick={() => setProblemaAberto(null)}
           >
             <motion.div
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden"
+              className="bg-white rounded-lg shadow-2xl w-full max-w-5xl mx-auto my-3 sm:my-6 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white">
+              <div className="relative p-4 sm:p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white">
                 <button
                   onClick={() => setProblemaAberto(null)}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                  className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <motion.div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-3">
+                <motion.div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-white shadow-md flex items-center justify-center mb-3">
                   {Icone && <Icone className="w-7 h-7 text-navy-700" />}
                 </motion.div>
                 {isAdmin ? (
-                  <div className="grid gap-3 pr-12 sm:grid-cols-[1fr_220px_auto]">
+                  <div className="grid gap-3 pr-10 sm:pr-12 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
                     <input
                       value={problemaAberto.titulo}
                       onChange={(e) => atualizarProblema(problemaAberto.id, { ...problemaAberto, titulo: e.target.value })}
-                      className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-2xl font-bold text-white placeholder:text-white/50"
+                      className="min-w-0 rounded-md border border-white/20 bg-white/10 px-3 py-2 text-xl sm:text-2xl font-bold text-white placeholder:text-white/50"
                     />
                     <select
                       value={problemaAberto.categoria}
@@ -230,7 +230,7 @@ const Raci = () => {
                     </button>
                   </div>
                 ) : (
-                  <motion.h2 className="text-2xl font-bold leading-tight">
+                  <motion.h2 className="pr-10 text-xl sm:text-2xl font-bold leading-tight break-words">
                     {problemaAberto.titulo}
                   </motion.h2>
                 )}
@@ -254,8 +254,8 @@ const Raci = () => {
                 )}
               </div>
 
-              <div className="border-b border-surface-200 px-6">
-                <div className="flex gap-1">
+              <div className="border-b border-surface-200 px-4 sm:px-6">
+                <div className="flex gap-1 overflow-x-auto">
                   <TabButton active={aba === 'fluxo'} onClick={() => setAba('fluxo')} icon={GitBranch}>
                     Fluxograma
                   </TabButton>
@@ -265,7 +265,7 @@ const Raci = () => {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {aba === 'fluxo' && (
                   <Fluxograma
                     problema={problemaAberto}

@@ -118,13 +118,11 @@ async function salvarConfiguracoes(configuracoes, usuarioId) {
   const entries = Object.entries(configuracoes);
   for (const [chave, valor] of entries) {
     await query(
-      `INSERT INTO configuracoes_sistema (chave, valor, categoria, atualizado_por, atualizado_em)
-       VALUES ($1, $2, split_part($1, '.', 1), $3, NOW())
+      `INSERT INTO configuracoes_sistema (chave, valor)
+       VALUES ($1, $2)
        ON CONFLICT (chave) DO UPDATE SET
-         valor = EXCLUDED.valor,
-         atualizado_por = EXCLUDED.atualizado_por,
-         atualizado_em = NOW()`,
-      [chave, String(valor), usuarioId]
+         valor = EXCLUDED.valor`,
+      [chave, String(valor)]
     );
   }
 }

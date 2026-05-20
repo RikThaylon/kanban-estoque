@@ -98,7 +98,7 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
     body('custo_unitario').isFloat({ min: 0 }).withMessage('Custo unitário deve ser >= 0'),
     body('custo_pedido').optional().isFloat({ min: 0 }),
     body('taxa_carregamento').optional().isFloat({ min: 0, max: 1 }),
-    body('nivel_servico').optional().isIn([90, 95, 98, 99]),
+    body('nivel_servico').optional().isIn(['90', '95', '98', '99']),
   ], validate,
   async (req, res, next) => {
     try {
