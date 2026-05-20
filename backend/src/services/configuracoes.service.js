@@ -117,13 +117,16 @@ async function perfilPode(perfil, permissao) {
 async function salvarConfiguracoes(configuracoes, usuarioId) {
   const entries = Object.entries(configuracoes);
   for (const [chave, valor] of entries) {
-    await query(
-      `INSERT INTO configuracoes_sistema (chave, valor)
-       VALUES ($1, $2)
-       ON CONFLICT (chave) DO UPDATE SET
-         valor = EXCLUDED.valor`,
+    const result = await query(
+      'UPDATE configuracoes_sistema SET valor = $2 WHERE chave = $1',
       [chave, String(valor)]
     );
+    if (result.rowCount === 0) {
+      await query(
+        'INSERT INTO configuracoes_sistema (chave, valor) VALUES ($1, $2)',
+        [chave, String(valor)]
+      );
+    }
   }
 }
 

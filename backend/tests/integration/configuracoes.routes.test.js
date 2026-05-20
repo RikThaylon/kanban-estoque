@@ -14,11 +14,12 @@ const request = require('supertest');
 const app = require('../../src/app');
 const { query } = require('../../src/config/database');
 const { authHeader } = require('../helpers/auth');
+const { salvarConfiguracoes } = require('../../src/services/configuracoes.service');
 
 describe('Configuracoes Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    query.mockResolvedValue({ rows: [] });
+    query.mockResolvedValue({ rows: [], rowCount: 1 });
   });
 
   it('PATCH /api/v1/configuracoes/kanban deve salvar nivel e ciclos', async () => {
@@ -30,9 +31,10 @@ describe('Configuracoes Routes', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ nivel_servico_padrao: 95, ciclos_estimativa_inicial: 10 });
     expect(query).toHaveBeenCalledWith(expect.stringContaining('configuracoes_sistema'), expect.arrayContaining(['kanban.nivel_servico_padrao']));
-    const sql = query.mock.calls.find(([text]) => String(text).includes('INSERT INTO configuracoes_sistema'))[0];
+    const sql = query.mock.calls.find(([text]) => String(text).includes('UPDATE configuracoes_sistema'))[0];
     expect(sql).not.toContain('atualizado_por');
     expect(sql).not.toContain('categoria');
+    expect(sql).not.toContain('ON CONFLICT');
   });
 
   it('PATCH /api/v1/configuracoes/pedidos deve salvar sem depender de colunas extras', async () => {
@@ -43,7 +45,7 @@ describe('Configuracoes Routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.limite_supervisor).toBe(5000);
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO configuracoes_sistema'), ['pedidos.limite_supervisor', '5000']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.limite_supervisor', '5000']);
   });
 
   it('PATCH /api/v1/configuracoes/permissoes deve salvar matriz de permissoes', async () => {
@@ -57,6 +59,26 @@ describe('Configuracoes Routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO configuracoes_sistema'), ['permissoes.cadastrar_item', 'comprador']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['permissoes.cadastrar_item', 'comprador']);
+  });
+
+  it('salvarConfiguracoes deve criar chave nova sem exigir constraint ON CONFLICT', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    await salvarConfiguracoes({ 'teste.chave': 123 }, 'user-1');
+
+    expect(query).toHaveBeenNthCalledWith(
+      1,
+      'UPDATE configuracoes_sistema SET valor = $2 WHERE chave = $1',
+      ['teste.chave', '123']
+    );
+    expect(query).toHaveBeenNthCalledWith(
+      2,
+      'INSERT INTO configuracoes_sistema (chave, valor) VALUES ($1, $2)',
+      ['teste.chave', '123']
+    );
+    expect(query.mock.calls.map(([sql]) => sql).join('\n')).not.toContain('ON CONFLICT');
   });
 });
