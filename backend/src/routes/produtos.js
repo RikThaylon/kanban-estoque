@@ -8,22 +8,12 @@ const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
-const { Z_TABLE } = require('../services/kanban.math');
 const { recalcularKanban } = require('../services/kanban.calc');
-const { calcularParametrosKanban, holtDoubleExponential, regressaoLinear } = require('../services/kanban.math');
+const { calcularParametrosKanban, buildEstimatedKanbanSeries } = require('../services/kanban.math');
 const { getKanbanSeries } = require('../services/kanban.repo');
-const { perfilPode } = require('../services/configuracoes.service');
+const { perfilPode, getKanbanDefaults } = require('../services/configuracoes.service');
 
 const router = express.Router();
-
-function calcularFaixaManual(estoqueAtual, estoqueSeguranca, pontoReposicao) {
-  const es = Number(estoqueSeguranca);
-  const pr = Number(pontoReposicao);
-  if (!Number.isFinite(es) || !Number.isFinite(pr)) return 'SEM_DADOS';
-  if (Number(estoqueAtual || 0) <= es) return 'VERMELHO';
-  if (Number(estoqueAtual || 0) <= pr) return 'AMARELO';
-  return 'VERDE';
-}
 
 const autorizarCadastroProduto = async (req, res, next) => {
   try {
@@ -115,40 +105,54 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
       const {
         codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido,
         taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
-        estoque_seguranca_manual, ponto_reposicao_manual, eoq_manual, estoque_maximo_manual,
       } = req.body;
+      const defaultsKanban = await getKanbanDefaults();
+      const nivelServicoFinal = nivel_servico ? Number(nivel_servico) : defaultsKanban.nivel_servico_padrao;
       const result = await query(
         `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido || 100, taxa_carregamento || 0.2, nivel_servico || 95, localizacao, req.user.id]
+        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido || 100, taxa_carregamento || 0.2, nivelServicoFinal, localizacao, req.user.id]
       );
-      const manual = {
-        es: estoque_seguranca_manual !== undefined && estoque_seguranca_manual !== '' ? Number(estoque_seguranca_manual) : null,
-        pr: ponto_reposicao_manual !== undefined && ponto_reposicao_manual !== '' ? Number(ponto_reposicao_manual) : null,
-        eoq: eoq_manual !== undefined && eoq_manual !== '' ? Number(eoq_manual) : null,
-        emax: estoque_maximo_manual !== undefined && estoque_maximo_manual !== '' ? Number(estoque_maximo_manual) : null,
-      };
-      const temManualKanban = Object.values(manual).some((v) => Number.isFinite(v));
       const cmdInicial = Number(cmd_inicial || 0);
       const leadTimeInicial = Number(lead_time_inicial || 0);
+      const seriesEstimadas = buildEstimatedKanbanSeries({
+        cmd: cmdInicial,
+        leadTime: leadTimeInicial,
+        ciclos: defaultsKanban.ciclos_estimativa_inicial,
+      });
 
-      if (temManualKanban) {
-        const faixaManual = calcularFaixaManual(0, manual.es, manual.pr);
+      if (seriesEstimadas.estimado) {
+        const calculado = calcularParametrosKanban({
+          demandaSemanalSeries: seriesEstimadas.demandaSemanalSeries,
+          leadTimeSeries: seriesEstimadas.leadTimeSeries,
+          custoUnitario: parseFloat(custo_unitario),
+          custoPedido: parseFloat(custo_pedido || 100),
+          taxaCarregamento: parseFloat(taxa_carregamento || 0.2),
+          nivelServico: nivelServicoFinal,
+          estoqueAtual: 0,
+        });
         await query(`
           INSERT INTO kanban_parametros (
-            produto_id, demanda_diaria_media, lead_time_previsto_dias,
+            produto_id, demanda_diaria_media, sigma_demanda_diaria,
+            lead_time_previsto_dias, lead_time_seguro_dias, sigma_lead_time, fator_z,
             estoque_seguranca, ponto_reposicao, eoq, estoque_maximo, faixa_atual,
             semanas_historico_usadas, pedidos_historico_usados, calculado_em
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,0,NOW())`,
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW())`,
           [
             result.rows[0].id,
-            cmdInicial > 0 ? cmdInicial : null,
-            leadTimeInicial > 0 ? leadTimeInicial : null,
-            Number.isFinite(manual.es) ? manual.es : null,
-            Number.isFinite(manual.pr) ? manual.pr : null,
-            Number.isFinite(manual.eoq) ? manual.eoq : null,
-            Number.isFinite(manual.emax) ? manual.emax : null,
-            faixaManual,
+            calculado.intermediarios.demandaDiariaMedia,
+            calculado.intermediarios.sigmaD,
+            calculado.intermediarios.ltPrevisto,
+            calculado.intermediarios.ltSeguro,
+            calculado.intermediarios.sigmaLT,
+            calculado.intermediarios.Z,
+            calculado.ES,
+            calculado.PR,
+            calculado.EOQ,
+            calculado.Emax,
+            calculado.faixa,
+            seriesEstimadas.ciclosUsados,
+            seriesEstimadas.ciclosUsados,
           ]
         );
       } else {

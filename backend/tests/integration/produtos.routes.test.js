@@ -46,17 +46,34 @@ describe('Produtos Routes', () => {
   describe('POST /api/v1/produtos', () => {
     const body = {codigo:'TST-001',nome:'Produto Teste',unidade:'UN',custo_unitario:45};
     it('admin deve criar produto', async () => {
-      query.mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
+      query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
         .mockResolvedValueOnce({rows:[]}); // INSERT kanban_parametros
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
     });
     it('comprador deve criar produto por permissao padrao', async () => {
       query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
         .mockResolvedValueOnce({rows:[]});
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('comprador')).send(body);
       expect(res.status).toBe(201);
+    });
+    it('deve calcular Kanban inicial quando CMD e LT forem informados', async () => {
+      query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
+        .mockResolvedValueOnce({rows:[]});
+      const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin'))
+        .send({...body, cmd_inicial: 5, lead_time_inicial: 10});
+      expect(res.status).toBe(201);
+      const insertKanbanCall = query.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO kanban_parametros'));
+      expect(insertKanbanCall[1][7]).toBeGreaterThanOrEqual(0);
+      expect(insertKanbanCall[1][8]).toBeGreaterThan(0);
+      expect(insertKanbanCall[1][12]).toBe(10);
     });
     it('deve validar campos obrigatórios', async () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send({});

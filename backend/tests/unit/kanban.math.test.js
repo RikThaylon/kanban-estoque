@@ -5,6 +5,7 @@
 
 const {
   Z_TABLE,
+  buildEstimatedKanbanSeries,
   holtDoubleExponential,
   regressaoLinear,
   calcularParametrosKanban,
@@ -80,6 +81,37 @@ describe('Kanban Math Models', () => {
   // ═══════════════════════════════════════════════════════
   // REGRESSÃO LINEAR
   // ═══════════════════════════════════════════════════════
+  describe('buildEstimatedKanbanSeries', () => {
+    it('deve gerar 10 ciclos estimados por padrao a partir de CMD e LT', () => {
+      const result = buildEstimatedKanbanSeries({ cmd: 5, leadTime: 12 });
+      expect(result.estimado).toBe(true);
+      expect(result.ciclosUsados).toBe(10);
+      expect(result.demandaSemanalSeries).toHaveLength(10);
+      expect(result.leadTimeSeries).toHaveLength(10);
+    });
+
+    it('deve limitar ciclos entre 3 e 10', () => {
+      expect(buildEstimatedKanbanSeries({ cmd: 5, leadTime: 12, ciclos: 1 }).ciclosUsados).toBe(3);
+      expect(buildEstimatedKanbanSeries({ cmd: 5, leadTime: 12, ciclos: 50 }).ciclosUsados).toBe(10);
+    });
+
+    it('deve permitir calculo inicial completo para produto novo', () => {
+      const series = buildEstimatedKanbanSeries({ cmd: 4, leadTime: 8 });
+      const result = calcularParametrosKanban({
+        demandaSemanalSeries: series.demandaSemanalSeries,
+        leadTimeSeries: series.leadTimeSeries,
+        custoUnitario: 20,
+        custoPedido: 100,
+        taxaCarregamento: 0.2,
+        nivelServico: 95,
+        estoqueAtual: 0,
+      });
+      expect(result.faixa).not.toBe('SEM_DADOS');
+      expect(result.PR).toBeGreaterThan(0);
+      expect(result.Emax).toBeGreaterThan(0);
+    });
+  });
+
   describe('regressaoLinear', () => {
     it('deve prever lead time com ajuste perfeito', () => {
       const leadTimes = [5, 6, 7, 8, 9];

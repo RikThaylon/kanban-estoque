@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle, Save } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, Plus, Save } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
@@ -47,6 +47,12 @@ const ProdutoDetalhe = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('kanban');
   const [abcDraft, setAbcDraft] = useState('');
+  const [fornecedorForm, setFornecedorForm] = useState({
+    fornecedor_id: '',
+    prioridade: '',
+    preco_acordado: '',
+    lead_time_nominal_dias: '',
+  });
 
   const { data: produto, isLoading } = useQuery({
     queryKey: ['produto', id],
@@ -86,6 +92,34 @@ const ProdutoDetalhe = () => {
       } catch { return produto?.fornecedores || []; }
     },
     enabled: !!produto && activeTab === 'fornecedores',
+  });
+
+  const { data: fornecedoresCatalogo } = useQuery({
+    queryKey: ['fornecedores'],
+    queryFn: async () => {
+      const res = await api.get('/fornecedores');
+      return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    },
+    enabled: !!produto && activeTab === 'fornecedores',
+  });
+
+  const fornecedoresDisponiveis = useMemo(() => {
+    const vinculados = new Set((fornecedoresVinculados || []).map((f) => f.fornecedor_id));
+    return (fornecedoresCatalogo || []).filter((f) => !vinculados.has(f.id));
+  }, [fornecedoresCatalogo, fornecedoresVinculados]);
+
+  const adicionarFornecedor = useMutation({
+    mutationFn: () => api.post(`/produtos/${id}/fornecedores`, {
+      fornecedor_id: fornecedorForm.fornecedor_id,
+      prioridade: fornecedorForm.prioridade ? Number(fornecedorForm.prioridade) : ((fornecedoresVinculados?.length || 0) + 1),
+      preco_acordado: fornecedorForm.preco_acordado ? Number(fornecedorForm.preco_acordado) : undefined,
+      lead_time_nominal_dias: fornecedorForm.lead_time_nominal_dias ? Number(fornecedorForm.lead_time_nominal_dias) : undefined,
+    }),
+    onSuccess: () => {
+      setFornecedorForm({ fornecedor_id: '', prioridade: '', preco_acordado: '', lead_time_nominal_dias: '' });
+      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
+      queryClient.invalidateQueries({ queryKey: ['produto', id] });
+    },
   });
 
   // Historico para o grafico linear interativo.
@@ -388,6 +422,70 @@ const ProdutoDetalhe = () => {
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-navy-800">Fornecedores vinculados</h3>
               </div>
+              <form
+                onSubmit={(event) => { event.preventDefault(); if (fornecedorForm.fornecedor_id) adicionarFornecedor.mutate(); }}
+                className="card p-4 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end"
+              >
+                <div className="sm:col-span-2">
+                  <label className="label">Adicionar fornecedor</label>
+                  <select
+                    className="input"
+                    value={fornecedorForm.fornecedor_id}
+                    onChange={(e) => setFornecedorForm((f) => ({ ...f, fornecedor_id: e.target.value }))}
+                  >
+                    <option value="">Selecionar</option>
+                    {fornecedoresDisponiveis.map((f) => (
+                      <option key={f.id} value={f.id}>{f.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Prioridade</label>
+                  <input
+                    className="input font-mono"
+                    type="number"
+                    min="1"
+                    placeholder={`${(fornecedoresVinculados?.length || 0) + 1}`}
+                    value={fornecedorForm.prioridade}
+                    onChange={(e) => setFornecedorForm((f) => ({ ...f, prioridade: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">Preco</label>
+                  <input
+                    className="input font-mono"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={fornecedorForm.preco_acordado}
+                    onChange={(e) => setFornecedorForm((f) => ({ ...f, preco_acordado: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="btn-primary w-full"
+                    disabled={!fornecedorForm.fornecedor_id || adicionarFornecedor.isPending}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar
+                  </button>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">Lead time (dias)</label>
+                  <input
+                    className="input font-mono"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={fornecedorForm.lead_time_nominal_dias}
+                    onChange={(e) => setFornecedorForm((f) => ({ ...f, lead_time_nominal_dias: e.target.value }))}
+                  />
+                </div>
+                <p className="sm:col-span-3 text-xs text-navy-500">
+                  Prioridade 1 e o fornecedor principal; 2, 3, 4... sao secundarios usados como alternativas de compra.
+                </p>
+              </form>
               {!fornecedoresVinculados || fornecedoresVinculados.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-10 text-center gap-3 card">
                   <div className="text-4xl">🏭</div>

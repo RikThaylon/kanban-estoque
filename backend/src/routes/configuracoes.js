@@ -7,6 +7,7 @@ const { validate } = require('../middleware/validate');
 const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
+  getKanbanDefaults,
   getPermissoesOperacionais,
   PAGINAS_SISTEMA,
   salvarConfiguracoes,
@@ -54,6 +55,43 @@ router.patch('/pedidos',
       res.json({
         limite_supervisor: limiteSupervisor,
         limite_gerente: limiteGerente,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get('/kanban', authenticate, async (req, res, next) => {
+  try {
+    res.json(await getKanbanDefaults());
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/kanban',
+  authenticate,
+  authorize('admin'),
+  audit('ATUALIZAR_CONFIGURACOES_KANBAN', 'configuracoes_sistema'),
+  [
+    body('nivel_servico_padrao').isIn([90, 95, 98, 99]).withMessage('Nivel de servico deve ser 90, 95, 98 ou 99'),
+    body('ciclos_estimativa_inicial').isInt({ min: 3, max: 10 }).withMessage('Ciclos deve ficar entre 3 e 10'),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const nivelServicoPadrao = Number(req.body.nivel_servico_padrao);
+      const ciclosEstimativaInicial = Number(req.body.ciclos_estimativa_inicial);
+
+      await salvarConfiguracoes({
+        'kanban.nivel_servico_padrao': nivelServicoPadrao,
+        'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
+      }, req.user.id);
+
+      res.json({
+        nivel_servico_padrao: nivelServicoPadrao,
+        ciclos_estimativa_inicial: ciclosEstimativaInicial,
       });
     } catch (err) {
       next(err);

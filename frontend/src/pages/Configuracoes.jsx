@@ -11,6 +11,10 @@ const Configuracoes = () => {
     limite_supervisor: '',
     limite_gerente: '',
   });
+  const [kanban, setKanban] = useState({
+    nivel_servico_padrao: 95,
+    ciclos_estimativa_inicial: 10,
+  });
   const [permissoes, setPermissoes] = useState({
     cadastrar_item: [],
     editar_curva_abc: [],
@@ -27,6 +31,11 @@ const Configuracoes = () => {
   const { data: permissoesData, isLoading: carregandoPermissoes } = useQuery({
     queryKey: ['configuracoes', 'permissoes'],
     queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+  });
+
+  const { data: kanbanData, isLoading: carregandoKanban } = useQuery({
+    queryKey: ['configuracoes', 'kanban'],
+    queryFn: async () => (await api.get('/configuracoes/kanban')).data,
   });
 
   useEffect(() => {
@@ -47,6 +56,15 @@ const Configuracoes = () => {
       });
     }
   }, [permissoesData]);
+
+  useEffect(() => {
+    if (kanbanData) {
+      setKanban({
+        nivel_servico_padrao: kanbanData.nivel_servico_padrao ?? 95,
+        ciclos_estimativa_inicial: kanbanData.ciclos_estimativa_inicial ?? 10,
+      });
+    }
+  }, [kanbanData]);
 
   const salvar = useMutation({
     mutationFn: () => api.patch('/configuracoes/pedidos', {
@@ -78,6 +96,22 @@ const Configuracoes = () => {
     onError: (e) => {
       setSucesso('');
       setErro(e.message || 'Erro ao salvar permissoes');
+    },
+  });
+
+  const salvarKanban = useMutation({
+    mutationFn: () => api.patch('/configuracoes/kanban', {
+      nivel_servico_padrao: Number(kanban.nivel_servico_padrao),
+      ciclos_estimativa_inicial: Number(kanban.ciclos_estimativa_inicial),
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configuracoes', 'kanban'] });
+      setErro('');
+      setSucesso('Parametros Kanban salvos.');
+    },
+    onError: (e) => {
+      setSucesso('');
+      setErro(e.message || 'Erro ao salvar parametros Kanban');
     },
   });
 
@@ -194,6 +228,59 @@ const Configuracoes = () => {
             <button type="submit" disabled={salvar.isPending || isLoading || invalido} className="btn-primary justify-center">
               <Save className="w-4 h-4" />
               {salvar.isPending ? 'Salvando...' : 'Salvar configuracoes'}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <form
+        onSubmit={(event) => { event.preventDefault(); setErro(''); setSucesso(''); salvarKanban.mutate(); }}
+        className="card p-0 overflow-hidden"
+      >
+        <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
+          <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
+            <Settings className="w-5 h-5 text-navy-700" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-bold text-navy-800">Kanban padrao</h2>
+            <p className="text-xs text-navy-500">Valores usados no cadastro de novos produtos.</p>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">Nivel de servico padrao</label>
+              <select
+                className="input font-mono"
+                value={kanban.nivel_servico_padrao}
+                onChange={(e) => setKanban((k) => ({ ...k, nivel_servico_padrao: e.target.value }))}
+                disabled={carregandoKanban}
+              >
+                {[90, 95, 98, 99].map((v) => <option key={v} value={v}>{v}%</option>)}
+              </select>
+              <p className="text-xs text-navy-500 mt-1">Novo item nasce com este percentual. Padrao: 95%.</p>
+            </div>
+            <div>
+              <label className="label">Ciclos para estimativa inicial</label>
+              <input
+                type="number"
+                min="3"
+                max="10"
+                step="1"
+                value={kanban.ciclos_estimativa_inicial}
+                onChange={(e) => setKanban((k) => ({ ...k, ciclos_estimativa_inicial: e.target.value }))}
+                className="input font-mono"
+                disabled={carregandoKanban}
+              />
+              <p className="text-xs text-navy-500 mt-1">Uso 10 para dar base suficiente a Holt e regressao sem inventar historico longo.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <button type="submit" disabled={salvarKanban.isPending || carregandoKanban} className="btn-primary justify-center">
+              <Save className="w-4 h-4" />
+              {salvarKanban.isPending ? 'Salvando...' : 'Salvar Kanban'}
             </button>
           </div>
         </div>

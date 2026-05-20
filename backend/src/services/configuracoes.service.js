@@ -16,6 +16,8 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.raci': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.relatorios': 'admin,gerente_operacoes,gerente_engenharia,plant_manager,comprador,visualizador',
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
+  'kanban.nivel_servico_padrao': 95,
+  'kanban.ciclos_estimativa_inicial': 10,
 };
 
 const PAGINAS_SISTEMA = [
@@ -92,6 +94,18 @@ async function getPermissoesOperacionais() {
   };
 }
 
+async function getKanbanDefaults() {
+  const [nivelServicoPadrao, ciclosEstimativaInicial] = await Promise.all([
+    getConfiguracao('kanban.nivel_servico_padrao', CONFIG_DEFAULTS['kanban.nivel_servico_padrao']),
+    getConfiguracao('kanban.ciclos_estimativa_inicial', CONFIG_DEFAULTS['kanban.ciclos_estimativa_inicial']),
+  ]);
+
+  return {
+    nivel_servico_padrao: Number(nivelServicoPadrao) || 95,
+    ciclos_estimativa_inicial: Math.min(10, Math.max(3, Number(ciclosEstimativaInicial) || 10)),
+  };
+}
+
 async function perfilPode(perfil, permissao) {
   if (perfil === 'admin') return true;
   const chave = PERMISSAO_TO_CHAVE[permissao];
@@ -121,6 +135,7 @@ module.exports = {
   PAGINAS_SISTEMA,
   getConfiguracao,
   getLimitesAprovacaoPedido,
+  getKanbanDefaults,
   getPermissoesOperacionais,
   perfilPode,
   serializePerfis,

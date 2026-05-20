@@ -1,6 +1,7 @@
 const { query, getClient } = require('../config/database');
-const { calcularParametrosKanban } = require('./kanban.math');
+const { calcularParametrosKanban, buildEstimatedKanbanSeries } = require('./kanban.math');
 const { getKanbanSeries } = require('./kanban.repo');
+const { getKanbanDefaults } = require('./configuracoes.service');
 const logger = require('../utils/logger');
 
 function toNumberOrNull(value) {
@@ -34,7 +35,28 @@ async function recalcularKanban(produtoId, io = null) {
   const produto = prodRes.rows[0];
 
   // Obter séries temporais via repositório
-  const { demandaSemanalSeries, leadTimeSeries, leadTimeFornecedor } = await getKanbanSeries(produtoId);
+  let { demandaSemanalSeries, leadTimeSeries, leadTimeFornecedor } = await getKanbanSeries(produtoId);
+
+  // Buscar faixa anterior e parametros estimados, quando existirem
+  const kpRes = await query('SELECT * FROM kanban_parametros WHERE produto_id = $1', [produtoId]);
+  const parametrosAtuais = kpRes.rows[0] || {};
+  const faixaAnterior = kpRes.rows[0]?.faixa_atual || 'SEM_DADOS';
+
+  if ((demandaSemanalSeries.length < 3 || leadTimeSeries.length < 2)
+    && parametrosAtuais.demanda_diaria_media
+    && parametrosAtuais.lead_time_previsto_dias) {
+    const defaultsKanban = await getKanbanDefaults();
+    const estimadas = buildEstimatedKanbanSeries({
+      cmd: parametrosAtuais.demanda_diaria_media,
+      leadTime: parametrosAtuais.lead_time_previsto_dias,
+      ciclos: defaultsKanban.ciclos_estimativa_inicial,
+    });
+    if (estimadas.estimado) {
+      demandaSemanalSeries = estimadas.demandaSemanalSeries;
+      leadTimeSeries = estimadas.leadTimeSeries;
+      leadTimeFornecedor = null;
+    }
+  }
 
   // Calcular parâmetros
   const result = calcularParametrosKanban({
@@ -48,10 +70,6 @@ async function recalcularKanban(produtoId, io = null) {
     estoqueAtual: parseFloat(produto.estoque_atual),
   });
 
-  // Buscar faixa anterior
-  const kpRes = await query('SELECT * FROM kanban_parametros WHERE produto_id = $1', [produtoId]);
-  const parametrosAtuais = kpRes.rows[0] || {};
-  const faixaAnterior = kpRes.rows[0]?.faixa_atual || 'SEM_DADOS';
   const estoqueAtual = parseFloat(produto.estoque_atual);
 
   if (result.insuficiente_historico) {

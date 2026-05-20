@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Filter, Download, X, Edit3, Trash2, HelpCircle } from 'lucide-react';
@@ -278,10 +278,6 @@ const ProdutoModal = ({ produto, onClose }) => {
     // Parâmetros iniciais Kanban (só no cadastro)
     cmd_inicial: '',
     lead_time_inicial: '',
-    estoque_seguranca_manual: '',
-    ponto_reposicao_manual: '',
-    eoq_manual: '',
-    estoque_maximo_manual: '',
     // Fornecedor principal (só no cadastro)
     fornecedor_id: '',
     preco_acordado_fornecedor: '',
@@ -290,11 +286,23 @@ const ProdutoModal = ({ produto, onClose }) => {
 
   const [erro, setErro] = useState('');
 
+  const { data: kanbanDefaults } = useQuery({
+    queryKey: ['configuracoes', 'kanban'],
+    queryFn: async () => (await api.get('/configuracoes/kanban')).data,
+    enabled: !isEdit,
+  });
+
+  useEffect(() => {
+    if (!isEdit && kanbanDefaults?.nivel_servico_padrao) {
+      setForm((prev) => ({ ...prev, nivel_servico: kanbanDefaults.nivel_servico_padrao }));
+    }
+  }, [isEdit, kanbanDefaults?.nivel_servico_padrao]);
+
   // Cálculo automático dos parâmetros Kanban para o gráfico
   const kanbanPreview = useMemo(() => {
     const cmd = parseFloat(form.cmd_inicial) || 0;
     const lt = parseFloat(form.lead_time_inicial) || 0;
-    const z = { 90: 1.28, 95: 1.645, 98: 2.054, 99: 2.326 }[parseInt(form.nivel_servico)] || 1.645;
+    const z = { 90: 1.2816, 95: 1.6449, 98: 1.8808, 99: 2.3263 }[parseInt(form.nivel_servico)] || 1.6449;
     const tc = parseFloat(form.taxa_carregamento) || 0.2;
     const cp = parseFloat(form.custo_pedido) || 100;
     const cu = parseFloat(form.custo_unitario) || 0;
@@ -332,9 +340,9 @@ const ProdutoModal = ({ produto, onClose }) => {
         custo_unitario: parseFloat(form.custo_unitario),
         custo_pedido: parseFloat(form.custo_pedido),
         taxa_carregamento: parseFloat(form.taxa_carregamento),
-        nivel_servico: parseInt(form.nivel_servico),
         localizacao: form.localizacao,
       };
+      if (isEdit) payload.nivel_servico = parseInt(form.nivel_servico);
       if (isEdit) {
         return api.patch(`/produtos/${produto.id}`, payload);
       } else {
@@ -343,10 +351,6 @@ const ProdutoModal = ({ produto, onClose }) => {
           codigo: form.codigo,
           cmd_inicial: form.cmd_inicial,
           lead_time_inicial: form.lead_time_inicial,
-          estoque_seguranca_manual: form.estoque_seguranca_manual,
-          ponto_reposicao_manual: form.ponto_reposicao_manual,
-          eoq_manual: form.eoq_manual,
-          estoque_maximo_manual: form.estoque_maximo_manual,
         });
         const novoProdutoId = res.data?.id || res.data?.data?.id;
 
@@ -422,7 +426,7 @@ const ProdutoModal = ({ produto, onClose }) => {
                 <Label tooltip="Probabilidade de nunca faltar este produto. 95% é o padrão da indústria. Quanto maior, mais estoque de segurança será mantido.">
                   Nível de serviço desejado
                 </Label>
-                <select className="input" value={form.nivel_servico} onChange={e => f('nivel_servico', e.target.value)}>
+                <select className="input" value={form.nivel_servico} onChange={e => f('nivel_servico', e.target.value)} disabled={!isEdit}>
                   {[
                     [90, '90% — Básico'],
                     [95, '95% — Padrão industrial'],
@@ -462,29 +466,6 @@ const ProdutoModal = ({ produto, onClose }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                <div>
-                  <Label>ES manual</Label>
-                  <input className="input font-mono" type="number" step="0.0001" min="0"
-                    value={form.estoque_seguranca_manual} onChange={e => f('estoque_seguranca_manual', e.target.value)} />
-                </div>
-                <div>
-                  <Label>PR manual</Label>
-                  <input className="input font-mono" type="number" step="0.0001" min="0"
-                    value={form.ponto_reposicao_manual} onChange={e => f('ponto_reposicao_manual', e.target.value)} />
-                </div>
-                <div>
-                  <Label>EOQ manual</Label>
-                  <input className="input font-mono" type="number" step="0.0001" min="0"
-                    value={form.eoq_manual} onChange={e => f('eoq_manual', e.target.value)} />
-                </div>
-                <div>
-                  <Label>Emax manual</Label>
-                  <input className="input font-mono" type="number" step="0.0001" min="0"
-                    value={form.estoque_maximo_manual} onChange={e => f('estoque_maximo_manual', e.target.value)} />
-                </div>
-              </div>
-
               {/* Prévia calculada */}
               {kanbanPreview && (
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -505,14 +486,14 @@ const ProdutoModal = ({ produto, onClose }) => {
 
               {/* Grafico linear interativo */}
               <div className="mt-4">
-                <p className="text-xs font-bold text-navy-500 mb-2">Visualização do ciclo Kanban estimado (3 ciclos)</p>
+                <p className="text-xs font-bold text-navy-500 mb-2">Visualizacao do ciclo Kanban estimado ({kanbanDefaults?.ciclos_estimativa_inicial || 10} ciclos)</p>
                 <KanbanSawtoothChart
                   cmd={kanbanPreview?.cmd || 0}
                   leadTime={kanbanPreview?.lt || 0}
                   es={kanbanPreview?.es || 0}
                   pr={kanbanPreview?.pr || 0}
                   emax={kanbanPreview?.emax || 0}
-                  ciclos={3}
+                  ciclos={kanbanDefaults?.ciclos_estimativa_inicial || 10}
                   height={200}
                 />
               </div>

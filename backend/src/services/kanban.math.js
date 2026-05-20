@@ -7,6 +7,31 @@
 
 /** Tabela Z para nível de serviço */
 const Z_TABLE = { 90: 1.2816, 95: 1.6449, 98: 1.8808, 99: 2.3263 };
+const DEFAULT_ESTIMATED_CYCLES = 10;
+
+function normalizarCiclosEstimativa(ciclos = DEFAULT_ESTIMATED_CYCLES) {
+  return Math.min(10, Math.max(3, Math.floor(Number(ciclos) || DEFAULT_ESTIMATED_CYCLES)));
+}
+
+function buildEstimatedKanbanSeries({ cmd, leadTime, ciclos = DEFAULT_ESTIMATED_CYCLES }) {
+  const demandaDiaria = Number(cmd);
+  const leadTimeDias = Number(leadTime);
+  if (!Number.isFinite(demandaDiaria) || demandaDiaria <= 0 || !Number.isFinite(leadTimeDias) || leadTimeDias <= 0) {
+    return { demandaSemanalSeries: [], leadTimeSeries: [], ciclosUsados: 0, estimado: false };
+  }
+
+  const ciclosUsados = normalizarCiclosEstimativa(ciclos);
+  const demandaBase = demandaDiaria * 7;
+  const demandaFatores = [0.92, 1.04, 0.97, 1.08, 1.0, 0.95, 1.06, 0.99, 1.03, 1.01];
+  const leadTimeFatores = [1.0, 1.08, 0.94, 1.04, 0.98, 1.02, 0.96, 1.06, 1.0, 1.03];
+
+  return {
+    demandaSemanalSeries: Array.from({ length: ciclosUsados }, (_, i) => Number((demandaBase * demandaFatores[i % demandaFatores.length]).toFixed(4))),
+    leadTimeSeries: Array.from({ length: ciclosUsados }, (_, i) => Math.max(1, Number((leadTimeDias * leadTimeFatores[i % leadTimeFatores.length]).toFixed(2)))),
+    ciclosUsados,
+    estimado: true,
+  };
+}
 
 /**
  * Suavização Exponencial Dupla de Holt
@@ -303,6 +328,8 @@ function classificacaoABC(produtos) {
 
 module.exports = {
   Z_TABLE,
+  DEFAULT_ESTIMATED_CYCLES,
+  buildEstimatedKanbanSeries,
   holtDoubleExponential,
   regressaoLinear,
   calcularParametrosKanban,
