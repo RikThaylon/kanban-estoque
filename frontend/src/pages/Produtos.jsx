@@ -9,6 +9,12 @@ import { useAuthStore } from '../stores/authStore';
 import { formatMoney, formatNumber } from '../utils/formatters';
 
 const PERFIS_GESTAO = ['admin', 'gerente_operacoes', 'supervisor_turno'];
+const TURNOS = [
+  { value: 'TURNO_A', label: 'Turno A' },
+  { value: 'TURNO_B', label: 'Turno B' },
+  { value: 'TURNO_C', label: 'Turno C' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
+];
 
 // ─── Tooltip helper ────────────────────────────────────────────────────────
 const Tooltip = ({ text }) => (
@@ -40,7 +46,7 @@ const Produtos = () => {
   const [page, setPage] = useState(1);
   const [busca, setBusca] = useState('');
   const [faixaFiltro, setFaixaFiltro] = useState('');
-  const [openModal, setOpenModal] = useState(null); // null | 'novo' | objeto produto
+  const [openModal, setOpenModal] = useState(null); // null | { tipo, produto? }
 
   const desativar = useMutation({
     mutationFn: (id) => api.delete(`/produtos/${id}`),
@@ -81,9 +87,14 @@ const Produtos = () => {
           <p className="text-navy-400 text-sm mt-1">Gerencie os itens do estoque e acompanhe as faixas Kanban</p>
         </div>
         {podeCadastrar && (
-          <button onClick={() => setOpenModal('novo')} className="btn-primary w-full sm:w-auto justify-center">
-            <Plus className="w-4 h-4" /> Novo produto
-          </button>
+          <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
+            <button onClick={() => setOpenModal({ tipo: 'novo' })} className="btn-secondary w-full sm:w-auto justify-center">
+              <Plus className="w-4 h-4" /> Cadastrar produto
+            </button>
+            <button onClick={() => setOpenModal({ tipo: 'insercao' })} className="btn-primary w-full sm:w-auto justify-center">
+              <Plus className="w-4 h-4" /> Inserir item existente
+            </button>
+          </div>
         )}
       </div>
 
@@ -157,7 +168,7 @@ const Produtos = () => {
                     Detalhes
                   </Link>
                   {podeGerir && (
-                    <button onClick={() => setOpenModal(produto)} className="btn-secondary justify-center">
+                    <button onClick={() => setOpenModal({ tipo: 'editar', produto })} className="btn-secondary justify-center">
                       <Edit3 className="w-4 h-4" /> Editar
                     </button>
                   )}
@@ -226,7 +237,7 @@ const Produtos = () => {
                             Detalhes
                           </Link>
                           {podeGerir && (
-                            <button onClick={() => setOpenModal(produto)} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                            <button onClick={() => setOpenModal({ tipo: 'editar', produto })} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
                           )}
                           {isAdmin && (
                             <button onClick={() => { if (confirm(`Desativar ${produto.codigo}?`)) desativar.mutate(produto.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Desativar"><Trash2 className="w-4 h-4" /></button>
@@ -255,15 +266,16 @@ const Produtos = () => {
         )}
       </div>
 
-      {openModal && <ProdutoModal produto={openModal === 'novo' ? null : openModal} onClose={() => setOpenModal(null)} />}
+      {openModal && <ProdutoModal produto={openModal.produto || null} modo={openModal.tipo} onClose={() => setOpenModal(null)} />}
     </div>
   );
 };
 
 // ─── Modal: Criar/Editar Produto ───────────────────────────────────────────
-const ProdutoModal = ({ produto, onClose }) => {
+const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
   const queryClient = useQueryClient();
   const isEdit = !!produto;
+  const isInsercao = modo === 'insercao';
 
   const [form, setForm] = useState({
     codigo: produto?.codigo || '',
@@ -278,6 +290,9 @@ const ProdutoModal = ({ produto, onClose }) => {
     // Parâmetros iniciais Kanban (só no cadastro)
     cmd_inicial: '',
     lead_time_inicial: '',
+    estoque_inicial: '',
+    turno_inicial: '',
+    documento_inicial: '',
     // Fornecedor principal (só no cadastro)
     fornecedor_id: '',
     preco_acordado_fornecedor: '',
@@ -354,6 +369,18 @@ const ProdutoModal = ({ produto, onClose }) => {
         });
         const novoProdutoId = res.data?.id || res.data?.data?.id;
 
+        if (novoProdutoId && isInsercao && parseFloat(form.estoque_inicial) > 0) {
+          await api.post('/movimentacoes', {
+            produto_id: novoProdutoId,
+            tipo: 'ENTRADA',
+            quantidade: parseFloat(form.estoque_inicial),
+            turno: form.turno_inicial,
+            numero_documento: form.documento_inicial || undefined,
+            referencia: 'Entrada inicial',
+            observacao: 'Estoque inicial informado na insercao do item existente',
+          });
+        }
+
         // Vincular fornecedor principal, se informado
         if (novoProdutoId && form.fornecedor_id) {
           await api.post(`/produtos/${novoProdutoId}/fornecedores`, {
@@ -377,11 +404,25 @@ const ProdutoModal = ({ produto, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold text-navy-800">{isEdit ? `Editar produto ${produto.codigo}` : 'Novo produto'}</h2>
+          <h2 className="text-lg font-bold text-navy-800">
+            {isEdit ? `Editar produto ${produto.codigo}` : (isInsercao ? 'Inserir item existente' : 'Cadastrar produto')}
+          </h2>
           <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); setErro(''); salvar.mutate(); }} className="p-5 space-y-5">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          setErro('');
+          if (isInsercao && (!form.estoque_inicial || parseFloat(form.estoque_inicial) <= 0)) {
+            setErro('Informe o estoque atual do item existente.');
+            return;
+          }
+          if (isInsercao && !form.turno_inicial) {
+            setErro('Selecione o turno da entrada inicial.');
+            return;
+          }
+          salvar.mutate();
+        }} className="p-5 space-y-5">
 
           {/* ── Seção: Identificação ── */}
           <div>
@@ -441,6 +482,50 @@ const ProdutoModal = ({ produto, onClose }) => {
               </div>
             </div>
           </div>
+
+          {!isEdit && isInsercao && (
+            <div className="rounded-lg border border-red-200 bg-red-50/50 p-4">
+              <h3 className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Entrada inicial do item existente</h3>
+              <p className="text-xs text-navy-500 mb-3">
+                Use quando o material ja existe fisicamente no estoque e esta sendo trazido para o sistema.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label>Estoque atual</Label>
+                  <input
+                    className="input font-mono"
+                    type="number"
+                    min="0"
+                    step="0.0001"
+                    value={form.estoque_inicial}
+                    onChange={e => f('estoque_inicial', e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Turno da insercao</Label>
+                  <select
+                    className="input"
+                    value={form.turno_inicial}
+                    onChange={e => f('turno_inicial', e.target.value)}
+                    required
+                  >
+                    <option value="">Selecionar</option>
+                    {TURNOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label>Documento</Label>
+                  <input
+                    className="input"
+                    value={form.documento_inicial}
+                    onChange={e => f('documento_inicial', e.target.value)}
+                    placeholder="Inventario, planilha..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Seção: Parâmetros Kanban Iniciais (só no cadastro) ── */}
           {!isEdit && (

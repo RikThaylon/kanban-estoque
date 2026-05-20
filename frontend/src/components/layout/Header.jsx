@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Bell, LogOut, Menu, Radio, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useAuth } from '../../hooks/useAuth';
+import api from '../../services/api';
 
 const TITLES = {
   dashboard: ['Centro de comando', 'Visao operacional do estoque Kanban'],
@@ -29,6 +31,23 @@ const Header = () => {
     const key = location.pathname.split('/').filter(Boolean)[0] || 'dashboard';
     return TITLES[key] || ['Kanban Estoque', 'Operacao industrial'];
   }, [location.pathname]);
+
+  const { data: notificacoes } = useQuery({
+    queryKey: ['notificacoes', user?.perfil],
+    queryFn: async () => {
+      const [movs, n1, n2, n3] = await Promise.all([
+        api.get('/movimentacoes/pendentes').then((res) => Array.isArray(res.data) ? res.data.length : 0).catch(() => 0),
+        api.get('/pedidos', { params: { status: 'AGUARDANDO_APROVACAO', limit: 1 } }).then((res) => res.data?.total || 0).catch(() => 0),
+        api.get('/pedidos', { params: { status: 'AGUARDANDO_GERENTE', limit: 1 } }).then((res) => res.data?.total || 0).catch(() => 0),
+        api.get('/pedidos', { params: { status: 'APROVADO', limit: 1 } }).then((res) => res.data?.total || 0).catch(() => 0),
+      ]);
+      return movs + n1 + n2 + n3;
+    },
+    refetchInterval: 30000,
+    staleTime: 15000,
+  });
+
+  const badgeTotal = alertsUnread + (notificacoes || 0);
 
   return (
     <header className="sticky top-0 z-10 border-b border-steel-700/10 bg-[rgba(247,248,245,0.78)] backdrop-blur-xl px-3 sm:px-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
@@ -61,9 +80,9 @@ const Header = () => {
             aria-label="Alertas"
           >
             <Bell className="w-5 h-5" />
-            {alertsUnread > 0 && (
+            {badgeTotal > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-signal-red text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {alertsUnread > 9 ? '9+' : alertsUnread}
+                {badgeTotal > 9 ? '9+' : badgeTotal}
               </span>
             )}
           </Link>

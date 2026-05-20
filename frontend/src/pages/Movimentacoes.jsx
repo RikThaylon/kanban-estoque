@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowDownCircle, ArrowUpCircle, Edit3, RefreshCw, Plus, Check, X, Clock, AlertCircle, FileText } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Edit3, Plus, Check, X, Clock, AlertCircle, FileText } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatNumber, formatDateTime } from '../utils/formatters';
@@ -11,8 +11,14 @@ const TIPOS = [
   { value: 'SAIDA', label: 'Saída', icon: ArrowUpCircle, color: 'text-red-600', bg: 'bg-red-50' },
   { value: 'AJUSTE_POSITIVO', label: 'Ajuste +', icon: Edit3, color: 'text-blue-600', bg: 'bg-blue-50' },
   { value: 'AJUSTE_NEGATIVO', label: 'Ajuste −', icon: Edit3, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { value: 'TRANSFERENCIA', label: 'Transferência', icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50' },
   { value: 'DEVOLUCAO', label: 'Devolução', icon: ArrowDownCircle, color: 'text-teal-600', bg: 'bg-teal-50' },
+];
+
+const TURNOS = [
+  { value: 'TURNO_A', label: 'Turno A' },
+  { value: 'TURNO_B', label: 'Turno B' },
+  { value: 'TURNO_C', label: 'Turno C' },
+  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
 ];
 
 const STATUS_BADGE = {
@@ -83,7 +89,7 @@ const Movimentacoes = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-navy-800 tracking-tight">Movimentações de Estoque</h1>
-          <p className="text-navy-400 text-sm mt-1">Entradas, saídas, ajustes e transferências</p>
+          <p className="text-navy-400 text-sm mt-1">Entradas, saídas e ajustes de estoque</p>
         </div>
         {!readOnly && (
           <button onClick={() => setOpenNova(true)} className="btn-primary flex items-center gap-2">
@@ -137,6 +143,7 @@ const Movimentacoes = () => {
                 <th className="px-4 py-3 text-left">Data</th>
                 <th className="px-4 py-3 text-left">Produto</th>
                 <th className="px-4 py-3 text-left">Tipo</th>
+                <th className="px-4 py-3 text-left">Turno</th>
                 <th className="px-4 py-3 text-right">Quantidade</th>
                 <th className="px-4 py-3 text-right">Estoque (antes → depois)</th>
                 <th className="px-4 py-3 text-left">Por</th>
@@ -146,10 +153,10 @@ const Movimentacoes = () => {
             </thead>
             <tbody className="divide-y divide-surface-200">
               {isLoading && tab === 'todas' && (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-navy-400">Carregando…</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-navy-400">Carregando…</td></tr>
               )}
               {!isLoading && lista.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-navy-400">
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-navy-400">
                   {tab === 'pendentes' ? 'Nada aguardando aprovação. 🎉' : 'Nenhuma movimentação encontrada.'}
                 </td></tr>
               )}
@@ -167,6 +174,9 @@ const Movimentacoes = () => {
                       <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${tipoConf?.bg} ${tipoConf?.color}`}>
                         <Icon className="w-3 h-3" /> {tipoConf?.label || m.tipo}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-navy-500 whitespace-nowrap">
+                      {m.turno ? m.turno.replace('TURNO_', 'Turno ') : '—'}
                     </td>
                     <td className="px-4 py-3 text-right font-mono">{formatNumber(m.quantidade)} {m.unidade}</td>
                     <td className="px-4 py-3 text-right font-mono text-xs text-navy-500">
@@ -237,6 +247,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
   const [busca, setBusca] = useState('');
   const [produtoId, setProdutoId] = useState('');
   const [tipo, setTipo] = useState('SAIDA');
+  const [turno, setTurno] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [referencia, setReferencia] = useState('');
   const [observacao, setObservacao] = useState('');
@@ -253,7 +264,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
   });
 
   const requerAprovacao = useMemo(
-    () => ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'TRANSFERENCIA', 'DEVOLUCAO'].includes(tipo),
+    () => ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCAO'].includes(tipo),
     [tipo]
   );
 
@@ -262,6 +273,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
       produto_id: produtoId,
       tipo,
       quantidade: parseFloat(quantidade),
+      turno: turno || undefined,
       referencia: referencia || undefined,
       observacao: observacao || undefined,
     }),
@@ -285,6 +297,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
     setAviso('');
     if (!produtoId) return setErro('Selecione um produto');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
+    if (!turno) return setErro('Selecione o turno da movimentacao');
     criar.mutate();
   };
 
@@ -350,6 +363,14 @@ const NovaMovimentacaoModal = ({ onClose }) => {
               className="input w-full font-mono"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-navy-700 mb-1">Turno</label>
+            <select value={turno} onChange={e => setTurno(e.target.value)} className="input w-full" required>
+              <option value="">Selecionar turno</option>
+              {TURNOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
           </div>
 
           {/* Referência */}

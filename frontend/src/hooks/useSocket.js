@@ -7,6 +7,7 @@ export const useSocket = () => {
   const queryClient = useQueryClient();
   const incrementAlerts = useUiStore(state => state.incrementAlerts);
   const setAlertsUnread = useUiStore(state => state.setAlertsUnread);
+  const pushToast = useUiStore(state => state.pushToast);
 
   useEffect(() => {
     const socket = getSocket();
@@ -39,6 +40,12 @@ export const useSocket = () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       queryClient.invalidateQueries({ queryKey: ['pedido', data.pedido_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({
+        tipo: ['APROVADO', 'EMITIDO'].includes(data?.status_novo) ? 'success' : 'info',
+        titulo: `Pedido ${data?.numero || ''}`.trim(),
+        mensagem: `Status atualizado para ${(data?.status_novo || '').replace(/_/g, ' ').toLowerCase()}.`,
+      });
     };
 
     const onAlertaNovo = () => {
@@ -52,7 +59,15 @@ export const useSocket = () => {
       queryClient.invalidateQueries({ queryKey: ['produto', data?.produto_id] });
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({
+        tipo: data?.motivo ? 'warning' : 'info',
+        titulo: 'Movimentacao de estoque',
+        mensagem: data?.motivo ? 'Uma movimentacao foi rejeitada.' : 'Uma movimentacao mudou de status.',
+      });
     };
+
+    syncAlerts();
 
     socket.on('faixa:mudou', onFaixaMudou);
     socket.on('estoque:atualizado', onEstoqueAtualizado);
@@ -71,7 +86,7 @@ export const useSocket = () => {
       socket.off('movimentacao:aprovada', onMovimentacaoMudou);
       socket.off('movimentacao:rejeitada', onMovimentacaoMudou);
     };
-  }, [queryClient, incrementAlerts, setAlertsUnread]);
+  }, [queryClient, incrementAlerts, setAlertsUnread, pushToast]);
 
   const subscribeToProduct = (produtoId) => {
     const socket = getSocket();

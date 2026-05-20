@@ -1,0 +1,11 @@
+# Rules
+
+- Preserve architecture
+- Avoid unnecessary refactors
+- Prefer incremental changes
+- Keep UI consistent
+- Maintain existing patterns
+- Do not create duplicate logic
+- Prefer reusable services
+- Minimize token usage
+- Keep code production-ready

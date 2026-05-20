@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  Brush,
   CartesianGrid,
   Legend,
   Line,
@@ -18,11 +19,25 @@ const formatValue = (value) => {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(number);
 };
 
+const formatDateTime = (value, withTime = false) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  }).format(date);
+};
+
 const buildLinearCycleData = ({ cmd, leadTime, es, pr, emax, ciclos }) => {
   const diasConsumo = Math.max((emax - pr) / cmd, 1);
   const reposicaoDias = Math.max(1, Math.min(leadTime || 1, 2));
   const rows = [];
+  const start = new Date();
+  start.setHours(8, 0, 0, 0);
   let dia = 0;
+
+  const atDay = (day) => start.getTime() + (day * 86400000);
 
   for (let ciclo = 1; ciclo <= ciclos; ciclo += 1) {
     const inicio = dia;
@@ -31,10 +46,10 @@ const buildLinearCycleData = ({ cmd, leadTime, es, pr, emax, ciclos }) => {
     const diaReposicao = diaChegada + reposicaoDias;
     const estoqueChegada = Math.max(pr - cmd * leadTime, Math.max(es * 0.7, 0));
 
-    rows.push({ dia: inicio, estoqueEstimado: emax, evento: `Inicio ciclo ${ciclo}` });
-    rows.push({ dia: diaPedido, estoqueEstimado: pr, evento: 'Ponto de reposicao' });
-    rows.push({ dia: diaChegada, estoqueEstimado: estoqueChegada, evento: 'Chegada do pedido' });
-    rows.push({ dia: diaReposicao, estoqueEstimado: emax, evento: 'Reposicao concluida' });
+    rows.push({ x: atDay(inicio), dia: inicio, estoqueEstimado: emax, evento: `Inicio ciclo ${ciclo}` });
+    rows.push({ x: atDay(diaPedido), dia: diaPedido, estoqueEstimado: pr, evento: 'Ponto de reposicao' });
+    rows.push({ x: atDay(diaChegada), dia: diaChegada, estoqueEstimado: estoqueChegada, evento: 'Chegada do pedido' });
+    rows.push({ x: atDay(diaReposicao), dia: diaReposicao, estoqueEstimado: emax, evento: 'Reposicao concluida' });
 
     dia = diaReposicao;
   }
@@ -51,7 +66,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
   return (
     <div className="rounded-md border border-steel-700/15 bg-white px-3 py-2 shadow-panel text-xs">
-      <div className="font-bold text-steel-900 mb-1">Dia {formatValue(label)}</div>
+      <div className="font-bold text-steel-900 mb-1">{formatDateTime(label, true)}</div>
       {event && <div className="text-steel-500 mb-1">{event}</div>}
       <div className="space-y-1">
         {visible.map(item => (
@@ -91,15 +106,16 @@ const KanbanSawtoothChart = ({
     });
 
     historico.forEach(point => {
-      const dia = Number(point.dia);
-      if (!Number.isFinite(dia)) return;
-      byDay.set(dia, {
-        ...(byDay.get(dia) || { dia }),
+      const x = point.data ? new Date(point.data).getTime() : Number(point.x);
+      if (!Number.isFinite(x)) return;
+      byDay.set(x, {
+        ...(byDay.get(x) || { x }),
+        evento: point.evento,
         estoqueReal: Number(point.estoque),
       });
     });
 
-    const rows = Array.from(byDay.values()).sort((a, b) => a.dia - b.dia);
+    const rows = Array.from(byDay.values()).sort((a, b) => a.x - b.x);
     const values = rows.flatMap(row => [row.estoqueEstimado, row.estoqueReal]).filter(Number.isFinite);
     return {
       data: rows,
@@ -134,10 +150,11 @@ const KanbanSawtoothChart = ({
             <ReferenceLine y={pr} stroke="#B45309" strokeDasharray="5 5" label={{ value: 'PR', fill: '#B45309', fontSize: 11 }} />
             <ReferenceLine y={emax} stroke="#1A5C36" strokeDasharray="5 5" label={{ value: 'EM', fill: '#1A5C36', fontSize: 11 }} />
             <XAxis
-              dataKey="dia"
+              dataKey="x"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tickFormatter={(value) => `${Math.round(value)}d`}
+              scale="time"
+              tickFormatter={(value) => formatDateTime(value)}
               tick={{ fill: '#555555', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
@@ -172,6 +189,15 @@ const KanbanSawtoothChart = ({
               activeDot={{ r: 6 }}
               connectNulls
             />
+            {data.length > 8 && (
+              <Brush
+                dataKey="x"
+                height={22}
+                travellerWidth={10}
+                stroke="#E11D2E"
+                tickFormatter={(value) => formatDateTime(value)}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

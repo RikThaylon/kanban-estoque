@@ -15,7 +15,7 @@ const logger = require('../utils/logger');
 const router = express.Router();
 
 // Tipos que exigem aprovação antes de afetar o estoque
-const TIPOS_REQUEREM_APROVACAO = ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'TRANSFERENCIA', 'DEVOLUCAO'];
+const TIPOS_REQUEREM_APROVACAO = ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCAO'];
 
 // Quem pode aprovar movimentações pendentes
 const PERFIS_APROVADORES = ['admin', 'supervisor_turno', 'gerente_operacoes', 'plant_manager'];
@@ -100,8 +100,9 @@ router.post('/',
   audit('CRIAR_MOVIMENTACAO', 'movimentacoes'),
   [
     body('produto_id').matches(UUID_REGEX).withMessage('produto_id inválido'),
-    body('tipo').isIn(['ENTRADA', 'SAIDA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'TRANSFERENCIA', 'DEVOLUCAO']),
+    body('tipo').isIn(['ENTRADA', 'SAIDA', 'AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCAO']),
     body('quantidade').isFloat({ gt: 0 }).withMessage('Quantidade deve ser > 0'),
+    body('turno').optional({ nullable: true, checkFalsy: true }).isIn(['TURNO_A', 'TURNO_B', 'TURNO_C', 'ADMINISTRATIVO']),
     body('referencia').optional().trim().isLength({ max: 100 }),
     body('numero_documento').optional().trim().isLength({ max: 80 }),
     body('observacao').optional().trim().isLength({ max: 1000 }),
@@ -111,7 +112,7 @@ router.post('/',
     const client = await getClient();
     try {
       await client.query('BEGIN');
-      const { produto_id, tipo, quantidade, referencia, numero_documento, observacao } = req.body;
+      const { produto_id, tipo, quantidade, turno, referencia, numero_documento, observacao } = req.body;
       const qtd = parseFloat(quantidade);
 
       const requerAprovacao = TIPOS_REQUEREM_APROVACAO.includes(tipo);
@@ -131,11 +132,11 @@ router.post('/',
         // PENDENTE: não toca em estoque ainda. Snapshot do estoque atual.
         const movRes = await client.query(
           `INSERT INTO movimentacoes
-             (produto_id, tipo, quantidade, estoque_antes, estoque_depois,
+             (produto_id, tipo, quantidade, turno, estoque_antes, estoque_depois,
               referencia, numero_documento, observacao, status, criado_por)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'PENDENTE',$9)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'PENDENTE',$10)
            RETURNING *`,
-          [produto_id, tipo, qtd, estoqueAntes, estoqueAntes,
+          [produto_id, tipo, qtd, turno || null, estoqueAntes, estoqueAntes,
            referencia, numero_documento, observacao, req.user.id]
         );
         await client.query('COMMIT');
@@ -154,11 +155,11 @@ router.post('/',
 
       const movRes = await client.query(
         `INSERT INTO movimentacoes
-           (produto_id, tipo, quantidade, estoque_antes, estoque_depois,
+           (produto_id, tipo, quantidade, turno, estoque_antes, estoque_depois,
             referencia, numero_documento, observacao, status, criado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'EXECUTADO',$9)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'EXECUTADO',$10)
          RETURNING *`,
-        [produto_id, tipo, qtd, estoqueAntes, estoqueDepois,
+        [produto_id, tipo, qtd, turno || null, estoqueAntes, estoqueDepois,
          referencia, numero_documento, observacao, req.user.id]
       );
 

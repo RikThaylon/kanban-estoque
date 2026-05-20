@@ -40,13 +40,14 @@ describe('Movimentacoes Routes', () => {
   });
 
   describe('POST /api/v1/movimentacoes', () => {
-    const body = { produto_id:'11111111-1111-4111-b111-111111111111', tipo:'ENTRADA', quantidade:10 };
+    const body = { produto_id:'11111111-1111-4111-b111-111111111111', tipo:'ENTRADA', quantidade:10, turno:'TURNO_A' };
 
     it('deve criar ENTRADA direta', async () => {
       _mockClient.query.mockResolvedValueOnce({}).mockResolvedValueOnce({rows:[{estoque_atual:100}]})
         .mockResolvedValueOnce({rows:[{id:'m1',status:'EXECUTADO'}]}).mockResolvedValueOnce({}).mockResolvedValueOnce({});
       const res = await request(app).post('/api/v1/movimentacoes').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
+      expect(_mockClient.query).toHaveBeenCalledWith(expect.stringContaining('turno'), expect.arrayContaining(['TURNO_A']));
     });
     it('deve criar AJUSTE como PENDENTE', async () => {
       _mockClient.query.mockResolvedValueOnce({}).mockResolvedValueOnce({rows:[{estoque_atual:100}]})
@@ -74,6 +75,11 @@ describe('Movimentacoes Routes', () => {
     it('deve validar quantidade > 0', async () => {
       const res = await request(app).post('/api/v1/movimentacoes').set('Authorization',authHeader('admin'))
         .send({...body,quantidade:-5});
+      expect(res.status).toBe(400);
+    });
+    it('deve bloquear TRANSFERENCIA em novos lancamentos', async () => {
+      const res = await request(app).post('/api/v1/movimentacoes').set('Authorization',authHeader('admin'))
+        .send({...body,tipo:'TRANSFERENCIA'});
       expect(res.status).toBe(400);
     });
     it('deve negar eng_processos', async () => {

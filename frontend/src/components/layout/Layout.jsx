@@ -45,6 +45,38 @@ const Layout = () => {
           </div>
         </main>
       </div>
+      <ToastRail />
+    </div>
+  );
+};
+
+const ToastRail = () => {
+  const toasts = useUiStore((state) => state.toasts);
+  const dismissToast = useUiStore((state) => state.dismissToast);
+
+  useEffect(() => {
+    if (!toasts.length) return undefined;
+    const timers = toasts.map((toast) => setTimeout(() => dismissToast(toast.id), 5200));
+    return () => timers.forEach(clearTimeout);
+  }, [dismissToast, toasts]);
+
+  if (!toasts.length) return null;
+
+  return (
+    <div className="fixed right-3 top-20 z-50 grid w-[min(360px,calc(100vw-1.5rem))] gap-2">
+      {toasts.map((toast) => (
+        <button
+          key={toast.id}
+          type="button"
+          onClick={() => dismissToast(toast.id)}
+          className={`rounded-lg border bg-white p-3 text-left shadow-panel transition hover:-translate-y-0.5 ${
+            toast.tipo === 'success' ? 'border-green-200' : toast.tipo === 'warning' ? 'border-amber-200' : 'border-red-200'
+          }`}
+        >
+          <div className="text-sm font-bold text-steel-900">{toast.titulo}</div>
+          <div className="mt-0.5 text-xs text-steel-600">{toast.mensagem}</div>
+        </button>
+      ))}
     </div>
   );
 };

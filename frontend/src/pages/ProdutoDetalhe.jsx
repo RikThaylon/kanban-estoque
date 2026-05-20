@@ -46,6 +46,7 @@ const ProdutoDetalhe = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('kanban');
+  const [chartZoom, setChartZoom] = useState('todos');
   const [abcDraft, setAbcDraft] = useState('');
   const [fornecedorForm, setFornecedorForm] = useState({
     fornecedor_id: '',
@@ -126,12 +127,19 @@ const ProdutoDetalhe = () => {
   const historicoSerrote = useMemo(() => {
     if (!produto?.ultimas_movimentacoes?.length) return [];
     const movs = [...(produto.ultimas_movimentacoes || [])].reverse();
-    const diaBase = new Date(movs[0]?.criado_em).getTime();
     return movs.map(m => ({
-      dia: Math.round((new Date(m.criado_em).getTime() - diaBase) / 86400000),
+      data: m.criado_em,
       estoque: parseFloat(m.estoque_depois),
+      evento: `${m.tipo} - ${formatNumber(m.quantidade)} ${produto.unidade}`,
     }));
   }, [produto]);
+
+  const historicoGrafico = useMemo(() => {
+    if (chartZoom === 'todos') return historicoSerrote;
+    const now = Date.now();
+    const days = chartZoom === 'dia' ? 1 : 7;
+    return historicoSerrote.filter((p) => now - new Date(p.data).getTime() <= days * 86400000);
+  }, [chartZoom, historicoSerrote]);
 
   if (isLoading) return <div className="p-8 text-center animate-pulse">Carregando detalhes do produto...</div>;
   if (!produto) return <div className="p-8 text-center text-red-500">Produto não encontrado.</div>;
@@ -290,7 +298,7 @@ const ProdutoDetalhe = () => {
                       <h3 className="font-bold text-navy-800">Ciclo de reposicao Kanban</h3>
                       <p className="text-sm text-navy-400 mt-0.5">
                         {historicoSerrote.length > 0
-                          ? 'Historico real + ciclos estimados com tooltip por ponto'
+                          ? 'Historico real por data e hora + ciclos estimados com tooltip por ponto'
                           : 'Ciclos estimados com base nos parametros calculados'}
                       </p>
                     </div>
@@ -299,10 +307,30 @@ const ProdutoDetalhe = () => {
                       <div>LT: <strong>{safe(produto.lead_time_previsto_dias, 0)} dias</strong></div>
                     </div>
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      ['todos', 'Todo historico'],
+                      ['7d', 'Ultimos 7 dias'],
+                      ['dia', 'Zoom do dia'],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setChartZoom(value)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors ${
+                          chartZoom === value
+                            ? 'bg-red-600 border-red-600 text-white'
+                            : 'bg-white border-surface-200 text-navy-600 hover:bg-surface-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <KanbanSawtoothChart
                     cmd={cmd} leadTime={lt} es={es} pr={pr} emax={emax}
                     ciclos={6}
-                    historico={historicoSerrote}
+                    historico={historicoGrafico}
                     height={280}
                   />
                 </>
@@ -393,7 +421,10 @@ const ProdutoDetalhe = () => {
                   {produto.ultimas_movimentacoes?.length > 0 ? (
                     produto.ultimas_movimentacoes.map(m => (
                       <tr key={m.id} className="hover:bg-surface-50">
-                        <td className="p-4 text-sm text-navy-600">{new Date(m.criado_em).toLocaleDateString('pt-BR')}</td>
+                        <td className="p-4 text-sm text-navy-600">
+                          {new Date(m.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                          {m.turno && <div className="text-xs text-navy-400">{m.turno.replace('TURNO_', 'Turno ')}</div>}
+                        </td>
                         <td className="p-4">
                           <span className={`text-xs font-bold px-2 py-1 rounded ${
                             ['ENTRADA', 'AJUSTE_POSITIVO', 'DEVOLUCAO'].includes(m.tipo)
