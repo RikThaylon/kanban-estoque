@@ -15,6 +15,50 @@ Sistema web de **controle de estoque com metodologia Kanban** — cálculo de po
 
 ---
 
+## Principais fluxos do sistema
+
+### Produtos e estoque inicial
+
+O catálogo separa duas intenções operacionais:
+
+- **Cadastrar produto**: cria o cadastro técnico do item, seus parâmetros de custo, unidade, localização, nível de serviço e dados iniciais de Kanban.
+- **Inserir item existente**: usado quando o material já existe fisicamente no estoque e veio de planilha, inventário ou outro método anterior. O sistema cria o produto e registra uma **entrada inicial de estoque** com turno e documento de referência.
+
+Essa separação evita misturar cadastro mestre com movimentação real de estoque, mantendo rastreabilidade desde a implantação.
+
+### Movimentações
+
+As movimentações exigem produto, tipo, quantidade e **turno operacional**. Os tipos disponíveis para novos lançamentos são:
+
+- Entrada
+- Saída
+- Ajuste positivo
+- Ajuste negativo
+- Devolução
+
+Transferências foram retiradas dos novos lançamentos para manter o fluxo mais simples e auditável. Registros históricos continuam preservados caso existam no banco.
+
+### Kanban e gráficos
+
+O cadastro pode usar CMD (consumo médio diário) e lead time estimado para iniciar o cálculo. Conforme o uso real cresce, o sistema recalcula parâmetros com histórico de movimentações e pedidos.
+
+O gráfico de ciclo Kanban usa eixo temporal real com data e hora. Se houver mais de uma saída no mesmo dia, os pontos aparecem como eventos separados; o usuário pode usar o controle de zoom/brush para investigar detalhes por período.
+
+### Aprovações e notificações
+
+Pedidos e movimentações pendentes aparecem no sino de notificação com contador em vermelho. Eventos recebidos via WebSocket também geram popups de feedback para melhorar a fluidez do processo, por exemplo:
+
+- pedido criado aguardando aprovação;
+- pedido aprovado e liberado para compra;
+- movimentação pendente, aprovada ou rejeitada;
+- alertas operacionais de estoque.
+
+### Configurações administrativas
+
+Administradores podem ajustar limites de aprovação, nível de serviço padrão, ciclos iniciais de estimativa e permissões por cargo. Essas configurações ficam centralizadas para reduzir alterações manuais no código.
+
+---
+
 ## Como rodar — modo local sem Docker
 
 > **Pré-requisitos:** Node.js ≥ 20 e PostgreSQL ≥ 15 instalados nativamente.
