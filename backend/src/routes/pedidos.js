@@ -148,14 +148,39 @@ router.post('/', authenticate,
         maquina_id,
       } = req.body;
       const numero = await gerarNumeroPedido();
-      const custoTotal = preco_unitario ? (preco_unitario * quantidade_pedida) : null;
+      const quantidadePedido = Number(quantidade_pedida);
+      let fornecedorPedidoId = fornecedor_id || null;
+      let precoPedido = preco_unitario !== undefined && preco_unitario !== null ? Number(preco_unitario) : null;
 
       if (fornecedor_id && !['admin', 'comprador'].includes(req.user.perfil)) {
         throw new AppError('Apenas comprador escolhe fornecedor da solicitacao', 403, 'FORNECEDOR_RESTRITO_COMPRADOR');
       }
 
       const kpRes = await query('SELECT faixa_atual, ponto_reposicao FROM kanban_parametros WHERE produto_id = $1', [produto_id]);
-      const prodRes = await query('SELECT estoque_atual FROM produtos WHERE id = $1', [produto_id]);
+      const prodRes = await query('SELECT estoque_atual, custo_unitario FROM produtos WHERE id = $1', [produto_id]);
+      if (prodRes.rows.length === 0) throw new NotFoundError('Produto');
+
+      if (!fornecedorPedidoId) {
+        const fornecedorRes = await query(`
+          SELECT pf.fornecedor_id, pf.preco_acordado
+          FROM produto_fornecedor pf
+          JOIN fornecedores f ON f.id = pf.fornecedor_id AND f.ativo = true
+          WHERE pf.produto_id = $1 AND pf.ativo = true
+          ORDER BY pf.prioridade ASC, pf.lead_time_nominal_dias ASC NULLS LAST
+          LIMIT 1
+        `, [produto_id]);
+
+        fornecedorPedidoId = fornecedorRes.rows[0]?.fornecedor_id || null;
+        if (precoPedido === null && fornecedorRes.rows[0]?.preco_acordado !== undefined) {
+          precoPedido = Number(fornecedorRes.rows[0].preco_acordado);
+        }
+      }
+
+      if (precoPedido === null && prodRes.rows[0]?.custo_unitario !== undefined) {
+        precoPedido = Number(prodRes.rows[0].custo_unitario);
+      }
+
+      const custoTotal = precoPedido !== null ? precoPedido * quantidadePedido : null;
 
       // Roteamento por maquina: item em N maquinas exige escolha explicita.
       const maquinasRes = await query(`
@@ -190,7 +215,7 @@ router.post('/', authenticate,
       const result = await query(
         `INSERT INTO pedidos_compra (numero, produto_id, fornecedor_id, quantidade_pedida, preco_unitario, custo_total, status, faixa_no_momento, estoque_no_momento, pr_no_momento, data_prevista, departamento_id, maquina_id, aprovador_n1_id, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
-        [numero, produto_id, fornecedor_id, quantidade_pedida, preco_unitario, custoTotal, status,
+        [numero, produto_id, fornecedorPedidoId, quantidadePedido, precoPedido, custoTotal, status,
          kpRes.rows[0]?.faixa_atual, prodRes.rows[0]?.estoque_atual, kpRes.rows[0]?.ponto_reposicao,
          data_prevista, deptId, vinculoMaquina.maquina_id, aprovadorN1Id, req.user.id]
       );
@@ -446,6 +471,9 @@ router.post('/:id/receber', authenticate,
       // Recalcular Kanban
       const io = req.app.get('io');
       dispatchRecalculoKanban(recalcularKanban, pedido.produto_id, io, logger);
+      if (io) {
+        io.emit('pedido:status', { pedido_id: id, numero: pedido.numero, status_novo: novoStatus });
+      }
 
       res.json({ message: 'Recebimento registrado', status: novoStatus, quantidade_total_recebida: totalRecebido });
     } catch (err) {

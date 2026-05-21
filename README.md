@@ -46,6 +46,15 @@ O gráfico de ciclo Kanban usa eixo temporal real com data e hora. Se houver mai
 
 ### Aprovações e notificações
 
+O fluxo principal de compra é:
+
+1. O facilitador cria a solicitação vinculando produto e máquina.
+2. A máquina identifica o departamento e o supervisor responsável.
+3. A solicitação vai para o supervisor quando fica abaixo do limite configurado.
+4. Acima do limite do supervisor, vai para o gerente de operações.
+5. Acima do limite do gerente, escala para diretoria/plant manager.
+6. Quando aprovada, cai para o comprador emitir a OC externa e escolher/confirmar fornecedor.
+
 Pedidos e movimentações pendentes aparecem no sino de notificação com contador em vermelho. Eventos recebidos via WebSocket também geram popups de feedback para melhorar a fluidez do processo, por exemplo:
 
 - pedido criado aguardando aprovação;
@@ -55,7 +64,15 @@ Pedidos e movimentações pendentes aparecem no sino de notificação com contad
 
 ### Configurações administrativas
 
-Administradores podem ajustar limites de aprovação, nível de serviço padrão, ciclos iniciais de estimativa e permissões por cargo. Essas configurações ficam centralizadas para reduzir alterações manuais no código.
+Administradores podem ajustar limites de aprovação, nível de serviço padrão, ciclos iniciais de estimativa, turnos operacionais e permissões por cargo. Essas configurações ficam centralizadas para reduzir alterações manuais no código.
+
+Os turnos iniciais cadastrados pelo sistema são:
+
+- `1T`: 06:00-14:00
+- `2T`: 14:01-22:00
+- `3T`: 22:01-05:59
+
+Eles ficam em `configuracoes_sistema` e podem ser alterados pelo admin na tela de Configurações.
 
 ---
 

@@ -41,10 +41,20 @@ export const useSocket = () => {
       queryClient.invalidateQueries({ queryKey: ['pedido', data.pedido_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      const mensagens = {
+        AGUARDANDO_APROVACAO: 'Nova solicitacao aguardando aprovacao do supervisor.',
+        AGUARDANDO_GERENTE: 'Solicitacao escalada para gerente de operacoes.',
+        AGUARDANDO_DIRETORIA: 'Solicitacao escalada para diretoria/plant manager.',
+        APROVADO: 'Pedido aprovado e liberado para o comprador emitir.',
+        EMITIDO: 'Compra emitida e aguardando recebimento.',
+        RECEBIDO: 'Pedido recebido e estoque atualizado.',
+        REJEITADO: 'Pedido rejeitado pelo aprovador.',
+        CANCELADO: 'Pedido cancelado.',
+      };
       pushToast({
-        tipo: ['APROVADO', 'EMITIDO'].includes(data?.status_novo) ? 'success' : 'info',
+        tipo: ['APROVADO', 'EMITIDO', 'RECEBIDO'].includes(data?.status_novo) ? 'success' : data?.status_novo === 'REJEITADO' ? 'warning' : 'info',
         titulo: `Pedido ${data?.numero || ''}`.trim(),
-        mensagem: `Status atualizado para ${(data?.status_novo || '').replace(/_/g, ' ').toLowerCase()}.`,
+        mensagem: mensagens[data?.status_novo] || `Status atualizado para ${(data?.status_novo || '').replace(/_/g, ' ').toLowerCase()}.`,
       });
     };
 

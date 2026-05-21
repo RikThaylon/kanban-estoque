@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Save, Settings, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Clock, Save, Settings, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 import { formatMoney } from '../utils/formatters';
 import { PAGINA_LABELS, PAGINAS_SISTEMA, PERFIL_LABELS } from '../utils/permissoes';
@@ -20,6 +20,7 @@ const Configuracoes = () => {
     editar_curva_abc: [],
     paginas: {},
   });
+  const [turnos, setTurnos] = useState([]);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
 
@@ -36,6 +37,11 @@ const Configuracoes = () => {
   const { data: kanbanData, isLoading: carregandoKanban } = useQuery({
     queryKey: ['configuracoes', 'kanban'],
     queryFn: async () => (await api.get('/configuracoes/kanban')).data,
+  });
+
+  const { data: turnosData, isLoading: carregandoTurnos } = useQuery({
+    queryKey: ['configuracoes', 'turnos'],
+    queryFn: async () => (await api.get('/configuracoes/turnos')).data,
   });
 
   useEffect(() => {
@@ -65,6 +71,12 @@ const Configuracoes = () => {
       });
     }
   }, [kanbanData]);
+
+  useEffect(() => {
+    if (turnosData?.turnos) {
+      setTurnos(turnosData.turnos);
+    }
+  }, [turnosData]);
 
   const salvar = useMutation({
     mutationFn: () => api.patch('/configuracoes/pedidos', {
@@ -115,6 +127,19 @@ const Configuracoes = () => {
     },
   });
 
+  const salvarTurnos = useMutation({
+    mutationFn: () => api.patch('/configuracoes/turnos', { turnos }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configuracoes', 'turnos'] });
+      setErro('');
+      setSucesso('Turnos salvos.');
+    },
+    onError: (e) => {
+      setSucesso('');
+      setErro(e.message || 'Erro ao salvar turnos');
+    },
+  });
+
   const supervisor = Number(form.limite_supervisor) || 0;
   const gerente = Number(form.limite_gerente) || 0;
   const invalido = supervisor < 0 || gerente < 0 || gerente < supervisor;
@@ -155,6 +180,10 @@ const Configuracoes = () => {
         },
       };
     });
+  };
+
+  const updateTurno = (index, campo, valor) => {
+    setTurnos((prev) => prev.map((turno, i) => (i === index ? { ...turno, [campo]: valor } : turno)));
   };
 
   return (
@@ -281,6 +310,69 @@ const Configuracoes = () => {
             <button type="submit" disabled={salvarKanban.isPending || carregandoKanban} className="btn-primary justify-center">
               <Save className="w-4 h-4" />
               {salvarKanban.isPending ? 'Salvando...' : 'Salvar Kanban'}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <form
+        onSubmit={(event) => { event.preventDefault(); setErro(''); setSucesso(''); salvarTurnos.mutate(); }}
+        className="card p-0 overflow-hidden"
+      >
+        <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
+          <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-navy-700" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-bold text-navy-800">Turnos operacionais</h2>
+            <p className="text-xs text-navy-500">Usados nas entradas e saidas de estoque.</p>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {turnos.map((turno, index) => (
+              <div key={turno.id || index} className="rounded-md border border-surface-200 bg-white p-3">
+                <label className="label">Turno</label>
+                <input
+                  value={turno.nome}
+                  onChange={(e) => updateTurno(index, 'nome', e.target.value)}
+                  className="input font-bold"
+                  disabled={carregandoTurnos}
+                  required
+                />
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <div>
+                    <label className="label">Inicio</label>
+                    <input
+                      type="time"
+                      value={turno.inicio}
+                      onChange={(e) => updateTurno(index, 'inicio', e.target.value)}
+                      className="input font-mono"
+                      disabled={carregandoTurnos}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Fim</label>
+                    <input
+                      type="time"
+                      value={turno.fim}
+                      onChange={(e) => updateTurno(index, 'fim', e.target.value)}
+                      className="input font-mono"
+                      disabled={carregandoTurnos}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <button type="submit" disabled={salvarTurnos.isPending || carregandoTurnos} className="btn-primary justify-center">
+              <Save className="w-4 h-4" />
+              {salvarTurnos.isPending ? 'Salvando...' : 'Salvar turnos'}
             </button>
           </div>
         </div>

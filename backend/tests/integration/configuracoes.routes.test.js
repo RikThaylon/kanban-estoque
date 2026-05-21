@@ -62,6 +62,26 @@ describe('Configuracoes Routes', () => {
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['permissoes.cadastrar_item', 'comprador']);
   });
 
+  it('PATCH /api/v1/configuracoes/turnos deve salvar turnos operacionais', async () => {
+    const turnos = [
+      { id: '1T', nome: '1T', inicio: '06:00', fim: '14:00' },
+      { id: '2T', nome: '2T', inicio: '14:01', fim: '22:00' },
+      { id: '3T', nome: '3T', inicio: '22:01', fim: '05:59' },
+    ];
+
+    const res = await request(app)
+      .patch('/api/v1/configuracoes/turnos')
+      .set('Authorization', authHeader('admin'))
+      .send({ turnos });
+
+    expect(res.status).toBe(200);
+    expect(res.body.turnos).toEqual(turnos);
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE configuracoes_sistema'),
+      ['turnos.lista', JSON.stringify(turnos)]
+    );
+  });
+
   it('salvarConfiguracoes deve criar chave nova sem exigir constraint ON CONFLICT', async () => {
     query
       .mockResolvedValueOnce({ rows: [], rowCount: 0 })

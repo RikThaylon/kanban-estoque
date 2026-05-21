@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, CheckCircle, X, Check, Send, PackageCheck, Clock, Eye, Ban } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { useUiStore } from '../stores/uiStore';
 import { formatMoney, formatDate } from '../utils/formatters';
 import { isReadOnlyPerfil } from '../utils/permissoes';
 
@@ -26,6 +27,7 @@ const PERFIS_APROVADORES_N3 = ['admin', 'plant_manager'];
 
 const Pedidos = () => {
   const { user } = useAuthStore();
+  const pushToast = useUiStore(state => state.pushToast);
   const readOnly = isReadOnlyPerfil(user?.perfil);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -52,7 +54,17 @@ const Pedidos = () => {
   // Mutations
   const aprovar = useMutation({
     mutationFn: (id) => api.post(`/pedidos/${id}/aprovar`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({
+        tipo: res.data?.status === 'APROVADO' ? 'success' : 'info',
+        titulo: `Pedido ${res.data?.numero || ''}`.trim(),
+        mensagem: res.data?.status === 'APROVADO'
+          ? 'Aprovado e liberado para o comprador emitir a compra.'
+          : `Escalado para ${(res.data?.status || '').replace(/_/g, ' ').toLowerCase()}.`,
+      });
+    },
   });
 
   const emitir = useMutation({
@@ -63,19 +75,27 @@ const Pedidos = () => {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({ tipo: 'success', titulo: 'Compra emitida', mensagem: 'Pedido enviado para acompanhamento e recebimento.' });
       setOpenEmitir(null);
     },
   });
 
   const cancelar = useMutation({
     mutationFn: (id) => api.patch(`/pedidos/${id}/status`, { status: 'CANCELADO' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pedidos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({ tipo: 'warning', titulo: 'Pedido cancelado', mensagem: 'A fila de compras foi atualizada.' });
+    },
   });
 
   const rejeitar = useMutation({
     mutationFn: ({ id, motivo }) => api.post(`/pedidos/${id}/rejeitar`, { motivo }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({ tipo: 'warning', titulo: 'Pedido rejeitado', mensagem: 'O solicitante verá o retorno na fila de pedidos.' });
       setOpenRejeitar(null);
     },
   });
@@ -402,6 +422,7 @@ const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
 const NovoPedidoModal = ({ template, onClose }) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const pushToast = useUiStore(state => state.pushToast);
   const podeEscolherFornecedor = ['admin', 'comprador'].includes(user?.perfil);
   const [busca, setBusca] = useState(template?.produto_codigo ? `${template.produto_codigo} — ${template.produto_nome}` : '');
   const [produtoId, setProdutoId] = useState(template?.produto_id || '');
@@ -473,8 +494,19 @@ const NovoPedidoModal = ({ template, onClose }) => {
       data_prevista: dataPrevista || undefined,
       maquina_id: maquinaId || undefined,
     }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      const status = res.data?.status || '';
+      pushToast({
+        tipo: status === 'RASCUNHO' ? 'info' : 'success',
+        titulo: `Pedido ${res.data?.numero || ''}`.trim(),
+        mensagem: status === 'AGUARDANDO_APROVACAO'
+          ? 'Solicitacao enviada para aprovacao do supervisor.'
+          : status === 'AGUARDANDO_GERENTE'
+            ? 'Solicitacao enviada para aprovacao do gerente de operacoes.'
+            : 'Pedido criado com sucesso.',
+      });
       onClose();
     },
     onError: (e) => setErro(e.message || 'Erro ao criar pedido'),
@@ -688,6 +720,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
 
 const ReceberPedidoModal = ({ pedido, onClose }) => {
   const queryClient = useQueryClient();
+  const pushToast = useUiStore(state => state.pushToast);
   const restante = parseFloat(pedido.quantidade_pedida) - parseFloat(pedido.quantidade_recebida || 0);
   const [quantidade, setQuantidade] = useState(restante);
   const [numeroNF, setNumeroNF] = useState('');
@@ -703,6 +736,12 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
       queryClient.invalidateQueries({ queryKey: ['produtos'] });
       queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      pushToast({
+        tipo: 'success',
+        titulo: 'Recebimento registrado',
+        mensagem: 'Estoque atualizado e Kanban recalculando em segundo plano.',
+      });
       onClose();
     },
     onError: (e) => setErro(e.message || 'Erro ao receber pedido'),

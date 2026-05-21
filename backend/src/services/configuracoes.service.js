@@ -18,6 +18,11 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
+  'turnos.lista': JSON.stringify([
+    { id: '1T', nome: '1T', inicio: '06:00', fim: '14:00' },
+    { id: '2T', nome: '2T', inicio: '14:01', fim: '22:00' },
+    { id: '3T', nome: '3T', inicio: '22:01', fim: '05:59' },
+  ]),
 };
 
 const PAGINAS_SISTEMA = [
@@ -52,6 +57,32 @@ function parsePerfis(valor) {
 
 function serializePerfis(perfis) {
   return [...new Set(parsePerfis(perfis))].join(',');
+}
+
+function normalizarTurnos(valor) {
+  const fallback = JSON.parse(CONFIG_DEFAULTS['turnos.lista']);
+  let turnos = valor;
+
+  if (typeof valor === 'string') {
+    try {
+      turnos = JSON.parse(valor);
+    } catch {
+      return fallback;
+    }
+  }
+
+  if (!Array.isArray(turnos)) return fallback;
+
+  const normalizados = turnos
+    .map((turno) => ({
+      id: String(turno?.id || '').trim().slice(0, 20),
+      nome: String(turno?.nome || turno?.id || '').trim().slice(0, 40),
+      inicio: String(turno?.inicio || '').trim(),
+      fim: String(turno?.fim || '').trim(),
+    }))
+    .filter((turno) => turno.id && turno.nome && /^\d{2}:\d{2}$/.test(turno.inicio) && /^\d{2}:\d{2}$/.test(turno.fim));
+
+  return normalizados.length ? normalizados : fallback;
 }
 
 async function getConfiguracao(chave, fallback = null) {
@@ -130,6 +161,11 @@ async function salvarConfiguracoes(configuracoes, usuarioId) {
   }
 }
 
+async function getTurnosOperacionais() {
+  const valor = await getConfiguracao('turnos.lista', CONFIG_DEFAULTS['turnos.lista']);
+  return normalizarTurnos(valor);
+}
+
 module.exports = {
   CONFIG_DEFAULTS,
   PERMISSOES_CHAVES,
@@ -137,7 +173,9 @@ module.exports = {
   getConfiguracao,
   getLimitesAprovacaoPedido,
   getKanbanDefaults,
+  getTurnosOperacionais,
   getPermissoesOperacionais,
+  normalizarTurnos,
   perfilPode,
   serializePerfis,
   salvarConfiguracoes,

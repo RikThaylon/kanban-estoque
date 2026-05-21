@@ -8,8 +8,10 @@ const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
   getKanbanDefaults,
+  getTurnosOperacionais,
   getPermissoesOperacionais,
   PAGINAS_SISTEMA,
+  normalizarTurnos,
   salvarConfiguracoes,
   serializePerfis,
 } = require('../services/configuracoes.service');
@@ -93,6 +95,45 @@ router.patch('/kanban',
         nivel_servico_padrao: nivelServicoPadrao,
         ciclos_estimativa_inicial: ciclosEstimativaInicial,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get('/turnos', authenticate, async (req, res, next) => {
+  try {
+    res.json({ turnos: await getTurnosOperacionais() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/turnos',
+  authenticate,
+  authorize('admin'),
+  audit('ATUALIZAR_CONFIGURACOES_TURNOS', 'configuracoes_sistema'),
+  [
+    body('turnos').isArray({ min: 1, max: 12 }).withMessage('turnos deve ser uma lista de 1 a 12 itens'),
+    body('turnos.*.id').trim().matches(/^[A-Za-z0-9_-]{1,20}$/).withMessage('Codigo do turno invalido'),
+    body('turnos.*.nome').trim().isLength({ min: 1, max: 40 }).withMessage('Nome do turno deve ter 1-40 caracteres'),
+    body('turnos.*.inicio').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Inicio deve estar em HH:mm'),
+    body('turnos.*.fim').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Fim deve estar em HH:mm'),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const turnos = normalizarTurnos(req.body.turnos);
+      const ids = new Set(turnos.map((turno) => turno.id));
+      if (ids.size !== turnos.length) {
+        throw new AppError('Cada turno precisa ter um codigo unico', 400, 'TURNO_DUPLICADO');
+      }
+
+      await salvarConfiguracoes({
+        'turnos.lista': JSON.stringify(turnos),
+      }, req.user.id);
+
+      res.json({ turnos });
     } catch (err) {
       next(err);
     }

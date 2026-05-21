@@ -89,6 +89,24 @@ describe('Pedidos Routes', () => {
       expect(res.status).toBe(201); expect(res.body.status).toBe('AGUARDANDO_GERENTE');
     });
 
+    it('facilitador deve criar solicitacao sem escolher fornecedor usando fornecedor principal do produto', async () => {
+      query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
+        .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
+        .mockResolvedValueOnce({rows:[{estoque_atual:30,custo_unitario:12}]})
+        .mockResolvedValueOnce({rows:[{fornecedor_id:'33333333-3333-4333-b333-333333333333',preco_acordado:10}]})
+        .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:'ped-4',status:'AGUARDANDO_APROVACAO'}]});
+
+      const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('facilitador'))
+        .send({produto_id:body.produto_id,quantidade_pedida:100});
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
+      expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO pedidos_compra'), expect.arrayContaining(['33333333-3333-4333-b333-333333333333', 10, 1000]));
+    });
+
     it('deve validar produto_id UUID', async () => {
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('admin'))
         .send({...body,produto_id:'bad'});

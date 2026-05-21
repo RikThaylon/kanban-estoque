@@ -40,14 +40,14 @@ describe('Movimentacoes Routes', () => {
   });
 
   describe('POST /api/v1/movimentacoes', () => {
-    const body = { produto_id:'11111111-1111-4111-b111-111111111111', tipo:'ENTRADA', quantidade:10, turno:'TURNO_A' };
+    const body = { produto_id:'11111111-1111-4111-b111-111111111111', tipo:'ENTRADA', quantidade:10, turno:'1T' };
 
     it('deve criar ENTRADA direta', async () => {
       _mockClient.query.mockResolvedValueOnce({}).mockResolvedValueOnce({rows:[{estoque_atual:100}]})
         .mockResolvedValueOnce({rows:[{id:'m1',status:'EXECUTADO'}]}).mockResolvedValueOnce({}).mockResolvedValueOnce({});
       const res = await request(app).post('/api/v1/movimentacoes').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
-      expect(_mockClient.query).toHaveBeenCalledWith(expect.stringContaining('turno'), expect.arrayContaining(['TURNO_A']));
+      expect(_mockClient.query).toHaveBeenCalledWith(expect.stringContaining('turno'), expect.arrayContaining(['1T']));
     });
     it('deve criar AJUSTE como PENDENTE', async () => {
       _mockClient.query.mockResolvedValueOnce({}).mockResolvedValueOnce({rows:[{estoque_atual:100}]})

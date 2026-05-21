@@ -9,12 +9,6 @@ import { useAuthStore } from '../stores/authStore';
 import { formatMoney, formatNumber } from '../utils/formatters';
 
 const PERFIS_GESTAO = ['admin', 'gerente_operacoes', 'supervisor_turno'];
-const TURNOS = [
-  { value: 'TURNO_A', label: 'Turno A' },
-  { value: 'TURNO_B', label: 'Turno B' },
-  { value: 'TURNO_C', label: 'Turno C' },
-  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
-];
 
 // ─── Tooltip helper ────────────────────────────────────────────────────────
 const Tooltip = ({ text }) => (
@@ -298,6 +292,11 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     preco_acordado_fornecedor: '',
     lead_time_fornecedor: '',
   });
+  const { data: turnosData, isLoading: carregandoTurnos } = useQuery({
+    queryKey: ['configuracoes', 'turnos'],
+    queryFn: async () => (await api.get('/configuracoes/turnos')).data,
+  });
+  const turnos = turnosData?.turnos || [];
 
   const [erro, setErro] = useState('');
 
@@ -508,10 +507,11 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                     className="input"
                     value={form.turno_inicial}
                     onChange={e => f('turno_inicial', e.target.value)}
+                    disabled={carregandoTurnos}
                     required
                   >
                     <option value="">Selecionar</option>
-                    {TURNOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    {turnos.map(t => <option key={t.id} value={t.id}>{t.nome} ({t.inicio}-{t.fim})</option>)}
                   </select>
                 </div>
                 <div>

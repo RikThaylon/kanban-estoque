@@ -14,12 +14,18 @@ const TIPOS = [
   { value: 'DEVOLUCAO', label: 'Devolução', icon: ArrowDownCircle, color: 'text-teal-600', bg: 'bg-teal-50' },
 ];
 
-const TURNOS = [
-  { value: 'TURNO_A', label: 'Turno A' },
-  { value: 'TURNO_B', label: 'Turno B' },
-  { value: 'TURNO_C', label: 'Turno C' },
-  { value: 'ADMINISTRATIVO', label: 'Administrativo' },
-];
+const TURNOS_LEGADO = {
+  TURNO_A: 'Turno A',
+  TURNO_B: 'Turno B',
+  TURNO_C: 'Turno C',
+  ADMINISTRATIVO: 'Administrativo',
+};
+
+const formatTurno = (valor, turnos = []) => {
+  if (!valor) return '—';
+  const turno = turnos.find((t) => t.id === valor);
+  return turno ? `${turno.nome} (${turno.inicio}-${turno.fim})` : (TURNOS_LEGADO[valor] || valor);
+};
 
 const STATUS_BADGE = {
   PENDENTE: 'bg-amber-100 text-amber-800',
@@ -35,6 +41,11 @@ const Movimentacoes = () => {
   const { user } = useAuthStore();
   const isAprovador = PERFIS_APROVADORES.includes(user?.perfil);
   const readOnly = isReadOnlyPerfil(user?.perfil);
+  const { data: turnosData } = useQuery({
+    queryKey: ['configuracoes', 'turnos'],
+    queryFn: async () => (await api.get('/configuracoes/turnos')).data,
+  });
+  const turnos = turnosData?.turnos || [];
 
   const [tab, setTab] = useState('todas'); // 'todas' | 'pendentes'
   const [filterTipo, setFilterTipo] = useState('');
@@ -176,7 +187,7 @@ const Movimentacoes = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs font-bold text-navy-500 whitespace-nowrap">
-                      {m.turno ? m.turno.replace('TURNO_', 'Turno ') : '—'}
+                      {formatTurno(m.turno, turnos)}
                     </td>
                     <td className="px-4 py-3 text-right font-mono">{formatNumber(m.quantidade)} {m.unidade}</td>
                     <td className="px-4 py-3 text-right font-mono text-xs text-navy-500">
@@ -253,6 +264,11 @@ const NovaMovimentacaoModal = ({ onClose }) => {
   const [observacao, setObservacao] = useState('');
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
+  const { data: turnosData, isLoading: carregandoTurnos } = useQuery({
+    queryKey: ['configuracoes', 'turnos'],
+    queryFn: async () => (await api.get('/configuracoes/turnos')).data,
+  });
+  const turnos = turnosData?.turnos || [];
 
   const { data: produtosRes } = useQuery({
     queryKey: ['produtos', 'busca', busca],
@@ -367,9 +383,9 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
           <div>
             <label className="block text-sm font-medium text-navy-700 mb-1">Turno</label>
-            <select value={turno} onChange={e => setTurno(e.target.value)} className="input w-full" required>
+            <select value={turno} onChange={e => setTurno(e.target.value)} className="input w-full" required disabled={carregandoTurnos}>
               <option value="">Selecionar turno</option>
-              {TURNOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {turnos.map(t => <option key={t.id} value={t.id}>{t.nome} ({t.inicio}-{t.fim})</option>)}
             </select>
           </div>
 
