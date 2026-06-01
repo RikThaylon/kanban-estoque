@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle, Plus, Save } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
@@ -149,7 +149,17 @@ const ProdutoDetalhe = () => {
   const es = parseFloat(produto.estoque_seguranca) || 0;
   const pr = parseFloat(produto.ponto_reposicao) || 0;
   const emax = parseFloat(produto.estoque_maximo) || 0;
+  const estoqueAtual = parseFloat(produto.estoque_atual) || 0;
+  const diasEstoqueRestante = cmd > 0 ? Math.round((estoqueAtual / cmd) * 10) / 10 : null;
+  const diasAteReposicao = cmd > 0 && pr > 0 ? Math.max(0, Math.round(((estoqueAtual - pr) / cmd) * 10) / 10) : null;
   const emaxDias = cmd > 0 && emax > 0 ? Math.round((emax / cmd) * 10) / 10 : null;
+  const tempoTone = diasEstoqueRestante === null
+    ? 'border-surface-200 bg-surface-50 text-navy-700'
+    : estoqueAtual <= es
+      ? 'border-red-200 bg-red-50 text-red-800'
+      : estoqueAtual <= pr
+        ? 'border-amber-200 bg-amber-50 text-amber-800'
+        : 'border-emerald-200 bg-emerald-50 text-emerald-800';
   const podeEditarAbc = user?.perfil === 'admin' || (permissoes?.editar_curva_abc || ['eng_producao']).includes(user?.perfil);
   const abcValue = abcDraft || produto.classificacao_abc || '';
 
@@ -185,10 +195,25 @@ const ProdutoDetalhe = () => {
 
       {/* Main Info Card */}
       <div className="card p-4 sm:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
           <div className="bg-surface-50 p-4 rounded-xl border border-surface-200">
             <p className="text-sm text-navy-500 font-medium mb-1">Estoque Atual</p>
             <div className="text-3xl font-bold text-navy-800">{formatNumber(produto.estoque_atual)} <span className="text-base font-normal text-navy-400">{produto.unidade}</span></div>
+          </div>
+          <div className={`p-4 rounded-xl border ${tempoTone}`}>
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <p className="text-sm font-bold">Tempo restante</p>
+              <Clock3 className="w-5 h-5 opacity-70" />
+            </div>
+            <div className="text-3xl font-black leading-none">
+              {diasEstoqueRestante !== null ? formatNumber(diasEstoqueRestante) : '--'}
+              <span className="text-sm font-bold ml-1">dias</span>
+            </div>
+            <p className="text-xs mt-2 opacity-80">
+              {diasAteReposicao !== null
+                ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias ate o PR` : 'No ponto de reposicao ou abaixo')
+                : 'Informe CMD para calcular'}
+            </p>
           </div>
           <div>
             <p className="text-sm text-navy-500 font-medium mb-1">Preço de Compra</p>
