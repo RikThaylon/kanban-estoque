@@ -7,7 +7,6 @@ module.exports = {
     'src/**/*.js',
     '!src/server.js',
     '!src/config/migrate.js',
-    '!src/config/seed.js',
     '!src/config/reset.js',
   ],
   coverageDirectory: 'coverage',

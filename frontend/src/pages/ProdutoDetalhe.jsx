@@ -149,6 +149,7 @@ const ProdutoDetalhe = () => {
   const es = parseFloat(produto.estoque_seguranca) || 0;
   const pr = parseFloat(produto.ponto_reposicao) || 0;
   const emax = parseFloat(produto.estoque_maximo) || 0;
+  const emaxDias = cmd > 0 && emax > 0 ? Math.round((emax / cmd) * 10) / 10 : null;
   const podeEditarAbc = user?.perfil === 'admin' || (permissoes?.editar_curva_abc || ['eng_producao']).includes(user?.perfil);
   const abcValue = abcDraft || produto.classificacao_abc || '';
 
@@ -284,6 +285,9 @@ const ProdutoDetalhe = () => {
                 title="Estoque Máximo (Emax)"
                 value={formatNumber(produto.estoque_maximo)}
                 formula="ES + EOQ"
+                tooltip={emaxDias !== null
+                  ? `Equivale a aproximadamente ${emaxDias} dias no CMD atual. Dias = Emax / CMD.`
+                  : 'Dias de cobertura aparecem quando houver CMD calculado ou informado.'}
               />
             </div>
           )}

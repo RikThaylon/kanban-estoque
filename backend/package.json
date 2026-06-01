@@ -7,7 +7,6 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "migrate": "node src/config/migrate.js",
-    "seed": "node src/config/seed.js",
     "reset": "node src/config/reset.js",
     "test": "jest --runInBand --forceExit",
     "test:unit": "jest --testPathPattern=tests/unit",

@@ -109,6 +109,12 @@ const Movimentacoes = () => {
         )}
       </div>
 
+      <div className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-navy-600">
+        <strong className="text-navy-800">Fluxo:</strong> entradas e saidas executadas atualizam o estoque na hora.
+        Ajustes, devolucoes e transferencias ficam pendentes quando exigem aprovacao; so alteram o saldo depois da aprovacao.
+        Recebimento de compra tambem entra como movimentacao de entrada.
+      </div>
+
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-surface-200">
         <button

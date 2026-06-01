@@ -2,7 +2,7 @@
 # Kanban Estoque — Setup local (sem Docker)
 # ══════════════════════════════════════════════════════════
 # Faz: checa pré-requisitos, instala dependências, cria DB,
-# aplica migrations e seed.
+# aplica migrations de schema.
 #
 # Uso (PowerShell na raiz do projeto):
 #   powershell -ExecutionPolicy Bypass -File .\scripts\setup-local.ps1
@@ -126,16 +126,11 @@ npm install --prefix frontend
 if ($LASTEXITCODE -ne 0) { Write-Fail "npm install (frontend) falhou"; exit 1 }
 Write-Ok "Dependencias instaladas"
 
-# ── 6. Aplica migrations e seed ─────────────────────────────
+# ── 6. Aplica migrations ────────────────────────────────────
 Write-Step "Aplicando schema (migrations)"
 npm run db:migrate
 if ($LASTEXITCODE -ne 0) { Write-Fail "Migration falhou"; exit 1 }
 Write-Ok "Schema aplicado"
-
-Write-Step "Aplicando seed (dados iniciais)"
-npm run db:seed
-if ($LASTEXITCODE -ne 0) { Write-Warn "Seed falhou (talvez ja tenha dados). Continuando..." }
-else { Write-Ok "Seed aplicado" }
 
 # ── 7. Final ────────────────────────────────────────────────
 Write-Host ""

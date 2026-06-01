@@ -44,6 +44,10 @@ O cadastro pode usar CMD (consumo médio diário) e lead time estimado para inic
 
 O gráfico de ciclo Kanban usa eixo temporal real com data e hora. Se houver mais de uma saída no mesmo dia, os pontos aparecem como eventos separados; o usuário pode usar o controle de zoom/brush para investigar detalhes por período.
 
+O estoque maximo (EMax) nao e uma quantidade fixa de dias. O sistema calcula `EMax = estoque de seguranca + lote economico (EOQ)`. A cobertura em dias e derivada depois: `dias de cobertura no maximo = EMax / CMD`. Exemplo: se o EMax for 120 unidades e o consumo medio diario for 6 unidades/dia, o estoque maximo representa cerca de 20 dias de cobertura.
+
+Quando ainda nao existe historico suficiente, o sistema nao forca ES, PR, EOQ ou EMax estatisticos. Ele usa os valores manuais cadastrados no item ate haver dados reais suficientes.
+
 ### Aprovações e notificações
 
 O fluxo principal de compra é:
@@ -103,7 +107,7 @@ O script:
 - Verifica Node e PostgreSQL
 - Cria role `kanban_user` e database `kanban_estoque`
 - Instala dependências (raiz + backend + frontend)
-- Aplica schema e seed inicial
+- Aplica schema e configuracoes padrao, sem dados mockados
 
 ### 3. Iniciar backend e frontend
 
@@ -128,8 +132,8 @@ npm run dev
 | `npm run dev:backend` | Só backend |
 | `npm run dev:frontend` | Só frontend |
 | `npm run db:migrate` | Aplica schema |
-| `npm run db:seed` | Aplica dados iniciais |
-| `npm run db:reset` | Schema + seed |
+| `npm run db:reset` | Remove todas as tabelas do banco local |
+| `npm run db:fresh` | Recria schema e configuracoes padrao sem dados operacionais |
 | `npm run build:frontend` | Build de produção do frontend |
 
 ---
@@ -164,9 +168,9 @@ Veja `.env.example`. Principais:
 ```
 .
 ├── backend/
-│   ├── migrations/       # SQL — schema + seed
+│   ├── migrations/       # SQL — schema + configuracoes padrao
 │   ├── src/
-│   │   ├── config/       # env, database, redis, migrate, seed
+│   │   ├── config/       # env, database, redis, migrate, reset
 │   │   ├── middleware/   # auth, rbac, audit, rate limit, error
 │   │   ├── routes/       # auth, usuarios, produtos, pedidos, ...
 │   │   ├── services/     # auth, kanban.calc, notificações

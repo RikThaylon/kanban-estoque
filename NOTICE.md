@@ -10,7 +10,7 @@ Este repositório representa a **versão-base não customizada** do produto e co
 
 - Arquitetura backend/frontend genérica
 - Schema padrão (`usuarios`, `produtos`, `pedidos_compra`, `kanban_parametros`, etc.)
-- **Dados mockados** no seed inicial (fornecedores, produtos, CNPJs e usuários são fictícios — não representam clientes reais)
+- Migrations de schema e configuracoes padrao, sem dados operacionais de cliente
 - Matriz RACI de referência (genérica)
 
 ## Confidencialidade
