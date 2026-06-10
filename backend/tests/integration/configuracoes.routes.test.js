@@ -42,11 +42,31 @@ describe('Configuracoes Routes', () => {
     const res = await request(app)
       .patch('/api/v1/configuracoes/pedidos')
       .set('Authorization', authHeader('admin'))
-      .send({ limite_supervisor: 5000, limite_gerente: 50000 });
+      .send({
+        limite_supervisor: 5000,
+        limite_gerente: 50000,
+        aprovadores_nivel_1: ['supervisor_turno', 'gerente_operacoes'],
+        aprovadores_nivel_2: ['gerente_operacoes'],
+        aprovadores_nivel_3: ['plant_manager'],
+      });
 
     expect(res.status).toBe(200);
     expect(res.body.limite_supervisor).toBe(5000);
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.limite_supervisor', '5000']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.aprovadores_nivel_1', 'supervisor_turno,gerente_operacoes']);
+  });
+
+  it('PATCH /api/v1/configuracoes/pedidos nao permite comprador como aprovador interno', async () => {
+    const res = await request(app)
+      .patch('/api/v1/configuracoes/pedidos')
+      .set('Authorization', authHeader('admin'))
+      .send({
+        limite_supervisor: 5000,
+        limite_gerente: 50000,
+        aprovadores_nivel_1: ['comprador'],
+      });
+
+    expect(res.status).toBe(400);
   });
 
   it('PATCH /api/v1/configuracoes/permissoes deve salvar matriz de permissoes', async () => {

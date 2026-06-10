@@ -3,6 +3,9 @@ const { query } = require('../config/database');
 const CONFIG_DEFAULTS = {
   'pedidos.limite_supervisor': 5000,
   'pedidos.limite_gerente': 50000,
+  'pedidos.aprovadores_nivel_1': 'supervisor_turno,gerente_operacoes,plant_manager',
+  'pedidos.aprovadores_nivel_2': 'gerente_operacoes,plant_manager',
+  'pedidos.aprovadores_nivel_3': 'plant_manager',
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
   'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
@@ -49,6 +52,7 @@ const PERMISSAO_TO_CHAVE = {
   cadastrar_item: PERMISSOES_CHAVES.cadastrarItem,
   editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
 };
+const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 
 function parsePerfis(valor) {
   if (Array.isArray(valor)) return valor.filter(Boolean);
@@ -102,6 +106,33 @@ async function getLimitesAprovacaoPedido() {
     supervisor: Number(supervisor),
     gerente: Number(gerente),
   };
+}
+
+function normalizarAprovadoresCompra(aprovadores = {}, options = {}) {
+  const incluirAdmin = options.incluirAdmin !== false;
+  const nivel1 = parsePerfis(aprovadores.nivel1 ?? CONFIG_DEFAULTS['pedidos.aprovadores_nivel_1']);
+  const nivel2 = parsePerfis(aprovadores.nivel2 ?? CONFIG_DEFAULTS['pedidos.aprovadores_nivel_2']);
+  const nivel3 = parsePerfis(aprovadores.nivel3 ?? CONFIG_DEFAULTS['pedidos.aprovadores_nivel_3']);
+  const normalizar = (perfis) => {
+    const elegiveis = perfis.filter((perfil) => !PERFIS_SEM_APROVACAO_COMPRA.includes(perfil));
+    return incluirAdmin ? [...elegiveis, 'admin'] : elegiveis.filter((perfil) => perfil !== 'admin');
+  };
+
+  return {
+    nivel1: [...new Set(normalizar(nivel1))],
+    nivel2: [...new Set(normalizar(nivel2))],
+    nivel3: [...new Set(normalizar(nivel3))],
+  };
+}
+
+async function getAprovadoresCompra(options = {}) {
+  const [nivel1, nivel2, nivel3] = await Promise.all([
+    getConfiguracao('pedidos.aprovadores_nivel_1', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_1']),
+    getConfiguracao('pedidos.aprovadores_nivel_2', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_2']),
+    getConfiguracao('pedidos.aprovadores_nivel_3', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_3']),
+  ]);
+
+  return normalizarAprovadoresCompra({ nivel1, nivel2, nivel3 }, options);
 }
 
 async function getPermissoesOperacionais() {
@@ -178,10 +209,12 @@ module.exports = {
   PAGINAS_SISTEMA,
   getConfiguracao,
   getLimitesAprovacaoPedido,
+  getAprovadoresCompra,
   getKanbanDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
   normalizarTurnos,
+  normalizarAprovadoresCompra,
   perfilPode,
   serializePerfis,
   salvarConfiguracoes,

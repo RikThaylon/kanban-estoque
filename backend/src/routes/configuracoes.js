@@ -7,6 +7,7 @@ const { validate } = require('../middleware/validate');
 const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
+  getAprovadoresCompra,
   getKanbanDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
@@ -16,15 +17,24 @@ const {
   serializePerfis,
 } = require('../services/configuracoes.service');
 const { PERFIS_VALIDOS } = require('../middleware/rbac');
+const PERFIS_APROVADORES_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
+  (perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil)
+);
 
 const router = express.Router();
 
-router.get('/pedidos', authenticate, authorize('admin'), async (req, res, next) => {
+router.get('/pedidos', authenticate, async (req, res, next) => {
   try {
-    const limites = await getLimitesAprovacaoPedido();
+    const [limites, aprovadores] = await Promise.all([
+      getLimitesAprovacaoPedido(),
+      getAprovadoresCompra({ incluirAdmin: false }),
+    ]);
     res.json({
       limite_supervisor: limites.supervisor,
       limite_gerente: limites.gerente,
+      aprovadores_nivel_1: aprovadores.nivel1,
+      aprovadores_nivel_2: aprovadores.nivel2,
+      aprovadores_nivel_3: aprovadores.nivel3,
     });
   } catch (err) {
     next(err);
@@ -38,6 +48,12 @@ router.patch('/pedidos',
   [
     body('limite_supervisor').isFloat({ min: 0 }).withMessage('Limite do supervisor deve ser >= 0'),
     body('limite_gerente').isFloat({ min: 0 }).withMessage('Limite do gerente deve ser >= 0'),
+    body('aprovadores_nivel_1').optional().isArray().withMessage('aprovadores_nivel_1 deve ser uma lista de cargos'),
+    body('aprovadores_nivel_1.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_1'),
+    body('aprovadores_nivel_2').optional().isArray().withMessage('aprovadores_nivel_2 deve ser uma lista de cargos'),
+    body('aprovadores_nivel_2.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_2'),
+    body('aprovadores_nivel_3').optional().isArray().withMessage('aprovadores_nivel_3 deve ser uma lista de cargos'),
+    body('aprovadores_nivel_3.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_3'),
   ],
   validate,
   async (req, res, next) => {
@@ -49,14 +65,31 @@ router.patch('/pedidos',
         throw new AppError('Limite do gerente deve ser maior ou igual ao limite do supervisor', 400, 'LIMITE_INVALIDO');
       }
 
-      await salvarConfiguracoes({
+      const configuracoes = {
         'pedidos.limite_supervisor': limiteSupervisor,
         'pedidos.limite_gerente': limiteGerente,
-      }, req.user.id);
+      };
+
+      if (req.body.aprovadores_nivel_1) {
+        configuracoes['pedidos.aprovadores_nivel_1'] = serializePerfis(req.body.aprovadores_nivel_1.filter((perfil) => perfil !== 'admin'));
+      }
+      if (req.body.aprovadores_nivel_2) {
+        configuracoes['pedidos.aprovadores_nivel_2'] = serializePerfis(req.body.aprovadores_nivel_2.filter((perfil) => perfil !== 'admin'));
+      }
+      if (req.body.aprovadores_nivel_3) {
+        configuracoes['pedidos.aprovadores_nivel_3'] = serializePerfis(req.body.aprovadores_nivel_3.filter((perfil) => perfil !== 'admin'));
+      }
+
+      await salvarConfiguracoes(configuracoes, req.user.id);
+
+      const aprovadores = await getAprovadoresCompra({ incluirAdmin: false });
 
       res.json({
         limite_supervisor: limiteSupervisor,
         limite_gerente: limiteGerente,
+        aprovadores_nivel_1: aprovadores.nivel1,
+        aprovadores_nivel_2: aprovadores.nivel2,
+        aprovadores_nivel_3: aprovadores.nivel3,
       });
     } catch (err) {
       next(err);

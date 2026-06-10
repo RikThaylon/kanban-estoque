@@ -2,7 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const { authorize, podeAprovarNivel1, podeAprovarNivel2, podeAprovarNivel3 } = require('../middleware/rbac');
+const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
@@ -10,7 +10,7 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { dispatchRecalculoKanban } = require('../services/recalculo.dispatcher');
-const { getLimitesAprovacaoPedido } = require('../services/configuracoes.service');
+const { getLimitesAprovacaoPedido, getAprovadoresCompra } = require('../services/configuracoes.service');
 const {
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
@@ -33,9 +33,22 @@ async function gerarNumeroPedido() {
 }
 
 // Transições válidas de status
-function podeAlterarStatusPedido(perfil, novoStatus) {
+function perfilPodeAprovarNivel(perfil, aprovadores, nivel) {
   if (perfil === 'admin') return true;
-  if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) return podeAprovarNivel1(perfil);
+  return Array.isArray(aprovadores?.[nivel]) && aprovadores[nivel].includes(perfil);
+}
+
+function nivelAprovacaoDoStatus(statusAtual) {
+  if (statusAtual === 'AGUARDANDO_GERENTE') return 'nivel2';
+  if (statusAtual === 'AGUARDANDO_DIRETORIA') return 'nivel3';
+  return 'nivel1';
+}
+
+function podeAlterarStatusPedido(perfil, novoStatus, aprovadores, statusAtual) {
+  if (perfil === 'admin') return true;
+  if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) {
+    return perfilPodeAprovarNivel(perfil, aprovadores, nivelAprovacaoDoStatus(statusAtual));
+  }
   if (['EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) return perfil === 'comprador';
   if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'].includes(perfil);
   return false;
@@ -249,11 +262,15 @@ router.post('/:id/aprovar', authenticate, audit('APROVAR_PEDIDO', 'pedidos_compr
         throw new AppError(`Pedido não está aguardando aprovação (status atual: ${pedido.status})`, 400, 'STATUS_INVALIDO');
       }
 
-      const limites = await getLimitesAprovacaoPedido();
+      const [limites, aprovadores] = await Promise.all([
+        getLimitesAprovacaoPedido(),
+        getAprovadoresCompra(),
+      ]);
       const decisao = determinarProximaAprovacao({
         pedido,
         usuario: req.user,
         limites,
+        aprovadores,
       });
 
       const result = decisao.novoStatus === 'APROVADO'
@@ -295,8 +312,10 @@ router.post('/:id/rejeitar', authenticate, audit('REJEITAR_PEDIDO', 'pedidos_com
         throw new AppError(`Pedido não pode ser rejeitado neste status: ${ped.status}`, 400, 'STATUS_INVALIDO');
       }
 
-      if (ped.status === 'AGUARDANDO_APROVACAO' && !podeAprovarNivel1(req.user.perfil)) {
-        throw new AppError('Necessário Supervisor de Turno ou superior', 403, 'FORBIDDEN');
+      const aprovadores = await getAprovadoresCompra();
+
+      if (ped.status === 'AGUARDANDO_APROVACAO' && !perfilPodeAprovarNivel(req.user.perfil, aprovadores, 'nivel1')) {
+        throw new AppError('Cargo nao autorizado para aprovacao interna N1. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
       }
       if (
         ped.status === 'AGUARDANDO_APROVACAO'
@@ -306,11 +325,11 @@ router.post('/:id/rejeitar', authenticate, audit('REJEITAR_PEDIDO', 'pedidos_com
       ) {
         throw new AppError('Rejeicao restrita ao supervisor responsavel pelo departamento', 403, 'SUPERVISOR_RESPONSAVEL');
       }
-      if (ped.status === 'AGUARDANDO_GERENTE' && !podeAprovarNivel2(req.user.perfil)) {
-        throw new AppError('Necessário Gerente de Operações ou superior', 403, 'FORBIDDEN');
+      if (ped.status === 'AGUARDANDO_GERENTE' && !perfilPodeAprovarNivel(req.user.perfil, aprovadores, 'nivel2')) {
+        throw new AppError('Cargo nao autorizado para aprovacao interna N2. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
       }
-      if (ped.status === 'AGUARDANDO_DIRETORIA' && !podeAprovarNivel3(req.user.perfil)) {
-        throw new AppError('Necessário Plant Manager ou superior', 403, 'FORBIDDEN');
+      if (ped.status === 'AGUARDANDO_DIRETORIA' && !perfilPodeAprovarNivel(req.user.perfil, aprovadores, 'nivel3')) {
+        throw new AppError('Cargo nao autorizado para aprovacao interna N3. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
       }
 
       const result = await query(
@@ -380,7 +399,10 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
       if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) {
         throw new AppError('Use POST /:id/receber para registrar recebimento com quantidade e NF', 400, 'USE_RECEBER_ENDPOINT');
       }
-      if (!podeAlterarStatusPedido(req.user.perfil, novoStatus)) {
+      const aprovadores = ['CANCELADO', 'REJEITADO'].includes(novoStatus)
+        ? await getAprovadoresCompra()
+        : null;
+      if (!podeAlterarStatusPedido(req.user.perfil, novoStatus, aprovadores, statusAtual)) {
         throw new AppError('Seu perfil nao pode alterar pedido para este status', 403, 'FORBIDDEN');
       }
       if (novoStatus === 'EMITIDO') {

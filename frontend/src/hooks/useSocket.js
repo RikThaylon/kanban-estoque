@@ -42,11 +42,11 @@ export const useSocket = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
       const mensagens = {
-        AGUARDANDO_APROVACAO: 'Nova solicitacao aguardando aprovacao do supervisor.',
-        AGUARDANDO_GERENTE: 'Solicitacao escalada para gerente de operacoes.',
-        AGUARDANDO_DIRETORIA: 'Solicitacao escalada para diretoria/plant manager.',
-        APROVADO: 'Pedido aprovado e liberado para o comprador emitir.',
-        EMITIDO: 'Compra emitida e aguardando recebimento.',
+        AGUARDANDO_APROVACAO: 'Nova solicitacao aguardando aprovacao interna N1.',
+        AGUARDANDO_GERENTE: 'Solicitacao aguardando aprovacao interna N2.',
+        AGUARDANDO_DIRETORIA: 'Solicitacao aguardando aprovacao interna N3.',
+        APROVADO: 'Pedido aprovado internamente. Comprador deve registrar a OC externa.',
+        EMITIDO: 'OC externa registrada e aguardando recebimento.',
         RECEBIDO: 'Pedido recebido e estoque atualizado.',
         REJEITADO: 'Pedido rejeitado pelo aprovador.',
         CANCELADO: 'Pedido cancelado.',

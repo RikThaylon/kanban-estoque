@@ -21,9 +21,38 @@ const STATUS_STYLES = {
   REJEITADO: 'bg-rose-200 text-rose-800',
 };
 
-const PERFIS_APROVADORES_N1 = ['admin', 'supervisor_turno', 'gerente_operacoes', 'plant_manager'];
-const PERFIS_APROVADORES_N2 = ['admin', 'gerente_operacoes', 'plant_manager'];
-const PERFIS_APROVADORES_N3 = ['admin', 'plant_manager'];
+const STATUS_LABELS = {
+  RASCUNHO: 'RASCUNHO',
+  AGUARDANDO_APROVACAO: 'AGUARDANDO APROVACAO N1',
+  AGUARDANDO_GERENTE: 'AGUARDANDO APROVACAO N2',
+  AGUARDANDO_DIRETORIA: 'AGUARDANDO APROVACAO N3',
+  APROVADO: 'APROVADO INTERNAMENTE',
+  EMITIDO: 'OC EXTERNA REGISTRADA',
+  EM_TRANSITO: 'EM TRANSITO',
+  RECEBIDO_PARCIAL: 'RECEBIDO PARCIAL',
+  RECEBIDO: 'RECEBIDO',
+  CANCELADO: 'CANCELADO',
+  REJEITADO: 'REJEITADO',
+};
+
+const APROVADORES_PADRAO = {
+  nivel1: ['supervisor_turno', 'gerente_operacoes', 'plant_manager'],
+  nivel2: ['gerente_operacoes', 'plant_manager'],
+  nivel3: ['plant_manager'],
+};
+const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
+const filtrarPerfisAprovadores = (perfis) => perfis.filter((perfil) => !PERFIS_SEM_APROVACAO_COMPRA.includes(perfil));
+const normalizarNivelAprovador = (perfis, fallback) => (
+  [...new Set(['admin', ...filtrarPerfisAprovadores(Array.isArray(perfis) ? perfis : fallback)])]
+);
+
+const normalizarAprovadoresCompra = (config) => ({
+  nivel1: normalizarNivelAprovador(config?.aprovadores_nivel_1, APROVADORES_PADRAO.nivel1),
+  nivel2: normalizarNivelAprovador(config?.aprovadores_nivel_2, APROVADORES_PADRAO.nivel2),
+  nivel3: normalizarNivelAprovador(config?.aprovadores_nivel_3, APROVADORES_PADRAO.nivel3),
+});
+
+const statusLabel = (status) => STATUS_LABELS[status] || String(status || '').replace(/_/g, ' ');
 
 const Pedidos = () => {
   const { user } = useAuthStore();
@@ -39,12 +68,17 @@ const Pedidos = () => {
   const [openEmitir, setOpenEmitir] = useState(null);
   const [pedidoTemplate, setPedidoTemplate] = useState(null);
 
-  const isAprovadorN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
-
   const { data, isLoading } = useQuery({
     queryKey: ['pedidos', page, statusFiltro],
     queryFn: async () => (await api.get('/pedidos', { params: { page, limit: 15, status: statusFiltro || undefined } })).data,
   });
+
+  const { data: configPedidos } = useQuery({
+    queryKey: ['configuracoes', 'pedidos'],
+    queryFn: async () => (await api.get('/configuracoes/pedidos')).data,
+  });
+
+  const aprovadoresCompra = useMemo(() => normalizarAprovadoresCompra(configPedidos), [configPedidos]);
 
   const { data: sugestoes } = useQuery({
     queryKey: ['pedidos', 'sugestoes'],
@@ -61,8 +95,8 @@ const Pedidos = () => {
         tipo: res.data?.status === 'APROVADO' ? 'success' : 'info',
         titulo: `Pedido ${res.data?.numero || ''}`.trim(),
         mensagem: res.data?.status === 'APROVADO'
-          ? 'Aprovado e liberado para o comprador emitir a compra.'
-          : `Escalado para ${(res.data?.status || '').replace(/_/g, ' ').toLowerCase()}.`,
+          ? 'Aprovacao interna concluida. O comprador deve registrar fornecedor e numero da OC externa.'
+          : `Escalado para ${statusLabel(res.data?.status).toLowerCase()}.`,
       });
     },
   });
@@ -76,7 +110,7 @@ const Pedidos = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
-      pushToast({ tipo: 'success', titulo: 'Compra emitida', mensagem: 'Pedido enviado para acompanhamento e recebimento.' });
+      pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Compra marcada como emitida para acompanhamento e recebimento.' });
       setOpenEmitir(null);
     },
   });
@@ -119,13 +153,24 @@ const Pedidos = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
-          <p className="text-navy-400 text-sm">Abastecimento baseado nas sugestões Kanban</p>
+          <p className="text-navy-400 text-sm">Solicitacao, aprovacao interna, OC externa e recebimento</p>
         </div>
         {!readOnly && (
           <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" /> Novo Pedido
           </button>
         )}
+      </div>
+
+      <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-navy-600 flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-navy-800">Fluxo:</span>
+        <span>Solicitacao</span>
+        <span className="text-navy-300">→</span>
+        <span>Aprovacao interna</span>
+        <span className="text-navy-300">→</span>
+        <span>Comprador registra OC externa</span>
+        <span className="text-navy-300">→</span>
+        <span>Recebimento</span>
       </div>
 
       {/* Sugestões de Compra */}
@@ -188,8 +233,8 @@ const Pedidos = () => {
             <option value="AGUARDANDO_APROVACAO">Aguardando aprovação (Nível 1)</option>
             <option value="AGUARDANDO_GERENTE">Aguardando gerente (Nível 2)</option>
             <option value="AGUARDANDO_DIRETORIA">Aguardando diretoria (Nível 3)</option>
-            <option value="APROVADO">Aprovado</option>
-            <option value="EMITIDO">Emitido</option>
+            <option value="APROVADO">Aprovado internamente / aguardando comprador</option>
+            <option value="EMITIDO">OC externa registrada</option>
             <option value="EM_TRANSITO">Em trânsito</option>
             <option value="RECEBIDO_PARCIAL">Recebido parcial</option>
             <option value="RECEBIDO">Recebido</option>
@@ -240,13 +285,14 @@ const Pedidos = () => {
                   <td className="p-4 text-right font-medium text-navy-700">{formatMoney(pedido.custo_total)}</td>
                   <td className="p-4 text-center">
                     <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${STATUS_STYLES[pedido.status] || 'bg-surface-100'}`}>
-                      {pedido.status.replace(/_/g, ' ')}
+                      {statusLabel(pedido.status)}
                     </span>
                   </td>
                   <td className="p-4">
                       <PedidoActions
                         pedido={pedido}
                         user={user}
+                        aprovadores={aprovadoresCompra}
                         onAprovar={() => aprovar.mutate(pedido.id)}
                         onEmitir={() => setOpenEmitir(pedido)}
                         onReceber={() => setOpenReceber(pedido)}
@@ -273,7 +319,7 @@ const Pedidos = () => {
                   <div className="text-xs text-navy-500">{formatDate(pedido.data_emissao || pedido.criado_em)}</div>
                 </div>
                 <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${STATUS_STYLES[pedido.status] || 'bg-surface-100'} shrink-0`}>
-                  {pedido.status.replace(/_/g, ' ')}
+                  {statusLabel(pedido.status)}
                 </span>
               </div>
               <div>
@@ -292,6 +338,7 @@ const Pedidos = () => {
               <PedidoActions
                 pedido={pedido}
                 user={user}
+                aprovadores={aprovadoresCompra}
                 onAprovar={() => aprovar.mutate(pedido.id)}
                 onRejeitar={() => setOpenRejeitar(pedido)}
                 onEmitir={() => setOpenEmitir(pedido)}
@@ -332,10 +379,10 @@ const Row = ({ label, value, clamp }) => (
 );
 
 // ─── Ações por pedido ───────────────────────────────────────────────────────
-const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe }) => {
-  const podeAprovarN1 = PERFIS_APROVADORES_N1.includes(user?.perfil);
-  const podeAprovarN2 = PERFIS_APROVADORES_N2.includes(user?.perfil);
-  const podeAprovarN3 = PERFIS_APROVADORES_N3.includes(user?.perfil);
+const PedidoActions = ({ pedido, user, aprovadores, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe }) => {
+  const podeAprovarN1 = aprovadores?.nivel1?.includes(user?.perfil);
+  const podeAprovarN2 = aprovadores?.nivel2?.includes(user?.perfil);
+  const podeAprovarN3 = aprovadores?.nivel3?.includes(user?.perfil);
   const readOnly = isReadOnlyPerfil(user?.perfil);
 
   let podeAprovar = false;
@@ -358,7 +405,7 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
         <Eye className="w-4 h-4" />
       </button>
       {podeAprovar && (
-        <button onClick={onAprovar} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Aprovar">
+        <button onClick={onAprovar} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Aprovar internamente">
           <Check className="w-4 h-4" />
         </button>
       )}
@@ -368,7 +415,7 @@ const PedidoActions = ({ pedido, user, onAprovar, onRejeitar, onEmitir, onRecebe
         </button>
       )}
       {podeEmitir && (
-        <button onClick={onEmitir} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Emitir">
+        <button onClick={onEmitir} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Registrar OC externa">
           <Send className="w-4 h-4" />
         </button>
       )}
@@ -691,6 +738,9 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-md p-3">
+            Pedido ja aprovado internamente. O comprador deve escolher o fornecedor e informar o numero da OC criada no sistema externo.
+          </div>
           <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
             <strong>{pedido.numero}</strong> - {pedido.produto_codigo} - {pedido.produto_nome}
           </div>
@@ -709,7 +759,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary justify-center">Cancelar</button>
             <button type="submit" disabled={loading} className="btn-primary justify-center">
-              {loading ? 'Emitindo...' : 'Marcar como emitido'}
+              {loading ? 'Registrando...' : 'Registrar OC externa'}
             </button>
           </div>
         </form>
@@ -808,8 +858,8 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
           {isLoading ? <div className="text-navy-400">Carregando…</div> : (
             <>
               <DetailRow label="Número" value={<span className="font-mono">{p.numero}</span>} />
-              <DetailRow label="Status" value={<span className={`px-2 py-0.5 rounded text-xs font-bold ${STATUS_STYLES[p.status]}`}>{p.status.replace(/_/g, ' ')}</span>} />
-              {p.numero_oc_externa && <DetailRow label="OC externa" value={<span className="font-mono">{p.numero_oc_externa}</span>} />}
+              <DetailRow label="Status" value={<span className={`px-2 py-0.5 rounded text-xs font-bold ${STATUS_STYLES[p.status]}`}>{statusLabel(p.status)}</span>} />
+              {p.numero_oc_externa && <DetailRow label="OC externa registrada" value={<span className="font-mono">{p.numero_oc_externa}</span>} />}
               <DetailRow label="Produto" value={`${p.produto_codigo} — ${p.produto_nome}`} />
               <DetailRow label="Fornecedor" value={p.fornecedor_nome} />
               {p.fornecedor_cnpj && <DetailRow label="CNPJ" value={p.fornecedor_cnpj} />}
@@ -830,7 +880,7 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
               <DetailRow label="Data recebimento" value={p.data_recebimento ? formatDate(p.data_recebimento) : '—'} />
               <DetailRow label="Lead time real" value={p.lead_time_real_dias ? `${p.lead_time_real_dias} dias` : '—'} />
               <DetailRow label="Criado por" value={p.criado_por_nome || '—'} />
-              {p.aprovado_por_nome && <DetailRow label="Aprovado por" value={p.aprovado_por_nome} />}
+              {p.aprovado_por_nome && <DetailRow label="Aprovado internamente por" value={p.aprovado_por_nome} />}
             </>
           )}
         </div>

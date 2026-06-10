@@ -1,13 +1,33 @@
 const { AppError } = require('../utils/errors');
 
-const PERFIS_NIVEL_1 = ['supervisor_turno', 'gerente_operacoes', 'plant_manager', 'admin'];
-const PERFIS_NIVEL_2 = ['gerente_operacoes', 'plant_manager', 'admin'];
-const PERFIS_NIVEL_3 = ['plant_manager', 'admin'];
+const APROVADORES_PADRAO = {
+  nivel1: ['supervisor_turno', 'gerente_operacoes', 'plant_manager', 'admin'],
+  nivel2: ['gerente_operacoes', 'plant_manager', 'admin'],
+  nivel3: ['plant_manager', 'admin'],
+};
+const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 
 function normalizarLimites(limites = {}) {
   return {
     supervisor: Number(limites.supervisor ?? 5000),
     gerente: Number(limites.gerente ?? 50000),
+  };
+}
+
+function normalizarAprovadores(aprovadores = {}) {
+  const normalizarNivel = (nivel) => {
+    const configurados = Array.isArray(aprovadores[nivel])
+      ? aprovadores[nivel].filter(Boolean)
+      : APROVADORES_PADRAO[nivel];
+
+    const elegiveis = configurados.filter((perfil) => !PERFIS_SEM_APROVACAO_COMPRA.includes(perfil));
+    return [...new Set([...elegiveis, 'admin'])];
+  };
+
+  return {
+    nivel1: normalizarNivel('nivel1'),
+    nivel2: normalizarNivel('nivel2'),
+    nivel3: normalizarNivel('nivel3'),
   };
 }
 
@@ -54,23 +74,24 @@ function validarSupervisorResponsavel(pedido, usuario) {
   }
 }
 
-function determinarProximaAprovacao({ pedido, usuario, limites }) {
+function determinarProximaAprovacao({ pedido, usuario, limites, aprovadores }) {
   const { supervisor, gerente } = normalizarLimites(limites);
+  const aprovadoresCompra = normalizarAprovadores(aprovadores);
   const custo = Number(pedido.custo_total || 0);
 
   validarAutoAprovacao(pedido, usuario);
 
   if (pedido.status === 'AGUARDANDO_APROVACAO') {
-    if (!PERFIS_NIVEL_1.includes(usuario.perfil)) {
-      throw new AppError('Necessario Supervisor de Turno ou superior', 403, 'FORBIDDEN');
+    if (!aprovadoresCompra.nivel1.includes(usuario.perfil)) {
+      throw new AppError('Cargo nao autorizado para aprovacao interna N1. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
     }
 
     validarSupervisorResponsavel(pedido, usuario);
 
-    if (custo >= supervisor && !PERFIS_NIVEL_2.includes(usuario.perfil)) {
+    if (custo >= supervisor && !aprovadoresCompra.nivel2.includes(usuario.perfil)) {
       return { novoStatus: 'AGUARDANDO_GERENTE', aprovadoPor: null };
     }
-    if (custo >= gerente && !PERFIS_NIVEL_3.includes(usuario.perfil)) {
+    if (custo >= gerente && !aprovadoresCompra.nivel3.includes(usuario.perfil)) {
       return { novoStatus: 'AGUARDANDO_DIRETORIA', aprovadoPor: null };
     }
 
@@ -78,23 +99,23 @@ function determinarProximaAprovacao({ pedido, usuario, limites }) {
   }
 
   if (pedido.status === 'AGUARDANDO_GERENTE') {
-    if (!PERFIS_NIVEL_2.includes(usuario.perfil)) {
+    if (!aprovadoresCompra.nivel2.includes(usuario.perfil)) {
       throw new AppError(
-        `Pedido acima de R$ ${supervisor} exige aprovacao do Gerente de Operacoes`,
+        `Pedido acima de R$ ${supervisor} exige aprovacao interna N2 configurada`,
         403,
         'APROVACAO_INSUFICIENTE'
       );
     }
-    if (custo >= gerente && !PERFIS_NIVEL_3.includes(usuario.perfil)) {
+    if (custo >= gerente && !aprovadoresCompra.nivel3.includes(usuario.perfil)) {
       return { novoStatus: 'AGUARDANDO_DIRETORIA', aprovadoPor: null };
     }
     return { novoStatus: 'APROVADO', aprovadoPor: usuario.id };
   }
 
   if (pedido.status === 'AGUARDANDO_DIRETORIA') {
-    if (!PERFIS_NIVEL_3.includes(usuario.perfil)) {
+    if (!aprovadoresCompra.nivel3.includes(usuario.perfil)) {
       throw new AppError(
-        `Pedido acima de R$ ${gerente} exige aprovacao da Diretoria`,
+        `Pedido acima de R$ ${gerente} exige aprovacao interna N3 configurada`,
         403,
         'APROVACAO_INSUFICIENTE'
       );
@@ -108,6 +129,7 @@ function determinarProximaAprovacao({ pedido, usuario, limites }) {
 module.exports = {
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
+  normalizarAprovadores,
   normalizarLimites,
   resolverVinculoMaquina,
 };

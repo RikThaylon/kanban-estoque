@@ -113,5 +113,41 @@ describe('pedido.workflow', () => {
 
       expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'ger-1' });
     });
+
+    it('permite cargo customizado configurado aprovar internamente N1', () => {
+      const result = determinarProximaAprovacao({
+        pedido: {
+          status: 'AGUARDANDO_APROVACAO',
+          custo_total: 100,
+          criado_por: 'fac-1',
+        },
+        usuario: { id: 'eng-1', perfil: 'eng_producao' },
+        limites,
+        aprovadores: {
+          nivel1: ['eng_producao'],
+          nivel2: ['gerente_operacoes'],
+          nivel3: ['plant_manager'],
+        },
+      });
+
+      expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'eng-1' });
+    });
+
+    it('nao permite comprador aprovar mesmo se o cargo for salvo na configuracao', () => {
+      expect(() => determinarProximaAprovacao({
+        pedido: {
+          status: 'AGUARDANDO_APROVACAO',
+          custo_total: 100,
+          criado_por: 'fac-1',
+        },
+        usuario: { id: 'comp-1', perfil: 'comprador' },
+        limites,
+        aprovadores: {
+          nivel1: ['comprador'],
+          nivel2: ['comprador'],
+          nivel3: ['comprador'],
+        },
+      })).toThrow('Cargo nao autorizado');
+    });
   });
 });

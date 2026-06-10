@@ -10,6 +10,9 @@ const Configuracoes = () => {
   const [form, setForm] = useState({
     limite_supervisor: '',
     limite_gerente: '',
+    aprovadores_nivel_1: [],
+    aprovadores_nivel_2: [],
+    aprovadores_nivel_3: [],
   });
   const [kanban, setKanban] = useState({
     nivel_servico_padrao: 95,
@@ -50,6 +53,9 @@ const Configuracoes = () => {
       setForm({
         limite_supervisor: data.limite_supervisor ?? '',
         limite_gerente: data.limite_gerente ?? '',
+        aprovadores_nivel_1: data.aprovadores_nivel_1 || [],
+        aprovadores_nivel_2: data.aprovadores_nivel_2 || [],
+        aprovadores_nivel_3: data.aprovadores_nivel_3 || [],
       });
     }
   }, [data]);
@@ -84,6 +90,9 @@ const Configuracoes = () => {
     mutationFn: () => api.patch('/configuracoes/pedidos', {
       limite_supervisor: Number(form.limite_supervisor),
       limite_gerente: Number(form.limite_gerente),
+      aprovadores_nivel_1: form.aprovadores_nivel_1 || [],
+      aprovadores_nivel_2: form.aprovadores_nivel_2 || [],
+      aprovadores_nivel_3: form.aprovadores_nivel_3 || [],
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'pedidos'] });
@@ -150,6 +159,8 @@ const Configuracoes = () => {
   const taxaCarregamentoPercentual = Number.isFinite(taxaCarregamento)
     ? (taxaCarregamento * 100).toFixed(0)
     : '0';
+  const perfisAprovadores = (permissoesData?.perfis || [])
+    .filter((perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil));
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -164,6 +175,18 @@ const Configuracoes = () => {
 
   const togglePerfil = (campo, perfil) => {
     setPermissoes((prev) => {
+      const atual = prev[campo] || [];
+      return {
+        ...prev,
+        [campo]: atual.includes(perfil)
+          ? atual.filter((p) => p !== perfil)
+          : [...atual, perfil],
+      };
+    });
+  };
+
+  const toggleAprovador = (campo, perfil) => {
+    setForm((prev) => {
       const atual = prev[campo] || [];
       return {
         ...prev,
@@ -255,6 +278,44 @@ const Configuracoes = () => {
             <p>
               Esses valores afetam os novos pedidos e as aprovacoes pendentes. Pedidos ja aprovados, emitidos ou recebidos nao sao reclassificados.
             </p>
+          </div>
+
+          <div className="rounded-md border border-surface-200 bg-white p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-navy-800">Quem aprova antes do comprador</h3>
+              <p className="text-xs text-navy-500 mt-1">
+                Estes cargos liberam a solicitacao internamente. Depois disso, apenas admin/comprador registra fornecedor e numero da OC externa.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <PermissionGroup
+                title="Aprovacao interna N1"
+                description="Usada para pedidos abaixo do limite do supervisor."
+                value={form.aprovadores_nivel_1}
+                perfis={perfisAprovadores}
+                disabled={isLoading || carregandoPermissoes}
+                onToggle={(perfil) => toggleAprovador('aprovadores_nivel_1', perfil)}
+              />
+              <PermissionGroup
+                title="Aprovacao interna N2"
+                description="Usada quando o valor chega ao limite do supervisor."
+                value={form.aprovadores_nivel_2}
+                perfis={perfisAprovadores}
+                disabled={isLoading || carregandoPermissoes}
+                onToggle={(perfil) => toggleAprovador('aprovadores_nivel_2', perfil)}
+              />
+              <PermissionGroup
+                title="Aprovacao interna N3"
+                description="Usada quando o valor chega ao limite do gerente."
+                value={form.aprovadores_nivel_3}
+                perfis={perfisAprovadores}
+                disabled={isLoading || carregandoPermissoes}
+                onToggle={(perfil) => toggleAprovador('aprovadores_nivel_3', perfil)}
+              />
+            </div>
+
+            <p className="text-xs text-navy-500">Admin sempre aprova todos os niveis por regra do sistema.</p>
           </div>
 
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -477,9 +538,10 @@ const Configuracoes = () => {
   );
 };
 
-const PermissionGroup = ({ title, value, perfis, disabled, onToggle }) => (
+const PermissionGroup = ({ title, description, value, perfis, disabled, onToggle }) => (
   <div>
     <h3 className="text-sm font-bold text-navy-800 mb-3">{title}</h3>
+    {description && <p className="text-xs text-navy-500 -mt-2 mb-3">{description}</p>}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
       {perfis.filter((perfil) => perfil !== 'admin').map((perfil) => (
         <label key={perfil} className="flex items-center gap-2 rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-navy-700">
