@@ -108,10 +108,16 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
       } = req.body;
       const defaultsKanban = await getKanbanDefaults();
       const nivelServicoFinal = nivel_servico ? Number(nivel_servico) : defaultsKanban.nivel_servico_padrao;
+      const custoPedidoFinal = custo_pedido !== undefined && custo_pedido !== null && custo_pedido !== ''
+        ? Number(custo_pedido)
+        : 100;
+      const taxaCarregamentoFinal = taxa_carregamento !== undefined && taxa_carregamento !== null && taxa_carregamento !== ''
+        ? Number(taxa_carregamento)
+        : defaultsKanban.taxa_carregamento_padrao;
       const result = await query(
         `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido || 100, taxa_carregamento || 0.2, nivelServicoFinal, localizacao, req.user.id]
+        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
       );
       const cmdInicial = Number(cmd_inicial || 0);
       const leadTimeInicial = Number(lead_time_inicial || 0);
@@ -126,8 +132,8 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
           demandaSemanalSeries: seriesEstimadas.demandaSemanalSeries,
           leadTimeSeries: seriesEstimadas.leadTimeSeries,
           custoUnitario: parseFloat(custo_unitario),
-          custoPedido: parseFloat(custo_pedido || 100),
-          taxaCarregamento: parseFloat(taxa_carregamento || 0.2),
+          custoPedido: custoPedidoFinal,
+          taxaCarregamento: taxaCarregamentoFinal,
           nivelServico: nivelServicoFinal,
           estoqueAtual: 0,
         });

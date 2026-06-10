@@ -11,6 +11,14 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError } = require('../utils/errors');
 
 const router = express.Router();
+const SENHA_MIN = 8;
+const SENHA_MAX = 100;
+const SENHA_REGEX = /^\S+$/;
+
+const validarSenha = (campo) => body(campo)
+  .isString().withMessage('Senha obrigatoria')
+  .isLength({ min: SENHA_MIN, max: SENHA_MAX }).withMessage(`Senha precisa ter entre ${SENHA_MIN} e ${SENHA_MAX} caracteres`)
+  .matches(SENHA_REGEX).withMessage('Senha nao pode conter espacos');
 
 // Lista usuarios — admin e visualizadores podem listar; demais nao
 router.get('/', authenticate, authorize('admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes', 'visualizador'),
@@ -40,7 +48,7 @@ router.post('/', authenticate, authorize('admin'), audit('CRIAR_USUARIO', 'usuar
     body('nome').trim().isLength({ min: 1, max: 120 }).withMessage('Nome obrigatório'),
     body('username').trim().isLength({ min: 3, max: 60 }).matches(/^[a-zA-Z0-9._-]+$/)
       .withMessage('Username só pode conter letras, números, ponto, hífen e underline'),
-    body('senha').isLength({ min: 6, max: 100 }).withMessage('Senha precisa ter entre 6 e 100 caracteres'),
+    validarSenha('senha'),
     body('perfil').isIn(PERFIS_VALIDOS).withMessage('Perfil inválido'),
   ], validate,
   async (req, res, next) => {
@@ -137,7 +145,7 @@ router.delete('/:id', authenticate, authorize('admin'), audit('DESATIVAR_USUARIO
 
 // Reset de senha (somente admin)
 router.post('/:id/reset-senha', authenticate, authorize('admin'), audit('RESET_SENHA', 'usuarios'),
-  [body('nova_senha').isLength({ min: 6, max: 100 })], validate,
+  [validarSenha('nova_senha')], validate,
   async (req, res, next) => {
     try {
       const senhaHash = await bcrypt.hash(req.body.nova_senha, env.BCRYPT_ROUNDS);

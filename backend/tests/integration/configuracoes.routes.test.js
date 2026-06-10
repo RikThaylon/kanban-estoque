@@ -22,15 +22,16 @@ describe('Configuracoes Routes', () => {
     query.mockResolvedValue({ rows: [], rowCount: 1 });
   });
 
-  it('PATCH /api/v1/configuracoes/kanban deve salvar nivel e ciclos', async () => {
+  it('PATCH /api/v1/configuracoes/kanban deve salvar nivel, ciclos e custo para manter', async () => {
     const res = await request(app)
       .patch('/api/v1/configuracoes/kanban')
       .set('Authorization', authHeader('admin'))
-      .send({ nivel_servico_padrao: 95, ciclos_estimativa_inicial: 10 });
+      .send({ nivel_servico_padrao: 95, ciclos_estimativa_inicial: 10, taxa_carregamento_padrao: 0.25 });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ nivel_servico_padrao: 95, ciclos_estimativa_inicial: 10 });
+    expect(res.body).toEqual({ nivel_servico_padrao: 95, ciclos_estimativa_inicial: 10, taxa_carregamento_padrao: 0.25 });
     expect(query).toHaveBeenCalledWith(expect.stringContaining('configuracoes_sistema'), expect.arrayContaining(['kanban.nivel_servico_padrao']));
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['kanban.taxa_carregamento_padrao', '0.25']);
     const sql = query.mock.calls.find(([text]) => String(text).includes('UPDATE configuracoes_sistema'))[0];
     expect(sql).not.toContain('atualizado_por');
     expect(sql).not.toContain('categoria');

@@ -79,21 +79,25 @@ router.patch('/kanban',
   [
     body('nivel_servico_padrao').isIn(['90', '95', '98', '99']).withMessage('Nivel de servico deve ser 90, 95, 98 ou 99'),
     body('ciclos_estimativa_inicial').isInt({ min: 3, max: 10 }).withMessage('Ciclos deve ficar entre 3 e 10'),
+    body('taxa_carregamento_padrao').isFloat({ min: 0, max: 1 }).withMessage('Custo para manter deve ficar entre 0 e 1'),
   ],
   validate,
   async (req, res, next) => {
     try {
       const nivelServicoPadrao = Number(req.body.nivel_servico_padrao);
       const ciclosEstimativaInicial = Number(req.body.ciclos_estimativa_inicial);
+      const taxaCarregamentoPadrao = Number(req.body.taxa_carregamento_padrao);
 
       await salvarConfiguracoes({
         'kanban.nivel_servico_padrao': nivelServicoPadrao,
         'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
+        'kanban.taxa_carregamento_padrao': taxaCarregamentoPadrao,
       }, req.user.id);
 
       res.json({
         nivel_servico_padrao: nivelServicoPadrao,
         ciclos_estimativa_inicial: ciclosEstimativaInicial,
+        taxa_carregamento_padrao: taxaCarregamentoPadrao,
       });
     } catch (err) {
       next(err);

@@ -27,6 +27,9 @@ const corPorTipo = {
 
 const labelPerfil = (v) => PERFIS.find((p) => p.value === v)?.label || v;
 const tipoPerfil = (v) => PERFIS.find((p) => p.value === v)?.tipo || 'executor';
+const SENHA_MIN = 8;
+const SENHA_MAX = 100;
+const SENHA_REGEX = /^\S+$/;
 
 const Usuarios = () => {
   const { user } = useAuthStore();
@@ -40,6 +43,7 @@ const Usuarios = () => {
   const [usuarioEdit, setUsuarioEdit] = useState(null);
   const [form, setForm] = useState({ nome: '', username: '', senha: '', perfil: 'comprador' });
   const [salvando, setSalvando] = useState(false);
+  const [erroModal, setErroModal] = useState('');
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -58,18 +62,21 @@ const Usuarios = () => {
   const abrirNovo = () => {
     setForm({ nome: '', username: '', senha: '', perfil: 'comprador' });
     setUsuarioEdit(null);
+    setErroModal('');
     setModalAberto('novo');
   };
 
   const abrirEditar = (u) => {
     setForm({ nome: u.nome, username: u.username, senha: '', perfil: u.perfil });
     setUsuarioEdit(u);
+    setErroModal('');
     setModalAberto('editar');
   };
 
   const abrirSenha = (u) => {
     setForm({ nome: u.nome, username: u.username, senha: '', perfil: u.perfil });
     setUsuarioEdit(u);
+    setErroModal('');
     setModalAberto('senha');
   };
 
@@ -77,9 +84,17 @@ const Usuarios = () => {
     setModalAberto(null);
     setUsuarioEdit(null);
     setSalvando(false);
+    setErroModal('');
   };
 
   const salvar = async () => {
+    setErroModal('');
+    if ((modalAberto === 'novo' || modalAberto === 'senha')) {
+      if (form.senha.length < SENHA_MIN || form.senha.length > SENHA_MAX || !SENHA_REGEX.test(form.senha)) {
+        setErroModal(`Senha deve ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres e nao pode conter espacos.`);
+        return;
+      }
+    }
     setSalvando(true);
     try {
       if (modalAberto === 'novo') {
@@ -227,6 +242,11 @@ const Usuarios = () => {
               </div>
 
               <div className="space-y-3">
+                {erroModal && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {erroModal}
+                  </div>
+                )}
                 {modalAberto !== 'senha' && (
                   <>
                     <div>
@@ -273,9 +293,11 @@ const Usuarios = () => {
                       value={form.senha}
                       onChange={(e) => setForm({ ...form, senha: e.target.value })}
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-surface-200 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde"
-                      minLength={6}
+                      minLength={SENHA_MIN}
+                      maxLength={SENHA_MAX}
+                      pattern="^\S+$"
                     />
-                    <p className="text-xs text-navy-400 mt-1">Mínimo 6 caracteres.</p>
+                    <p className="text-xs text-navy-400 mt-1">Minimo {SENHA_MIN} caracteres, sem espacos.</p>
                   </div>
                 )}
               </div>

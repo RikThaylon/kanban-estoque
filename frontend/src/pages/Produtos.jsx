@@ -307,10 +307,14 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
   });
 
   useEffect(() => {
-    if (!isEdit && kanbanDefaults?.nivel_servico_padrao) {
-      setForm((prev) => ({ ...prev, nivel_servico: kanbanDefaults.nivel_servico_padrao }));
+    if (!isEdit && kanbanDefaults) {
+      setForm((prev) => ({
+        ...prev,
+        nivel_servico: kanbanDefaults.nivel_servico_padrao ?? prev.nivel_servico,
+        taxa_carregamento: kanbanDefaults.taxa_carregamento_padrao ?? prev.taxa_carregamento,
+      }));
     }
-  }, [isEdit, kanbanDefaults?.nivel_servico_padrao]);
+  }, [isEdit, kanbanDefaults]);
 
   // Cálculo automático dos parâmetros Kanban para o gráfico
   const kanbanPreview = useMemo(() => {
@@ -446,7 +450,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {/* ── Seção: Dados de Custo ── */}
           <div>
             <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-3">Dados de Custo e Armazenagem</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label>Unidade</Label>
                 <select className="input" value={form.unidade} onChange={e => f('unidade', e.target.value)}>
@@ -459,6 +463,13 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                 </Label>
                 <input className="input font-mono" type="number" step="0.01" min="0"
                   value={form.custo_unitario} onChange={e => f('custo_unitario', e.target.value)} required />
+              </div>
+              <div>
+                <Label tooltip="Taxa anual usada no lote economico. Use 0.20 para 20% ao ano.">
+                  Custo para manter
+                </Label>
+                <input className="input font-mono" type="number" step="0.01" min="0" max="1"
+                  value={form.taxa_carregamento} onChange={e => f('taxa_carregamento', e.target.value)} required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-3">

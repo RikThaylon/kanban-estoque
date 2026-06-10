@@ -198,11 +198,13 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
                 <label className="label">Modal de Transporte Padrão</label>
                 <select className="input w-full" value={form.modal_padrao} onChange={e => f('modal_padrao', e.target.value)}>
                   <option value="">Selecione...</option>
-                  <option value="RODOVIARIO">Rodoviário</option>
-                  <option value="AEREO">Aéreo</option>
-                  <option value="MARITIMO">Marítimo</option>
-                  <option value="MOTOBOY">Motoboy</option>
-                  <option value="CORREIOS">Correios</option>
+                  <option value="rodoviario">Rodoviario</option>
+                  <option value="aereo">Aereo</option>
+                  <option value="maritimo">Maritimo</option>
+                  <option value="ferroviario">Ferroviario</option>
+                  <option value="expresso">Expresso</option>
+                  <option value="motoboy">Motoboy</option>
+                  <option value="correios">Correios</option>
                 </select>
               </div>
 

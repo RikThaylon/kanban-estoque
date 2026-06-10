@@ -18,6 +18,7 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
+  'kanban.taxa_carregamento_padrao': 0.2,
   'turnos.lista': JSON.stringify([
     { id: '1T', nome: '1T', inicio: '06:00', fim: '14:00' },
     { id: '2T', nome: '2T', inicio: '14:01', fim: '22:00' },
@@ -126,14 +127,19 @@ async function getPermissoesOperacionais() {
 }
 
 async function getKanbanDefaults() {
-  const [nivelServicoPadrao, ciclosEstimativaInicial] = await Promise.all([
+  const [nivelServicoPadrao, ciclosEstimativaInicial, taxaCarregamentoPadrao] = await Promise.all([
     getConfiguracao('kanban.nivel_servico_padrao', CONFIG_DEFAULTS['kanban.nivel_servico_padrao']),
     getConfiguracao('kanban.ciclos_estimativa_inicial', CONFIG_DEFAULTS['kanban.ciclos_estimativa_inicial']),
+    getConfiguracao('kanban.taxa_carregamento_padrao', CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao']),
   ]);
+  const taxaCarregamento = Number(taxaCarregamentoPadrao);
 
   return {
     nivel_servico_padrao: Number(nivelServicoPadrao) || 95,
     ciclos_estimativa_inicial: Math.min(10, Math.max(3, Number(ciclosEstimativaInicial) || 10)),
+    taxa_carregamento_padrao: Number.isFinite(taxaCarregamento)
+      ? Math.min(1, Math.max(0, taxaCarregamento))
+      : CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao'],
   };
 }
 

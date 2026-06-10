@@ -48,13 +48,17 @@ describe('Produtos Routes', () => {
     it('admin deve criar produto', async () => {
       query.mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{valor:'0.33'}]})
         .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
         .mockResolvedValueOnce({rows:[]}); // INSERT kanban_parametros
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
+      const insertProdutoCall = query.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO produtos'));
+      expect(insertProdutoCall[1][7]).toBe(0.33);
     });
     it('comprador deve criar produto por permissao padrao', async () => {
       query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
@@ -64,6 +68,7 @@ describe('Produtos Routes', () => {
     });
     it('deve calcular Kanban inicial quando CMD e LT forem informados', async () => {
       query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
         .mockResolvedValueOnce({rows:[]});

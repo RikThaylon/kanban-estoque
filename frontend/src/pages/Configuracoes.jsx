@@ -14,6 +14,7 @@ const Configuracoes = () => {
   const [kanban, setKanban] = useState({
     nivel_servico_padrao: 95,
     ciclos_estimativa_inicial: 10,
+    taxa_carregamento_padrao: 0.2,
   });
   const [permissoes, setPermissoes] = useState({
     cadastrar_item: [],
@@ -68,6 +69,7 @@ const Configuracoes = () => {
       setKanban({
         nivel_servico_padrao: kanbanData.nivel_servico_padrao ?? 95,
         ciclos_estimativa_inicial: kanbanData.ciclos_estimativa_inicial ?? 10,
+        taxa_carregamento_padrao: kanbanData.taxa_carregamento_padrao ?? 0.2,
       });
     }
   }, [kanbanData]);
@@ -115,6 +117,7 @@ const Configuracoes = () => {
     mutationFn: () => api.patch('/configuracoes/kanban', {
       nivel_servico_padrao: Number(kanban.nivel_servico_padrao),
       ciclos_estimativa_inicial: Number(kanban.ciclos_estimativa_inicial),
+      taxa_carregamento_padrao: Number(kanban.taxa_carregamento_padrao),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'kanban'] });
@@ -143,6 +146,10 @@ const Configuracoes = () => {
   const supervisor = Number(form.limite_supervisor) || 0;
   const gerente = Number(form.limite_gerente) || 0;
   const invalido = supervisor < 0 || gerente < 0 || gerente < supervisor;
+  const taxaCarregamento = Number(kanban.taxa_carregamento_padrao);
+  const taxaCarregamentoPercentual = Number.isFinite(taxaCarregamento)
+    ? (taxaCarregamento * 100).toFixed(0)
+    : '0';
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -277,7 +284,7 @@ const Configuracoes = () => {
         </div>
 
         <div className="p-4 sm:p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="label">Nivel de servico padrao</label>
               <select
@@ -289,6 +296,20 @@ const Configuracoes = () => {
                 {[90, 95, 98, 99].map((v) => <option key={v} value={v}>{v}%</option>)}
               </select>
               <p className="text-xs text-navy-500 mt-1">Novo item nasce com este percentual. Padrao: 95%.</p>
+            </div>
+            <div>
+              <label className="label">Custo para manter estoque</label>
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.01"
+                value={kanban.taxa_carregamento_padrao}
+                onChange={(e) => setKanban((k) => ({ ...k, taxa_carregamento_padrao: e.target.value }))}
+                className="input font-mono"
+                disabled={carregandoKanban}
+              />
+              <p className="text-xs text-navy-500 mt-1">{taxaCarregamentoPercentual}% ao ano. Use 0.20 para 20%.</p>
             </div>
             <div>
               <label className="label">Ciclos para estimativa inicial</label>
