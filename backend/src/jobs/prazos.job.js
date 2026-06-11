@@ -13,7 +13,7 @@ async function verificarPrazosVencidos(io) {
              p.nome AS produto_nome
       FROM pedidos_compra pc
       JOIN produtos p ON p.id = pc.produto_id
-      WHERE pc.status IN ('EMITIDO', 'EM_TRANSITO')
+      WHERE pc.status IN ('AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO')
         AND pc.data_prevista < CURRENT_DATE
     `);
 

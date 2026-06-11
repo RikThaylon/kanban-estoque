@@ -41,7 +41,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const res = await api.get('/pedidos', { params: { limit: 5 } });
       return res.data.data.filter(p => 
-        ['EMITIDO', 'EM_TRANSITO'].includes(p.status) && 
+        ['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO'].includes(p.status) && 
         new Date(p.data_prevista) < new Date()
       );
     },

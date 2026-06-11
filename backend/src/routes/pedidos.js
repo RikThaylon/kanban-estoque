@@ -2,7 +2,6 @@ const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
@@ -10,7 +9,7 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { dispatchRecalculoKanban } = require('../services/recalculo.dispatcher');
-const { getLimitesAprovacaoPedido, getAprovadoresCompra } = require('../services/configuracoes.service');
+const { getLimitesAprovacaoPedido, getAprovadoresCompra, getCargosFluxoCompra } = require('../services/configuracoes.service');
 const {
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
@@ -33,6 +32,11 @@ async function gerarNumeroPedido() {
 }
 
 // Transições válidas de status
+function perfilNoFluxo(perfil, perfis = []) {
+  if (perfil === 'admin') return true;
+  return Array.isArray(perfis) && perfis.includes(perfil);
+}
+
 function perfilPodeAprovarNivel(perfil, aprovadores, nivel) {
   if (perfil === 'admin') return true;
   return Array.isArray(aprovadores?.[nivel]) && aprovadores[nivel].includes(perfil);
@@ -44,26 +48,38 @@ function nivelAprovacaoDoStatus(statusAtual) {
   return 'nivel1';
 }
 
-function podeAlterarStatusPedido(perfil, novoStatus, aprovadores, statusAtual) {
+function normalizarStatusPedido(status) {
+  if (status === 'EMITIDO') return 'AGUARDANDO_CHEGADA';
+  if (status === 'RECEBIDO') return 'CONCLUIDO';
+  return status;
+}
+
+function podeAlterarStatusPedido(perfil, novoStatus, aprovadores, statusAtual, cargosFluxo = {}) {
   if (perfil === 'admin') return true;
   if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) {
     return perfilPodeAprovarNivel(perfil, aprovadores, nivelAprovacaoDoStatus(statusAtual));
   }
-  if (['EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) return perfil === 'comprador';
-  if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) return ['gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'].includes(perfil);
+  if (['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) {
+    return perfilNoFluxo(perfil, cargosFluxo.compradores);
+  }
+  if (['CONCLUIDO', 'RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) {
+    return perfilNoFluxo(perfil, cargosFluxo.recebedores);
+  }
   return false;
 }
 
 const TRANSICOES = {
   // Admin/supervisor/gerente podem dispensar aprovação e emitir direto a partir do rascunho
   'RASCUNHO': ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO'],
-  'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
-  'AGUARDANDO_GERENTE': ['AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  'AGUARDANDO_APROVACAO': ['AGUARDANDO_GERENTE', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  'AGUARDANDO_GERENTE': ['APROVADO', 'CANCELADO', 'REJEITADO'],
   'AGUARDANDO_DIRETORIA': ['APROVADO', 'CANCELADO', 'REJEITADO'],
-  'APROVADO': ['EMITIDO', 'CANCELADO'],
-  'EMITIDO': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
-  'EM_TRANSITO': ['RECEBIDO_PARCIAL', 'RECEBIDO', 'CANCELADO'],
-  'RECEBIDO_PARCIAL': ['RECEBIDO', 'CANCELADO'],
+  'APROVADO': ['AGUARDANDO_CHEGADA', 'EMITIDO', 'CANCELADO'],
+  'AGUARDANDO_CHEGADA': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  'EMITIDO': ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  'EM_TRANSITO': ['RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  'RECEBIDO_PARCIAL': ['CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  'CONCLUIDO': [],
   'RECEBIDO': [],
   'CANCELADO': [],
   'REJEITADO': [],
@@ -136,9 +152,8 @@ router.get('/sugestoes', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// POST /api/v1/pedidos — comprador, facilitador, supervisor, gerente, admin podem criar
+// POST /api/v1/pedidos - cargos solicitantes configurados pelo admin podem criar
 router.post('/', authenticate,
-  authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'),
   createLimiter, audit('CRIAR_PEDIDO', 'pedidos_compra'),
   [
     body('produto_id').matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('produto_id inválido'),
@@ -160,12 +175,17 @@ router.post('/', authenticate,
         departamento_id,
         maquina_id,
       } = req.body;
+      const cargosFluxo = await getCargosFluxoCompra();
+      if (!perfilNoFluxo(req.user.perfil, cargosFluxo.solicitantes)) {
+        throw new AppError('Seu cargo nao pode solicitar compra neste fluxo', 403, 'FORBIDDEN');
+      }
+      const podeEscolherFornecedor = perfilNoFluxo(req.user.perfil, cargosFluxo.compradores);
       const numero = await gerarNumeroPedido();
       const quantidadePedido = Number(quantidade_pedida);
       let fornecedorPedidoId = fornecedor_id || null;
       let precoPedido = preco_unitario !== undefined && preco_unitario !== null ? Number(preco_unitario) : null;
 
-      if (fornecedor_id && !['admin', 'comprador'].includes(req.user.perfil)) {
+      if (fornecedor_id && !podeEscolherFornecedor) {
         throw new AppError('Apenas comprador escolhe fornecedor da solicitacao', 403, 'FORNECEDOR_RESTRITO_COMPRADOR');
       }
 
@@ -383,7 +403,8 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { status: novoStatus, numero_oc_externa, fornecedor_id } = req.body;
+      const { status: statusSolicitado, numero_oc_externa, fornecedor_id } = req.body;
+      const novoStatus = normalizarStatusPedido(statusSolicitado);
 
       const pedRes = await query('SELECT status, fornecedor_id FROM pedidos_compra WHERE id = $1', [id]);
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
@@ -396,27 +417,28 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
       if (novoStatus === 'APROVADO' && req.user.perfil !== 'admin') {
         throw new AppError('Use POST /:id/aprovar para aprovar pedidos', 400, 'USE_APROVAR_ENDPOINT');
       }
-      if (['RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) {
+      if (['CONCLUIDO', 'RECEBIDO', 'RECEBIDO_PARCIAL'].includes(novoStatus)) {
         throw new AppError('Use POST /:id/receber para registrar recebimento com quantidade e NF', 400, 'USE_RECEBER_ENDPOINT');
       }
+      const cargosFluxo = await getCargosFluxoCompra();
       const aprovadores = ['CANCELADO', 'REJEITADO'].includes(novoStatus)
         ? await getAprovadoresCompra()
         : null;
-      if (!podeAlterarStatusPedido(req.user.perfil, novoStatus, aprovadores, statusAtual)) {
+      if (!podeAlterarStatusPedido(req.user.perfil, novoStatus, aprovadores, statusAtual, cargosFluxo)) {
         throw new AppError('Seu perfil nao pode alterar pedido para este status', 403, 'FORBIDDEN');
       }
-      if (novoStatus === 'EMITIDO') {
+      if (novoStatus === 'AGUARDANDO_CHEGADA') {
         if (!numero_oc_externa) {
           throw new AppError('Informe o numero da OC criada no sistema externo', 400, 'OC_EXTERNA_OBRIGATORIA');
         }
         if (!fornecedor_id && !pedRes.rows[0].fornecedor_id) {
-          throw new AppError('Comprador deve escolher o fornecedor antes de marcar como emitido', 400, 'FORNECEDOR_OBRIGATORIO');
+          throw new AppError('Comprador deve escolher o fornecedor antes de marcar como aguardando chegada', 400, 'FORNECEDOR_OBRIGATORIO');
         }
       }
 
       let extra = '';
       const params = [novoStatus, id];
-      if (novoStatus === 'EMITIDO') {
+      if (novoStatus === 'AGUARDANDO_CHEGADA') {
         extra = ', data_emissao = NOW(), numero_oc_externa = $3, fornecedor_id = COALESCE($4, fornecedor_id), fornecedor_escolhido_por = $5, fornecedor_escolhido_em = NOW()';
         params.push(numero_oc_externa, fornecedor_id || null, req.user.id);
       }
@@ -441,16 +463,21 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
 
 // POST /api/v1/pedidos/:id/receber
 router.post('/:id/receber', authenticate,
-  authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador', 'facilitador'),
   audit('RECEBER_PEDIDO', 'pedidos_compra'),
   [
     body('quantidade_recebida').isFloat({ gt: 0 }),
     body('data_recebimento').optional().isISO8601(),
-    body('numero_nf').optional().trim().isLength({ max: 80 }),
+    body('numero_nf').trim().isLength({ min: 1, max: 80 }).withMessage('Informe o numero da NF'),
   ], validate,
   async (req, res, next) => {
-    const client = await getClient();
+    let client;
     try {
+      const cargosFluxo = await getCargosFluxoCompra();
+      if (!perfilNoFluxo(req.user.perfil, cargosFluxo.recebedores)) {
+        throw new AppError('Seu cargo nao pode registrar recebimento neste fluxo', 403, 'FORBIDDEN');
+      }
+
+      client = await getClient();
       await client.query('BEGIN');
       const { id } = req.params;
       const { quantidade_recebida, data_recebimento, numero_nf } = req.body;
@@ -460,12 +487,12 @@ router.post('/:id/receber', authenticate,
       if (pedRes.rows.length === 0) throw new NotFoundError('Pedido');
       const pedido = pedRes.rows[0];
 
-      if (!['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status)) {
+      if (!['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status)) {
         throw new AppError('Pedido não pode ser recebido neste status', 400, 'STATUS_INVALIDO');
       }
 
       const totalRecebido = parseFloat(pedido.quantidade_recebida) + parseFloat(quantidade_recebida);
-      const novoStatus = totalRecebido >= parseFloat(pedido.quantidade_pedida) ? 'RECEBIDO' : 'RECEBIDO_PARCIAL';
+      const novoStatus = totalRecebido >= parseFloat(pedido.quantidade_pedida) ? 'CONCLUIDO' : 'RECEBIDO_PARCIAL';
 
       await client.query(
         `UPDATE pedidos_compra SET quantidade_recebida = $1, status = $2, data_recebimento = $3, atualizado_em = NOW() WHERE id = $4`,
@@ -499,10 +526,10 @@ router.post('/:id/receber', authenticate,
 
       res.json({ message: 'Recebimento registrado', status: novoStatus, quantidade_total_recebida: totalRecebido });
     } catch (err) {
-      await client.query('ROLLBACK');
+      if (client) await client.query('ROLLBACK');
       next(err);
     } finally {
-      client.release();
+      if (client) client.release();
     }
   }
 );

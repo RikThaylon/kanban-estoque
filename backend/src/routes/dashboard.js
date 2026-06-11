@@ -18,7 +18,7 @@ router.get('/resumo', authenticate, async (req, res, next) => {
       por_faixa[(r.faixa_atual || 'SEM_DADOS').toLowerCase()] = parseInt(r.count);
     });
 
-    const pedAbertosRes = await query(`SELECT COUNT(*) FROM pedidos_compra WHERE status NOT IN ('RECEBIDO','CANCELADO')`);
+    const pedAbertosRes = await query(`SELECT COUNT(*) FROM pedidos_compra WHERE status NOT IN ('CONCLUIDO','RECEBIDO','CANCELADO','REJEITADO')`);
     const pedUrgRes = await query(`SELECT COUNT(*) FROM pedidos_compra WHERE status = 'AGUARDANDO_APROVACAO'`);
     const alertasRes = await query('SELECT COUNT(*) FROM alertas WHERE lido = false');
     const valorRes = await query('SELECT COALESCE(SUM(estoque_atual * custo_unitario), 0) AS valor FROM produtos WHERE ativo = true');
@@ -85,7 +85,7 @@ router.get('/desempenho-fornecedores', authenticate, async (req, res, next) => {
         ) AS pontualidade,
         SUM(pc.quantidade_recebida) AS volume_total
       FROM fornecedores f
-      LEFT JOIN pedidos_compra pc ON pc.fornecedor_id = f.id AND pc.status = 'RECEBIDO'
+      LEFT JOIN pedidos_compra pc ON pc.fornecedor_id = f.id AND pc.status IN ('CONCLUIDO','RECEBIDO')
       WHERE f.ativo = true
       GROUP BY f.id, f.nome, f.avaliacao
       ORDER BY lead_time_medio ASC NULLS LAST

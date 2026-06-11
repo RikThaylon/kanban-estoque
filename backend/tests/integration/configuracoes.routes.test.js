@@ -39,21 +39,54 @@ describe('Configuracoes Routes', () => {
   });
 
   it('PATCH /api/v1/configuracoes/pedidos deve salvar sem depender de colunas extras', async () => {
+    for (let i = 0; i < 8; i += 1) {
+      query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    }
+    query
+      .mockResolvedValueOnce({ rows: [{ valor: 'facilitador' }] })
+      .mockResolvedValueOnce({ rows: [{ valor: 'supervisor_turno,gerente_operacoes' }] })
+      .mockResolvedValueOnce({ rows: [{ valor: 'gerente_operacoes' }] })
+      .mockResolvedValueOnce({ rows: [{ valor: 'plant_manager' }] })
+      .mockResolvedValueOnce({ rows: [{ valor: 'comprador' }] })
+      .mockResolvedValueOnce({ rows: [{ valor: 'comprador,facilitador' }] });
+
     const res = await request(app)
       .patch('/api/v1/configuracoes/pedidos')
       .set('Authorization', authHeader('admin'))
       .send({
         limite_supervisor: 5000,
         limite_gerente: 50000,
+        solicitantes: ['facilitador'],
         aprovadores_nivel_1: ['supervisor_turno', 'gerente_operacoes'],
         aprovadores_nivel_2: ['gerente_operacoes'],
         aprovadores_nivel_3: ['plant_manager'],
+        compradores: ['comprador'],
+        recebedores: ['comprador', 'facilitador'],
       });
 
     expect(res.status).toBe(200);
     expect(res.body.limite_supervisor).toBe(5000);
+    expect(res.body.solicitantes).toEqual(['facilitador']);
+    expect(res.body.compradores).toEqual(['comprador']);
+    expect(res.body.recebedores).toEqual(['comprador', 'facilitador']);
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.limite_supervisor', '5000']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.solicitantes', 'facilitador']);
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.aprovadores_nivel_1', 'supervisor_turno,gerente_operacoes']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.compradores', 'comprador']);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE configuracoes_sistema'), ['pedidos.recebedores', 'comprador,facilitador']);
+  });
+
+  it('PATCH /api/v1/configuracoes/pedidos deve ser restrito ao admin', async () => {
+    const res = await request(app)
+      .patch('/api/v1/configuracoes/pedidos')
+      .set('Authorization', authHeader('comprador'))
+      .send({
+        limite_supervisor: 5000,
+        limite_gerente: 50000,
+        solicitantes: ['facilitador'],
+      });
+
+    expect(res.status).toBe(403);
   });
 
   it('PATCH /api/v1/configuracoes/pedidos nao permite comprador como aprovador interno', async () => {

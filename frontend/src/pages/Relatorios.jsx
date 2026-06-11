@@ -278,7 +278,7 @@ const Relatorios = () => {
         </div>
         <p className="text-xs text-navy-500 mb-3">
           Agrupado pela <strong>data de chegada estimada</strong> (data emissão + lead time do fornecedor),
-          considerando OCs em APROVADO, EMITIDO, EM_TRANSITO ou RECEBIDO_PARCIAL (apenas valor ainda em aberto).
+          considerando OCs em APROVADO, AGUARDANDO_CHEGADA, EM_TRANSITO ou RECEBIDO_PARCIAL (apenas valor ainda em aberto).
         </p>
         {!previsao?.linhas?.length ? (
           <EmptyMsg msg="Nenhuma OC com chegada prevista no horizonte" />

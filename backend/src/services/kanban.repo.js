@@ -23,7 +23,7 @@ async function getKanbanSeries(produtoId) {
   const ltRes = await query(`
     SELECT lead_time_real_dias
     FROM pedidos_compra
-    WHERE produto_id = $1 AND status = 'RECEBIDO' AND lead_time_real_dias IS NOT NULL
+    WHERE produto_id = $1 AND status IN ('CONCLUIDO','RECEBIDO') AND lead_time_real_dias IS NOT NULL
     ORDER BY data_recebimento DESC
     LIMIT 20
   `, [produtoId]);

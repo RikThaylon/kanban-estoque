@@ -44,10 +44,10 @@ describe('RBAC Module', () => {
       expect(PERFIS_APROVADORES.nivel3).toBeDefined();
     });
 
-    it('nivel1 deve incluir supervisor_turno, gerente, admin', () => {
+    it('nivel1 deve incluir supervisor_turno e admin', () => {
       expect(PERFIS_APROVADORES.nivel1).toContain('supervisor_turno');
-      expect(PERFIS_APROVADORES.nivel1).toContain('gerente_operacoes');
       expect(PERFIS_APROVADORES.nivel1).toContain('admin');
+      expect(PERFIS_APROVADORES.nivel1).not.toContain('gerente_operacoes');
     });
 
     it('nivel2 deve incluir gerente, admin (sem supervisor)', () => {
@@ -99,8 +99,8 @@ describe('RBAC Module', () => {
       expect(podeAprovarNivel1('supervisor_turno')).toBe(true);
     });
 
-    it('deve permitir gerente_operacoes', () => {
-      expect(podeAprovarNivel1('gerente_operacoes')).toBe(true);
+    it('deve negar gerente_operacoes no nivel 1 padrao', () => {
+      expect(podeAprovarNivel1('gerente_operacoes')).toBe(false);
     });
 
     it('deve permitir admin', () => {

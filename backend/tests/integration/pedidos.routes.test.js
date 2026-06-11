@@ -23,6 +23,12 @@ const { USERS, authHeader } = require('../helpers/auth');
 describe('Pedidos Routes', () => {
   beforeEach(() => { jest.clearAllMocks(); _mockClient.query.mockReset(); query.mockResolvedValue({rows:[]}); app.set('io',{emit:jest.fn()}); });
 
+  const mockFluxoCompraPadrao = () => {
+    for (let i = 0; i < 6; i += 1) {
+      query.mockResolvedValueOnce({ rows: [] });
+    }
+  };
+
   describe('GET /api/v1/pedidos', () => {
     it('deve listar pedidos paginados', async () => {
       query.mockResolvedValueOnce({rows:[{count:'10'}]}).mockResolvedValueOnce({rows:[{id:'p1',numero:'PC-202605-0001'}]});
@@ -52,6 +58,7 @@ describe('Pedidos Routes', () => {
     };
 
     it('admin deve criar como RASCUNHO', async () => {
+      mockFluxoCompraPadrao();
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]}) // gerarNumeroPedido
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]}) // kanban_parametros
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]}) // produto
@@ -64,6 +71,7 @@ describe('Pedidos Routes', () => {
     });
 
     it('comprador com custo < R$5000 deve criar AGUARDANDO_APROVACAO', async () => {
+      mockFluxoCompraPadrao();
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
@@ -76,20 +84,26 @@ describe('Pedidos Routes', () => {
       expect(res.status).toBe(201); expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
     });
 
-    it('comprador com custo >= R$5000 deve criar AGUARDANDO_GERENTE', async () => {
+    it('comprador com custo >= R$5000 deve criar AGUARDANDO_APROVACAO para o supervisor decidir', async () => {
+      mockFluxoCompraPadrao();
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
         .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
         .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[{id:'ped-3',status:'AGUARDANDO_GERENTE'}]});
+        .mockResolvedValueOnce({rows:[{id:'ped-3',status:'AGUARDANDO_APROVACAO'}]});
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('comprador'))
         .send({...body,preco_unitario:100,quantidade_pedida:100}); // custo 10000
-      expect(res.status).toBe(201); expect(res.body.status).toBe('AGUARDANDO_GERENTE');
+      expect(res.status).toBe(201); expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
+      expect(query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO pedidos_compra'),
+        expect.arrayContaining(['AGUARDANDO_APROVACAO'])
+      );
     });
 
     it('facilitador deve criar solicitacao sem escolher fornecedor usando fornecedor principal do produto', async () => {
+      mockFluxoCompraPadrao();
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30,custo_unitario:12}]})
@@ -161,19 +175,53 @@ describe('Pedidos Routes', () => {
     });
   });
 
+  describe('PATCH /api/v1/pedidos/:id/status', () => {
+    const pid = '77777777-7777-4777-b777-777777777777';
+
+    it('comprador registra OC externa e coloca o pedido aguardando chegada', async () => {
+      query.mockResolvedValueOnce({rows:[{status:'APROVADO',fornecedor_id:null}]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:pid,numero:'PC-0001',status:'AGUARDANDO_CHEGADA',numero_oc_externa:'OC-99'}]});
+
+      const res = await request(app)
+        .patch(`/api/v1/pedidos/${pid}/status`)
+        .set('Authorization',authHeader('comprador'))
+        .send({
+          status: 'AGUARDANDO_CHEGADA',
+          numero_oc_externa: 'OC-99',
+          fornecedor_id: '22222222-2222-4222-b222-222222222222',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('AGUARDANDO_CHEGADA');
+    });
+  });
+
   describe('POST /api/v1/pedidos/:id/receber', () => {
     const pid = '66666666-6666-4666-b666-666666666666';
-    it('deve receber pedido e atualizar estoque', async () => {
+    it('deve exigir NF, concluir pedido e atualizar estoque', async () => {
       _mockClient.query.mockResolvedValueOnce({}) // BEGIN
-        .mockResolvedValueOnce({rows:[{id:pid,status:'EMITIDO',produto_id:'p1',numero:'PC-001',quantidade_pedida:100,quantidade_recebida:0}]})
+        .mockResolvedValueOnce({rows:[{id:pid,status:'AGUARDANDO_CHEGADA',produto_id:'p1',numero:'PC-001',quantidade_pedida:100,quantidade_recebida:0}]})
         .mockResolvedValueOnce({}) // UPDATE pedido
         .mockResolvedValueOnce({rows:[{estoque_atual:50}]}) // SELECT produto
         .mockResolvedValueOnce({}) // INSERT movimentacao
         .mockResolvedValueOnce({}) // UPDATE produto estoque
         .mockResolvedValueOnce({}); // COMMIT
       const res = await request(app).post(`/api/v1/pedidos/${pid}/receber`).set('Authorization',authHeader('admin'))
+        .send({quantidade_recebida:100, numero_nf:'NF-123'});
+      expect(res.status).toBe(200); expect(res.body.status).toBe('CONCLUIDO');
+    });
+
+    it('nao recebe sem numero de NF', async () => {
+      const res = await request(app).post(`/api/v1/pedidos/${pid}/receber`).set('Authorization',authHeader('comprador'))
         .send({quantidade_recebida:100});
-      expect(res.status).toBe(200); expect(res.body.status).toBe('RECEBIDO');
+
+      expect(res.status).toBe(400);
     });
   });
 });

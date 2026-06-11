@@ -3,9 +3,12 @@ const { query } = require('../config/database');
 const CONFIG_DEFAULTS = {
   'pedidos.limite_supervisor': 5000,
   'pedidos.limite_gerente': 50000,
-  'pedidos.aprovadores_nivel_1': 'supervisor_turno,gerente_operacoes,plant_manager',
-  'pedidos.aprovadores_nivel_2': 'gerente_operacoes,plant_manager',
+  'pedidos.solicitantes': 'facilitador,comprador',
+  'pedidos.aprovadores_nivel_1': 'supervisor_turno',
+  'pedidos.aprovadores_nivel_2': 'gerente_operacoes',
   'pedidos.aprovadores_nivel_3': 'plant_manager',
+  'pedidos.compradores': 'comprador',
+  'pedidos.recebedores': 'comprador,facilitador',
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
   'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
@@ -53,6 +56,7 @@ const PERMISSAO_TO_CHAVE = {
   editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
+const PERFIS_SEM_EXECUCAO_FLUXO_COMPRA = ['visualizador'];
 
 function parsePerfis(valor) {
   if (Array.isArray(valor)) return valor.filter(Boolean);
@@ -135,6 +139,47 @@ async function getAprovadoresCompra(options = {}) {
   return normalizarAprovadoresCompra({ nivel1, nivel2, nivel3 }, options);
 }
 
+function normalizarCargosFluxoCompra(config = {}, options = {}) {
+  const incluirAdmin = options.incluirAdmin !== false;
+  const normalizar = (valor, chaveDefault, bloqueados = PERFIS_SEM_EXECUCAO_FLUXO_COMPRA) => {
+    const perfis = parsePerfis(valor ?? CONFIG_DEFAULTS[chaveDefault])
+      .filter((perfil) => !bloqueados.includes(perfil))
+      .filter((perfil) => perfil !== 'admin');
+    return incluirAdmin ? [...new Set([...perfis, 'admin'])] : [...new Set(perfis)];
+  };
+
+  return {
+    solicitantes: normalizar(config.solicitantes, 'pedidos.solicitantes'),
+    aprovadores: normalizarAprovadoresCompra({
+      nivel1: config.nivel1,
+      nivel2: config.nivel2,
+      nivel3: config.nivel3,
+    }, options),
+    compradores: normalizar(config.compradores, 'pedidos.compradores'),
+    recebedores: normalizar(config.recebedores, 'pedidos.recebedores'),
+  };
+}
+
+async function getCargosFluxoCompra(options = {}) {
+  const [solicitantes, nivel1, nivel2, nivel3, compradores, recebedores] = await Promise.all([
+    getConfiguracao('pedidos.solicitantes', CONFIG_DEFAULTS['pedidos.solicitantes']),
+    getConfiguracao('pedidos.aprovadores_nivel_1', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_1']),
+    getConfiguracao('pedidos.aprovadores_nivel_2', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_2']),
+    getConfiguracao('pedidos.aprovadores_nivel_3', CONFIG_DEFAULTS['pedidos.aprovadores_nivel_3']),
+    getConfiguracao('pedidos.compradores', CONFIG_DEFAULTS['pedidos.compradores']),
+    getConfiguracao('pedidos.recebedores', CONFIG_DEFAULTS['pedidos.recebedores']),
+  ]);
+
+  return normalizarCargosFluxoCompra({
+    solicitantes,
+    nivel1,
+    nivel2,
+    nivel3,
+    compradores,
+    recebedores,
+  }, options);
+}
+
 async function getPermissoesOperacionais() {
   const [cadastrarItem, editarCurvaAbc, ...paginasValues] = await Promise.all([
     getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
@@ -210,11 +255,13 @@ module.exports = {
   getConfiguracao,
   getLimitesAprovacaoPedido,
   getAprovadoresCompra,
+  getCargosFluxoCompra,
   getKanbanDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
   normalizarTurnos,
   normalizarAprovadoresCompra,
+  normalizarCargosFluxoCompra,
   perfilPode,
   serializePerfis,
   salvarConfiguracoes,

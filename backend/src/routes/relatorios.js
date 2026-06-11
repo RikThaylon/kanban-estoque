@@ -52,7 +52,7 @@ router.get('/pedidos-periodo', authenticate, async (req, res, next) => {
   try {
     const { data_inicio, data_fim } = req.query;
     const params = [];
-    let where = "WHERE pc.status = 'RECEBIDO'";
+    let where = "WHERE pc.status IN ('CONCLUIDO','RECEBIDO')";
     if (data_inicio) { params.push(data_inicio); where += ` AND pc.data_recebimento >= $${params.length}`; }
     if (data_fim) { params.push(data_fim); where += ` AND pc.data_recebimento <= $${params.length}`; }
 
@@ -212,8 +212,8 @@ router.get('/estatisticas-gerais', authenticate, async (req, res, next) => {
       query(`
         SELECT
           COUNT(*) AS total_pedidos,
-          COUNT(*) FILTER (WHERE status = 'RECEBIDO') AS pedidos_recebidos,
-          COUNT(*) FILTER (WHERE status IN ('EMITIDO', 'EM_TRANSITO')) AS pedidos_em_andamento,
+          COUNT(*) FILTER (WHERE status IN ('CONCLUIDO','RECEBIDO')) AS pedidos_recebidos,
+          COUNT(*) FILTER (WHERE status IN ('AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO')) AS pedidos_em_andamento,
           COALESCE(SUM(custo_total), 0) AS custo_pedidos_total
         FROM pedidos_compra
         WHERE ${buildPeriodoSQL(req.query.periodo, 'criado_em')}
@@ -273,7 +273,7 @@ router.get('/previsao-gastos-mensal', authenticate, async (req, res, next) => {
         JOIN produtos p ON p.id = pc.produto_id
         LEFT JOIN categorias c ON c.id = p.categoria_id
         LEFT JOIN produto_fornecedor pf ON pf.produto_id = pc.produto_id AND pf.fornecedor_id = pc.fornecedor_id
-        WHERE pc.status IN ('APROVADO', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL')
+        WHERE pc.status IN ('APROVADO', 'AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL')
           AND pc.data_emissao IS NOT NULL
       )
       SELECT TO_CHAR(date_trunc('month', data_chegada), 'YYYY-MM') AS mes_chegada,

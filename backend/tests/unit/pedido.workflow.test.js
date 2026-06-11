@@ -19,12 +19,12 @@ describe('pedido.workflow', () => {
       })).toBe('AGUARDANDO_APROVACAO');
     });
 
-    it('escala solicitacao do facilitador acima do limite para gerente de operacoes', () => {
+    it('mantem solicitacao acima do limite com supervisor antes de escalar', () => {
       expect(determinarStatusInicialPedido({
         perfil: 'facilitador',
         custoTotal: 5000,
         limites,
-      })).toBe('AGUARDANDO_GERENTE');
+      })).toBe('AGUARDANDO_APROVACAO');
     });
 
     it('mantem pedido do comprador no mesmo fluxo operacional', () => {
@@ -104,6 +104,21 @@ describe('pedido.workflow', () => {
         pedido: {
           status: 'AGUARDANDO_GERENTE',
           custo_total: 12000,
+          criado_por: 'fac-1',
+          aprovador_n1_id: 'sup-1',
+        },
+        usuario: { id: 'ger-1', perfil: 'gerente_operacoes' },
+        limites,
+      });
+
+      expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'ger-1' });
+    });
+
+    it('permite gerente aprovar pedido escalado mesmo acima do limite legado de diretoria', () => {
+      const result = determinarProximaAprovacao({
+        pedido: {
+          status: 'AGUARDANDO_GERENTE',
+          custo_total: 75000,
           criado_por: 'fac-1',
           aprovador_n1_id: 'sup-1',
         },

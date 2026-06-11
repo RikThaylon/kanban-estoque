@@ -13,9 +13,11 @@ const STATUS_STYLES = {
   AGUARDANDO_GERENTE: 'bg-fuchsia-100 text-fuchsia-700',
   AGUARDANDO_DIRETORIA: 'bg-pink-100 text-pink-700',
   APROVADO: 'bg-blue-100 text-blue-700',
+  AGUARDANDO_CHEGADA: 'bg-indigo-100 text-indigo-700',
   EMITIDO: 'bg-indigo-100 text-indigo-700',
   EM_TRANSITO: 'bg-amber-100 text-amber-700',
   RECEBIDO_PARCIAL: 'bg-teal-100 text-teal-700',
+  CONCLUIDO: 'bg-green-100 text-green-700',
   RECEBIDO: 'bg-green-100 text-green-700',
   CANCELADO: 'bg-red-100 text-red-700',
   REJEITADO: 'bg-rose-200 text-rose-800',
@@ -27,29 +29,40 @@ const STATUS_LABELS = {
   AGUARDANDO_GERENTE: 'AGUARDANDO APROVACAO N2',
   AGUARDANDO_DIRETORIA: 'AGUARDANDO APROVACAO N3',
   APROVADO: 'APROVADO INTERNAMENTE',
-  EMITIDO: 'OC EXTERNA REGISTRADA',
+  AGUARDANDO_CHEGADA: 'AGUARDANDO CHEGADA',
+  EMITIDO: 'AGUARDANDO CHEGADA',
   EM_TRANSITO: 'EM TRANSITO',
   RECEBIDO_PARCIAL: 'RECEBIDO PARCIAL',
-  RECEBIDO: 'RECEBIDO',
+  CONCLUIDO: 'CONCLUIDO',
+  RECEBIDO: 'CONCLUIDO',
   CANCELADO: 'CANCELADO',
   REJEITADO: 'REJEITADO',
 };
 
 const APROVADORES_PADRAO = {
-  nivel1: ['supervisor_turno', 'gerente_operacoes', 'plant_manager'],
-  nivel2: ['gerente_operacoes', 'plant_manager'],
+  nivel1: ['supervisor_turno'],
+  nivel2: ['gerente_operacoes'],
   nivel3: ['plant_manager'],
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
+const PERFIS_SEM_FLUXO_COMPRA = ['visualizador'];
 const filtrarPerfisAprovadores = (perfis) => perfis.filter((perfil) => !PERFIS_SEM_APROVACAO_COMPRA.includes(perfil));
 const normalizarNivelAprovador = (perfis, fallback) => (
   [...new Set(['admin', ...filtrarPerfisAprovadores(Array.isArray(perfis) ? perfis : fallback)])]
 );
+const normalizarEtapaFluxo = (perfis, fallback) => (
+  [...new Set(['admin', ...(Array.isArray(perfis) ? perfis : fallback).filter((perfil) => !PERFIS_SEM_FLUXO_COMPRA.includes(perfil))])]
+);
 
-const normalizarAprovadoresCompra = (config) => ({
-  nivel1: normalizarNivelAprovador(config?.aprovadores_nivel_1, APROVADORES_PADRAO.nivel1),
-  nivel2: normalizarNivelAprovador(config?.aprovadores_nivel_2, APROVADORES_PADRAO.nivel2),
-  nivel3: normalizarNivelAprovador(config?.aprovadores_nivel_3, APROVADORES_PADRAO.nivel3),
+const normalizarFluxoCompra = (config) => ({
+  solicitantes: normalizarEtapaFluxo(config?.solicitantes, ['facilitador', 'comprador']),
+  aprovadores: {
+    nivel1: normalizarNivelAprovador(config?.aprovadores_nivel_1, APROVADORES_PADRAO.nivel1),
+    nivel2: normalizarNivelAprovador(config?.aprovadores_nivel_2, APROVADORES_PADRAO.nivel2),
+    nivel3: normalizarNivelAprovador(config?.aprovadores_nivel_3, APROVADORES_PADRAO.nivel3),
+  },
+  compradores: normalizarEtapaFluxo(config?.compradores, ['comprador']),
+  recebedores: normalizarEtapaFluxo(config?.recebedores, ['comprador', 'facilitador']),
 });
 
 const statusLabel = (status) => STATUS_LABELS[status] || String(status || '').replace(/_/g, ' ');
@@ -78,7 +91,8 @@ const Pedidos = () => {
     queryFn: async () => (await api.get('/configuracoes/pedidos')).data,
   });
 
-  const aprovadoresCompra = useMemo(() => normalizarAprovadoresCompra(configPedidos), [configPedidos]);
+  const fluxoCompra = useMemo(() => normalizarFluxoCompra(configPedidos), [configPedidos]);
+  const podeSolicitarCompra = !readOnly && fluxoCompra.solicitantes.includes(user?.perfil);
 
   const { data: sugestoes } = useQuery({
     queryKey: ['pedidos', 'sugestoes'],
@@ -103,14 +117,14 @@ const Pedidos = () => {
 
   const emitir = useMutation({
     mutationFn: ({ id, numero_oc_externa, fornecedor_id }) => api.patch(`/pedidos/${id}/status`, {
-      status: 'EMITIDO',
+      status: 'AGUARDANDO_CHEGADA',
       numero_oc_externa,
       fornecedor_id,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
-      pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Compra marcada como emitida para acompanhamento e recebimento.' });
+      pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Pedido aguardando chegada para lancamento da NF.' });
       setOpenEmitir(null);
     },
   });
@@ -153,9 +167,9 @@ const Pedidos = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
-          <p className="text-navy-400 text-sm">Solicitacao, aprovacao interna, OC externa e recebimento</p>
+          <p className="text-navy-400 text-sm">Solicitacao, aprovacao, OC externa, chegada e NF</p>
         </div>
-        {!readOnly && (
+        {podeSolicitarCompra && (
           <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" /> Novo Pedido
           </button>
@@ -165,12 +179,14 @@ const Pedidos = () => {
       <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-navy-600 flex flex-wrap items-center gap-2">
         <span className="font-semibold text-navy-800">Fluxo:</span>
         <span>Solicitacao</span>
-        <span className="text-navy-300">→</span>
-        <span>Aprovacao interna</span>
-        <span className="text-navy-300">→</span>
-        <span>Comprador registra OC externa</span>
-        <span className="text-navy-300">→</span>
-        <span>Recebimento</span>
+        <span className="text-navy-300">-&gt;</span>
+        <span>Aprovacao supervisor/gerente</span>
+        <span className="text-navy-300">-&gt;</span>
+        <span>Comprador registra OC</span>
+        <span className="text-navy-300">-&gt;</span>
+        <span>Aguardando chegada</span>
+        <span className="text-navy-300">-&gt;</span>
+        <span>NF e conclusao</span>
       </div>
 
       {/* Sugestões de Compra */}
@@ -201,7 +217,7 @@ const Pedidos = () => {
                   </div>
                   <button
                     onClick={() => handleGerarSugestao(sug)}
-                    disabled={readOnly || !sug.fornecedor_id || !sug.eoq}
+                    disabled={!podeSolicitarCompra || !sug.fornecedor_id || !sug.eoq}
                     className="w-full py-2 bg-navy-50 hover:bg-navy-100 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed text-navy-700 font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
                     title={!sug.fornecedor_id ? 'Sem fornecedor padrão cadastrado' : !sug.eoq ? 'Sem EOQ calculado' : ''}
                   >
@@ -234,10 +250,12 @@ const Pedidos = () => {
             <option value="AGUARDANDO_GERENTE">Aguardando gerente (Nível 2)</option>
             <option value="AGUARDANDO_DIRETORIA">Aguardando diretoria (Nível 3)</option>
             <option value="APROVADO">Aprovado internamente / aguardando comprador</option>
-            <option value="EMITIDO">OC externa registrada</option>
+            <option value="AGUARDANDO_CHEGADA">Aguardando chegada</option>
+            <option value="EMITIDO">Aguardando chegada (legado)</option>
             <option value="EM_TRANSITO">Em trânsito</option>
             <option value="RECEBIDO_PARCIAL">Recebido parcial</option>
-            <option value="RECEBIDO">Recebido</option>
+            <option value="CONCLUIDO">Concluido</option>
+            <option value="RECEBIDO">Concluido (legado)</option>
             <option value="CANCELADO">Cancelado</option>
           </select>
         </div>
@@ -292,7 +310,7 @@ const Pedidos = () => {
                       <PedidoActions
                         pedido={pedido}
                         user={user}
-                        aprovadores={aprovadoresCompra}
+                        fluxo={fluxoCompra}
                         onAprovar={() => aprovar.mutate(pedido.id)}
                         onEmitir={() => setOpenEmitir(pedido)}
                         onReceber={() => setOpenReceber(pedido)}
@@ -338,7 +356,7 @@ const Pedidos = () => {
               <PedidoActions
                 pedido={pedido}
                 user={user}
-                aprovadores={aprovadoresCompra}
+                fluxo={fluxoCompra}
                 onAprovar={() => aprovar.mutate(pedido.id)}
                 onRejeitar={() => setOpenRejeitar(pedido)}
                 onEmitir={() => setOpenEmitir(pedido)}
@@ -362,7 +380,7 @@ const Pedidos = () => {
         )}
       </div>
 
-      {openNovo && <NovoPedidoModal template={pedidoTemplate} onClose={() => { setOpenNovo(false); setPedidoTemplate(null); }} />}
+      {openNovo && <NovoPedidoModal template={pedidoTemplate} fluxo={fluxoCompra} onClose={() => { setOpenNovo(false); setPedidoTemplate(null); }} />}
       {openReceber && <ReceberPedidoModal pedido={openReceber} onClose={() => setOpenReceber(null)} />}
       {openDetalhe && <DetalhePedidoModal pedido={openDetalhe} onClose={() => setOpenDetalhe(null)} />}
       {openEmitir && <EmitirPedidoModal pedido={openEmitir} onClose={() => setOpenEmitir(null)} onConfirm={(payload) => emitir.mutate(payload)} loading={emitir.isPending} />}
@@ -379,10 +397,13 @@ const Row = ({ label, value, clamp }) => (
 );
 
 // ─── Ações por pedido ───────────────────────────────────────────────────────
-const PedidoActions = ({ pedido, user, aprovadores, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe }) => {
+const PedidoActions = ({ pedido, user, fluxo, onAprovar, onRejeitar, onEmitir, onReceber, onCancelar, onDetalhe }) => {
+  const aprovadores = fluxo?.aprovadores || {};
   const podeAprovarN1 = aprovadores?.nivel1?.includes(user?.perfil);
   const podeAprovarN2 = aprovadores?.nivel2?.includes(user?.perfil);
   const podeAprovarN3 = aprovadores?.nivel3?.includes(user?.perfil);
+  const podeComprar = fluxo?.compradores?.includes(user?.perfil);
+  const podeRegistrarRecebimento = fluxo?.recebedores?.includes(user?.perfil);
   const readOnly = isReadOnlyPerfil(user?.perfil);
 
   let podeAprovar = false;
@@ -395,9 +416,9 @@ const PedidoActions = ({ pedido, user, aprovadores, onAprovar, onRejeitar, onEmi
 
   podeAprovar = !readOnly && podeAprovar;
   const podeRejeitar = podeAprovar;
-  const podeEmitir = !readOnly && pedido.status === 'APROVADO' && ['admin', 'comprador'].includes(user?.perfil);
-  const podeReceber = !readOnly && ['EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
-  const podeCancelar = !readOnly && !['RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
+  const podeEmitir = !readOnly && pedido.status === 'APROVADO' && podeComprar;
+  const podeReceber = !readOnly && podeRegistrarRecebimento && ['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
+  const podeCancelar = !readOnly && !['CONCLUIDO', 'RECEBIDO', 'CANCELADO', 'REJEITADO'].includes(pedido.status);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 justify-center">
@@ -466,11 +487,11 @@ const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
 };
 
 // ─── Modal: Novo Pedido ─────────────────────────────────────────────────────
-const NovoPedidoModal = ({ template, onClose }) => {
+const NovoPedidoModal = ({ template, fluxo, onClose }) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const pushToast = useUiStore(state => state.pushToast);
-  const podeEscolherFornecedor = ['admin', 'comprador'].includes(user?.perfil);
+  const podeEscolherFornecedor = fluxo?.compradores?.includes(user?.perfil);
   const [busca, setBusca] = useState(template?.produto_codigo ? `${template.produto_codigo} — ${template.produto_nome}` : '');
   const [produtoId, setProdutoId] = useState(template?.produto_id || '');
   const [fornecedorId, setFornecedorId] = useState(template?.fornecedor_id || '');
@@ -779,7 +800,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
   const receber = useMutation({
     mutationFn: () => api.post(`/pedidos/${pedido.id}/receber`, {
       quantidade_recebida: parseFloat(quantidade),
-      numero_nf: numeroNF || undefined,
+      numero_nf: numeroNF.trim(),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
@@ -801,6 +822,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
     e.preventDefault();
     setErro('');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
+    if (!numeroNF.trim()) return setErro('Informe o numero da NF');
     receber.mutate();
   };
 
@@ -808,7 +830,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-navy-800">Receber pedido</h2>
+          <h2 className="text-lg font-bold text-navy-800">Registrar NF e concluir</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
@@ -823,14 +845,14 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
               className="input w-full font-mono" required autoFocus />
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Nº da NF (opcional)</label>
-            <input type="text" value={numeroNF} onChange={e => setNumeroNF(e.target.value)} className="input w-full" />
+            <label className="block text-sm font-medium text-navy-700 mb-1">Numero da NF</label>
+            <input type="text" value={numeroNF} onChange={e => setNumeroNF(e.target.value)} className="input w-full" required />
           </div>
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary justify-center">Cancelar</button>
             <button type="submit" disabled={receber.isPending} className="btn-primary justify-center">
-              {receber.isPending ? 'Registrando…' : 'Confirmar recebimento'}
+              {receber.isPending ? 'Registrando...' : 'Concluir pedido'}
             </button>
           </div>
         </form>

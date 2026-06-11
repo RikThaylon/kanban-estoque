@@ -346,7 +346,7 @@ router.get('/:id/historico-lead-time', authenticate, async (req, res, next) => {
       SELECT numero, data_emissao, data_recebimento, lead_time_real_dias, data_prevista,
              fornecedor_id, quantidade_pedida
       FROM pedidos_compra
-      WHERE produto_id = $1 AND status = 'RECEBIDO' AND lead_time_real_dias IS NOT NULL
+      WHERE produto_id = $1 AND status IN ('CONCLUIDO','RECEBIDO') AND lead_time_real_dias IS NOT NULL
       ORDER BY data_recebimento DESC LIMIT 20
     `, [req.params.id]);
     res.json(result.rows);

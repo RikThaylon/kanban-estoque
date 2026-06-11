@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Clock, Save, Settings, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ClipboardList, Clock, FileCheck2, Lock, Save, Settings, ShieldCheck, ShoppingCart, Truck } from 'lucide-react';
 import api from '../services/api';
+import { useAuthStore } from '../stores/authStore';
 import { formatMoney } from '../utils/formatters';
 import { PAGINA_LABELS, PAGINAS_SISTEMA, PERFIL_LABELS } from '../utils/permissoes';
 
 const Configuracoes = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isAdmin = user?.perfil === 'admin';
   const [form, setForm] = useState({
     limite_supervisor: '',
     limite_gerente: '',
+    solicitantes: [],
     aprovadores_nivel_1: [],
     aprovadores_nivel_2: [],
     aprovadores_nivel_3: [],
+    compradores: [],
+    recebedores: [],
   });
   const [kanban, setKanban] = useState({
     nivel_servico_padrao: 95,
@@ -53,9 +59,12 @@ const Configuracoes = () => {
       setForm({
         limite_supervisor: data.limite_supervisor ?? '',
         limite_gerente: data.limite_gerente ?? '',
+        solicitantes: data.solicitantes || [],
         aprovadores_nivel_1: data.aprovadores_nivel_1 || [],
         aprovadores_nivel_2: data.aprovadores_nivel_2 || [],
         aprovadores_nivel_3: data.aprovadores_nivel_3 || [],
+        compradores: data.compradores || [],
+        recebedores: data.recebedores || [],
       });
     }
   }, [data]);
@@ -90,9 +99,12 @@ const Configuracoes = () => {
     mutationFn: () => api.patch('/configuracoes/pedidos', {
       limite_supervisor: Number(form.limite_supervisor),
       limite_gerente: Number(form.limite_gerente),
+      solicitantes: form.solicitantes || [],
       aprovadores_nivel_1: form.aprovadores_nivel_1 || [],
       aprovadores_nivel_2: form.aprovadores_nivel_2 || [],
       aprovadores_nivel_3: form.aprovadores_nivel_3 || [],
+      compradores: form.compradores || [],
+      recebedores: form.recebedores || [],
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'pedidos'] });
@@ -161,6 +173,8 @@ const Configuracoes = () => {
     : '0';
   const perfisAprovadores = (permissoesData?.perfis || [])
     .filter((perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil));
+  const perfisFluxoCompra = (permissoesData?.perfis || [])
+    .filter((perfil) => !['admin', 'visualizador'].includes(perfil));
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -231,15 +245,24 @@ const Configuracoes = () => {
             <Settings className="w-5 h-5 text-navy-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Aprovacao de pedidos</h2>
-            <p className="text-xs text-navy-500">Valores de corte para supervisor, gerente e diretoria.</p>
+            <h2 className="font-bold text-navy-800">Fluxo de aprovacao de compra</h2>
+            <p className="text-xs text-navy-500">Somente admin altera cargos; demais perfis seguem as etapas configuradas.</p>
           </div>
         </div>
 
         <div className="p-4 sm:p-5 space-y-4">
+          <FluxoCompraPreview form={form} tetoSupervisor={supervisor} />
+
+          {!isAdmin && (
+            <div className="bg-surface-50 border border-surface-200 rounded-md p-3 flex gap-2 text-sm text-navy-600">
+              <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>Voce pode consultar o fluxo, mas apenas administradores salvam alteracoes nos cargos.</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label">Limite do supervisor de turno</label>
+              <label className="label">Teto do supervisor de turno</label>
               <input
                 type="number"
                 min="0"
@@ -247,16 +270,16 @@ const Configuracoes = () => {
                 value={form.limite_supervisor}
                 onChange={(e) => setForm((f) => ({ ...f, limite_supervisor: e.target.value }))}
                 className="input font-mono"
-                disabled={isLoading}
+                disabled={isLoading || !isAdmin}
                 required
               />
               <p className="text-xs text-navy-500 mt-1">
-                A partir de {formatMoney(supervisor)}, a solicitacao vai direto para gerente de operacoes.
+                Ate {formatMoney(supervisor)}, supervisor aprova. Acima disso, ele escala para gerente de operacoes.
               </p>
             </div>
 
             <div>
-              <label className="label">Limite do gerente de operacoes</label>
+              <label className="label">Limite legado de diretoria</label>
               <input
                 type="number"
                 min="0"
@@ -264,11 +287,11 @@ const Configuracoes = () => {
                 value={form.limite_gerente}
                 onChange={(e) => setForm((f) => ({ ...f, limite_gerente: e.target.value }))}
                 className="input font-mono"
-                disabled={isLoading}
+                disabled={isLoading || !isAdmin}
                 required
               />
               <p className="text-xs text-navy-500 mt-1">
-                A partir de {formatMoney(gerente)}, o gerente escala para diretoria/plant manager.
+                Mantido por compatibilidade. No fluxo redesenhado, o gerente conclui a aprovacao.
               </p>
             </div>
           </div>
@@ -282,47 +305,63 @@ const Configuracoes = () => {
 
           <div className="rounded-md border border-surface-200 bg-white p-4 space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-navy-800">Quem aprova antes do comprador</h3>
+              <h3 className="text-sm font-bold text-navy-800">Cargos do fluxo</h3>
               <p className="text-xs text-navy-500 mt-1">
-                Estes cargos liberam a solicitacao internamente. Depois disso, apenas admin/comprador registra fornecedor e numero da OC externa.
+                Configure quem solicita, aprova, registra a OC externa e confirma a chegada com NF.
               </p>
             </div>
 
             <div className="space-y-4">
               <PermissionGroup
-                title="Aprovacao interna N1"
-                description="Usada para pedidos abaixo do limite do supervisor."
+                title="1. Solicitacao de compra"
+                description="Quem pode abrir pedidos para reposicao."
+                value={form.solicitantes}
+                perfis={perfisFluxoCompra}
+                disabled={isLoading || carregandoPermissoes || !isAdmin}
+                onToggle={(perfil) => toggleAprovador('solicitantes', perfil)}
+              />
+              <PermissionGroup
+                title="2. Aprovacao do supervisor"
+                description="Aprova quando o valor nao excede o teto; se exceder, escala para gerente."
                 value={form.aprovadores_nivel_1}
                 perfis={perfisAprovadores}
-                disabled={isLoading || carregandoPermissoes}
+                disabled={isLoading || carregandoPermissoes || !isAdmin}
                 onToggle={(perfil) => toggleAprovador('aprovadores_nivel_1', perfil)}
               />
               <PermissionGroup
-                title="Aprovacao interna N2"
-                description="Usada quando o valor chega ao limite do supervisor."
+                title="3. Aprovacao do gerente de operacoes"
+                description="Recebe somente os pedidos escalados acima do teto."
                 value={form.aprovadores_nivel_2}
                 perfis={perfisAprovadores}
-                disabled={isLoading || carregandoPermissoes}
+                disabled={isLoading || carregandoPermissoes || !isAdmin}
                 onToggle={(perfil) => toggleAprovador('aprovadores_nivel_2', perfil)}
               />
               <PermissionGroup
-                title="Aprovacao interna N3"
-                description="Usada quando o valor chega ao limite do gerente."
-                value={form.aprovadores_nivel_3}
-                perfis={perfisAprovadores}
-                disabled={isLoading || carregandoPermissoes}
-                onToggle={(perfil) => toggleAprovador('aprovadores_nivel_3', perfil)}
+                title="4. Registro da OC externa"
+                description="Quem registra fornecedor final e numero da ordem de compra."
+                value={form.compradores}
+                perfis={perfisFluxoCompra}
+                disabled={isLoading || carregandoPermissoes || !isAdmin}
+                onToggle={(perfil) => toggleAprovador('compradores', perfil)}
+              />
+              <PermissionGroup
+                title="5. NF e conclusao"
+                description="Quem registra a NF quando o pedido chega."
+                value={form.recebedores}
+                perfis={perfisFluxoCompra}
+                disabled={isLoading || carregandoPermissoes || !isAdmin}
+                onToggle={(perfil) => toggleAprovador('recebedores', perfil)}
               />
             </div>
 
-            <p className="text-xs text-navy-500">Admin sempre aprova todos os niveis por regra do sistema.</p>
+            <p className="text-xs text-navy-500">Admin sempre executa qualquer etapa por regra do sistema, mesmo sem aparecer nas listas.</p>
           </div>
 
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
           {sucesso && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3">{sucesso}</div>}
 
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <button type="submit" disabled={salvar.isPending || isLoading || invalido} className="btn-primary justify-center">
+            <button type="submit" disabled={salvar.isPending || isLoading || invalido || !isAdmin} className="btn-primary justify-center">
               <Save className="w-4 h-4" />
               {salvar.isPending ? 'Salvando...' : 'Salvar configuracoes'}
             </button>
@@ -534,6 +573,83 @@ const Configuracoes = () => {
           </div>
         </div>
       </form>
+    </div>
+  );
+};
+
+const formatPerfis = (perfis = []) => {
+  if (!perfis.length) return 'Admin';
+  return perfis.map((perfil) => PERFIL_LABELS[perfil] || perfil).join(', ');
+};
+
+const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
+  const steps = [
+    {
+      icon: ClipboardList,
+      title: 'Solicitacao',
+      status: 'Novo pedido',
+      owner: formatPerfis(form.solicitantes),
+      note: 'Abre a necessidade de compra.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Supervisor',
+      status: `Teto ${formatMoney(tetoSupervisor)}`,
+      owner: formatPerfis(form.aprovadores_nivel_1),
+      note: 'Aprova ou escala para gerente.',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Gerente op.',
+      status: 'Se exceder teto',
+      owner: formatPerfis(form.aprovadores_nivel_2),
+      note: 'Aprova pedido escalado.',
+    },
+    {
+      icon: ShoppingCart,
+      title: 'Comprador',
+      status: 'OC externa',
+      owner: formatPerfis(form.compradores),
+      note: 'Registra o numero da OC.',
+    },
+    {
+      icon: Truck,
+      title: 'Aguardando chegada',
+      status: 'Em aberto',
+      owner: formatPerfis(form.compradores),
+      note: 'Pedido comprado, aguardando entrega.',
+    },
+    {
+      icon: FileCheck2,
+      title: 'Concluido',
+      status: 'NF registrada',
+      owner: formatPerfis(form.recebedores),
+      note: 'Comprador ou facilitador informa a NF.',
+    },
+  ];
+
+  return (
+    <div className="rounded-md border border-surface-200 bg-white p-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-2">
+        {steps.map((step, index) => (
+          <div key={step.title} className="relative rounded-md border border-surface-200 bg-surface-50 p-3 min-h-[150px]">
+            <div className="flex items-center justify-between gap-2">
+              <div className="w-9 h-9 rounded bg-white border border-surface-200 flex items-center justify-center">
+                <step.icon className="w-4 h-4 text-navy-700" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-navy-400">{step.status}</span>
+            </div>
+            <h3 className="mt-3 text-sm font-black text-navy-800">{step.title}</h3>
+            <p className="mt-1 text-xs text-navy-500">{step.note}</p>
+            <p className="mt-3 text-xs font-semibold text-navy-700 line-clamp-2">{step.owner}</p>
+            {index < steps.length - 1 && (
+              <div className="hidden xl:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white border border-surface-200 items-center justify-center">
+                <ArrowRight className="w-4 h-4 text-navy-300" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

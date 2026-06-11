@@ -19,7 +19,7 @@ const PERFIS_VISUALIZADORES = ['plant_manager', 'gerente_engenharia', 'eng_proce
 
 // Cargos que aprovam (em ordem hierarquica)
 const PERFIS_APROVADORES = {
-  nivel1: ['supervisor_turno', 'gerente_operacoes', 'admin'],
+  nivel1: ['supervisor_turno', 'admin'],
   nivel2: ['gerente_operacoes', 'admin'],
   nivel3: ['plant_manager', 'admin'],
 };

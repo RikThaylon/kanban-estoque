@@ -7,7 +7,7 @@ const { validate } = require('../middleware/validate');
 const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
-  getAprovadoresCompra,
+  getCargosFluxoCompra,
   getKanbanDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
@@ -20,21 +20,27 @@ const { PERFIS_VALIDOS } = require('../middleware/rbac');
 const PERFIS_APROVADORES_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
   (perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil)
 );
+const PERFIS_FLUXO_COMPRA_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
+  (perfil) => !['admin', 'visualizador'].includes(perfil)
+);
 
 const router = express.Router();
 
 router.get('/pedidos', authenticate, async (req, res, next) => {
   try {
-    const [limites, aprovadores] = await Promise.all([
+    const [limites, cargosFluxo] = await Promise.all([
       getLimitesAprovacaoPedido(),
-      getAprovadoresCompra({ incluirAdmin: false }),
+      getCargosFluxoCompra({ incluirAdmin: false }),
     ]);
     res.json({
       limite_supervisor: limites.supervisor,
       limite_gerente: limites.gerente,
-      aprovadores_nivel_1: aprovadores.nivel1,
-      aprovadores_nivel_2: aprovadores.nivel2,
-      aprovadores_nivel_3: aprovadores.nivel3,
+      solicitantes: cargosFluxo.solicitantes,
+      aprovadores_nivel_1: cargosFluxo.aprovadores.nivel1,
+      aprovadores_nivel_2: cargosFluxo.aprovadores.nivel2,
+      aprovadores_nivel_3: cargosFluxo.aprovadores.nivel3,
+      compradores: cargosFluxo.compradores,
+      recebedores: cargosFluxo.recebedores,
     });
   } catch (err) {
     next(err);
@@ -48,12 +54,18 @@ router.patch('/pedidos',
   [
     body('limite_supervisor').isFloat({ min: 0 }).withMessage('Limite do supervisor deve ser >= 0'),
     body('limite_gerente').isFloat({ min: 0 }).withMessage('Limite do gerente deve ser >= 0'),
+    body('solicitantes').optional().isArray().withMessage('solicitantes deve ser uma lista de cargos'),
+    body('solicitantes.*').optional().isIn(PERFIS_FLUXO_COMPRA_CONFIGURAVEIS).withMessage('Cargo invalido em solicitantes'),
     body('aprovadores_nivel_1').optional().isArray().withMessage('aprovadores_nivel_1 deve ser uma lista de cargos'),
     body('aprovadores_nivel_1.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_1'),
     body('aprovadores_nivel_2').optional().isArray().withMessage('aprovadores_nivel_2 deve ser uma lista de cargos'),
     body('aprovadores_nivel_2.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_2'),
     body('aprovadores_nivel_3').optional().isArray().withMessage('aprovadores_nivel_3 deve ser uma lista de cargos'),
     body('aprovadores_nivel_3.*').optional().isIn(PERFIS_APROVADORES_CONFIGURAVEIS).withMessage('Cargo invalido em aprovadores_nivel_3'),
+    body('compradores').optional().isArray().withMessage('compradores deve ser uma lista de cargos'),
+    body('compradores.*').optional().isIn(PERFIS_FLUXO_COMPRA_CONFIGURAVEIS).withMessage('Cargo invalido em compradores'),
+    body('recebedores').optional().isArray().withMessage('recebedores deve ser uma lista de cargos'),
+    body('recebedores.*').optional().isIn(PERFIS_FLUXO_COMPRA_CONFIGURAVEIS).withMessage('Cargo invalido em recebedores'),
   ],
   validate,
   async (req, res, next) => {
@@ -70,26 +82,38 @@ router.patch('/pedidos',
         'pedidos.limite_gerente': limiteGerente,
       };
 
-      if (req.body.aprovadores_nivel_1) {
+      if (req.body.solicitantes !== undefined) {
+        configuracoes['pedidos.solicitantes'] = serializePerfis(req.body.solicitantes.filter((perfil) => perfil !== 'admin'));
+      }
+      if (req.body.aprovadores_nivel_1 !== undefined) {
         configuracoes['pedidos.aprovadores_nivel_1'] = serializePerfis(req.body.aprovadores_nivel_1.filter((perfil) => perfil !== 'admin'));
       }
-      if (req.body.aprovadores_nivel_2) {
+      if (req.body.aprovadores_nivel_2 !== undefined) {
         configuracoes['pedidos.aprovadores_nivel_2'] = serializePerfis(req.body.aprovadores_nivel_2.filter((perfil) => perfil !== 'admin'));
       }
-      if (req.body.aprovadores_nivel_3) {
+      if (req.body.aprovadores_nivel_3 !== undefined) {
         configuracoes['pedidos.aprovadores_nivel_3'] = serializePerfis(req.body.aprovadores_nivel_3.filter((perfil) => perfil !== 'admin'));
+      }
+      if (req.body.compradores !== undefined) {
+        configuracoes['pedidos.compradores'] = serializePerfis(req.body.compradores.filter((perfil) => perfil !== 'admin'));
+      }
+      if (req.body.recebedores !== undefined) {
+        configuracoes['pedidos.recebedores'] = serializePerfis(req.body.recebedores.filter((perfil) => perfil !== 'admin'));
       }
 
       await salvarConfiguracoes(configuracoes, req.user.id);
 
-      const aprovadores = await getAprovadoresCompra({ incluirAdmin: false });
+      const cargosFluxo = await getCargosFluxoCompra({ incluirAdmin: false });
 
       res.json({
         limite_supervisor: limiteSupervisor,
         limite_gerente: limiteGerente,
-        aprovadores_nivel_1: aprovadores.nivel1,
-        aprovadores_nivel_2: aprovadores.nivel2,
-        aprovadores_nivel_3: aprovadores.nivel3,
+        solicitantes: cargosFluxo.solicitantes,
+        aprovadores_nivel_1: cargosFluxo.aprovadores.nivel1,
+        aprovadores_nivel_2: cargosFluxo.aprovadores.nivel2,
+        aprovadores_nivel_3: cargosFluxo.aprovadores.nivel3,
+        compradores: cargosFluxo.compradores,
+        recebedores: cargosFluxo.recebedores,
       });
     } catch (err) {
       next(err);

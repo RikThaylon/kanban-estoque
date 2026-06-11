@@ -46,13 +46,15 @@ export const useSocket = () => {
         AGUARDANDO_GERENTE: 'Solicitacao aguardando aprovacao interna N2.',
         AGUARDANDO_DIRETORIA: 'Solicitacao aguardando aprovacao interna N3.',
         APROVADO: 'Pedido aprovado internamente. Comprador deve registrar a OC externa.',
-        EMITIDO: 'OC externa registrada e aguardando recebimento.',
-        RECEBIDO: 'Pedido recebido e estoque atualizado.',
+        AGUARDANDO_CHEGADA: 'OC externa registrada. Pedido aguardando chegada.',
+        EMITIDO: 'OC externa registrada. Pedido aguardando chegada.',
+        CONCLUIDO: 'Pedido concluido com NF e estoque atualizado.',
+        RECEBIDO: 'Pedido concluido com NF e estoque atualizado.',
         REJEITADO: 'Pedido rejeitado pelo aprovador.',
         CANCELADO: 'Pedido cancelado.',
       };
       pushToast({
-        tipo: ['APROVADO', 'EMITIDO', 'RECEBIDO'].includes(data?.status_novo) ? 'success' : data?.status_novo === 'REJEITADO' ? 'warning' : 'info',
+        tipo: ['APROVADO', 'AGUARDANDO_CHEGADA', 'EMITIDO', 'CONCLUIDO', 'RECEBIDO'].includes(data?.status_novo) ? 'success' : data?.status_novo === 'REJEITADO' ? 'warning' : 'info',
         titulo: `Pedido ${data?.numero || ''}`.trim(),
         mensagem: mensagens[data?.status_novo] || `Status atualizado para ${(data?.status_novo || '').replace(/_/g, ' ').toLowerCase()}.`,
       });
