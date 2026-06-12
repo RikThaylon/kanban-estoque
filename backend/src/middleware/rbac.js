@@ -39,9 +39,9 @@ const PERMISSIONS = {
   eng_producao: ['*:read', 'produtos:*'],
   gerente_operacoes: ['*:read', 'pedidos:aprovar', 'pedidos:*', 'usuarios:read', 'movimentacoes:*'],
   supervisor_turno: ['*:read', 'pedidos:aprovar', 'pedidos:*', 'movimentacoes:*'],
-  comprador: ['produtos:read', 'movimentacoes:read', 'pedidos:*', 'dashboard:read', 'alertas:read', 'relatorios:read'],
-  facilitador: ['produtos:read', 'movimentacoes:*', 'pedidos:read', 'dashboard:read', 'alertas:read'],
-  visualizador: ['dashboard:read', 'produtos:read', 'alertas:read', 'raci:read', 'relatorios:read'],
+  comprador: ['produtos:read', 'movimentacoes:read', 'pedidos:*', 'grafo:read', 'dashboard:read', 'alertas:read', 'relatorios:read'],
+  facilitador: ['produtos:read', 'movimentacoes:*', 'pedidos:read', 'grafo:read', 'dashboard:read', 'alertas:read'],
+  visualizador: ['dashboard:read', 'produtos:read', 'grafo:read', 'alertas:read', 'raci:read', 'relatorios:read'],
 };
 
 /**

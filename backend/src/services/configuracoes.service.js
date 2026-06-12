@@ -15,6 +15,7 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.produtos': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.movimentacoes': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
   'permissoes.paginas.pedidos': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
+  'permissoes.paginas.grafo': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.fornecedores': 'admin,comprador',
   'permissoes.paginas.configuracoes': 'admin',
   'permissoes.paginas.maquinas': 'admin,gerente_operacoes,supervisor_turno,eng_producao',
@@ -37,6 +38,7 @@ const PAGINAS_SISTEMA = [
   'produtos',
   'movimentacoes',
   'pedidos',
+  'grafo',
   'fornecedores',
   'configuracoes',
   'maquinas',
@@ -227,6 +229,14 @@ async function perfilPode(perfil, permissao) {
   return parsePerfis(valor).includes(perfil);
 }
 
+async function perfilTemPagina(perfil, pagina) {
+  if (perfil === 'admin') return true;
+  if (!perfil || !PAGINAS_SISTEMA.includes(pagina)) return false;
+  const chave = `permissoes.paginas.${pagina}`;
+  const valor = await getConfiguracao(chave, CONFIG_DEFAULTS[chave] || '');
+  return parsePerfis(valor).includes(perfil);
+}
+
 async function salvarConfiguracoes(configuracoes, usuarioId) {
   const entries = Object.entries(configuracoes);
   for (const [chave, valor] of entries) {
@@ -263,6 +273,7 @@ module.exports = {
   normalizarAprovadoresCompra,
   normalizarCargosFluxoCompra,
   perfilPode,
+  perfilTemPagina,
   serializePerfis,
   salvarConfiguracoes,
 };

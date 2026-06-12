@@ -101,6 +101,7 @@ app.use('/api/v1/departamentos', require('./routes/departamentos'));
 app.use('/api/v1/maquinas', require('./routes/maquinas'));
 app.use('/api/v1/movimentacoes', require('./routes/movimentacoes'));
 app.use('/api/v1/pedidos', require('./routes/pedidos'));
+app.use('/api/v1/grafo', require('./routes/grafo'));
 app.use('/api/v1/configuracoes', require('./routes/configuracoes'));
 app.use('/api/v1/dashboard', require('./routes/dashboard'));
 app.use('/api/v1/alertas', require('./routes/alertas'));

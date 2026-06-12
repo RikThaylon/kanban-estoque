@@ -12,6 +12,7 @@ const TITLES = {
   produtos: ['Catalogo tecnico', 'Itens, parametros e curvas de consumo'],
   movimentacoes: ['Movimentacoes', 'Entradas, saidas e ajustes de estoque'],
   pedidos: ['Compras e aprovacao', 'Solicitacoes, status e recebimentos'],
+  grafo: ['Grafo de relacionamentos', 'Pecas, maquinas, compras e responsaveis'],
   maquinas: ['Maquinas e departamentos', 'Vinculos produtivos e responsaveis'],
   alertas: ['Alertas', 'Riscos e pendencias do sistema'],
   relatorios: ['Relatorios', 'Analise gerencial e exportacoes'],
