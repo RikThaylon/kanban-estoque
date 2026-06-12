@@ -34,6 +34,25 @@ describe('pedido.workflow', () => {
         limites,
       })).toBe('AGUARDANDO_APROVACAO');
     });
+
+    it('nao deixa pedido administrativo parado como rascunho', () => {
+      expect(determinarStatusInicialPedido({
+        perfil: 'admin',
+        usuarioId: 'admin-1',
+        custoTotal: 120,
+        limites,
+      })).toBe('AGUARDANDO_APROVACAO');
+    });
+
+    it('encaminha para gerente quando o supervisor responsavel cria a propria solicitacao', () => {
+      expect(determinarStatusInicialPedido({
+        perfil: 'supervisor_turno',
+        usuarioId: 'sup-1',
+        aprovadorN1Id: 'sup-1',
+        custoTotal: 120,
+        limites,
+      })).toBe('AGUARDANDO_GERENTE');
+    });
   });
 
   describe('resolverVinculoMaquina', () => {
@@ -114,7 +133,7 @@ describe('pedido.workflow', () => {
       expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'ger-1' });
     });
 
-    it('permite gerente aprovar pedido escalado mesmo acima do limite legado de diretoria', () => {
+    it('gerente escala para diretoria quando pedido supera limite gerencial', () => {
       const result = determinarProximaAprovacao({
         pedido: {
           status: 'AGUARDANDO_GERENTE',
@@ -126,7 +145,22 @@ describe('pedido.workflow', () => {
         limites,
       });
 
-      expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'ger-1' });
+      expect(result).toEqual({ novoStatus: 'AGUARDANDO_DIRETORIA', aprovadoPor: null });
+    });
+
+    it('permite diretoria aprovar pedido em N3', () => {
+      const result = determinarProximaAprovacao({
+        pedido: {
+          status: 'AGUARDANDO_DIRETORIA',
+          custo_total: 75000,
+          criado_por: 'fac-1',
+          aprovador_n1_id: 'sup-1',
+        },
+        usuario: { id: 'dir-1', perfil: 'plant_manager' },
+        limites,
+      });
+
+      expect(result).toEqual({ novoStatus: 'APROVADO', aprovadoPor: 'dir-1' });
     });
 
     it('permite cargo customizado configurado aprovar internamente N1', () => {

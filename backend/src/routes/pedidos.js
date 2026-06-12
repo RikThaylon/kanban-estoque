@@ -236,13 +236,12 @@ router.post('/', authenticate,
 
       const deptId = vinculoMaquina.departamento_id || departamento_id || null;
       const aprovadorN1Id = vinculoMaquina.supervisor_id || null;
-      const limites = await getLimitesAprovacaoPedido();
 
-      // Status inicial vem dos limites configuraveis pelo admin.
+      // Toda solicitacao nasce em uma fila acionavel; nao fica parada como rascunho.
       const status = determinarStatusInicialPedido({
         perfil: req.user.perfil,
-        custoTotal,
-        limites,
+        usuarioId: req.user.id,
+        aprovadorN1Id,
       });
 
       const result = await query(
@@ -254,7 +253,7 @@ router.post('/', authenticate,
       );
 
       const io = req.app.get('io');
-      if (io && status !== 'RASCUNHO') {
+      if (io) {
         io.emit('pedido:status', {
           pedido_id: result.rows[0].id,
           numero: result.rows[0].numero,
@@ -267,6 +266,39 @@ router.post('/', authenticate,
     } catch (err) { next(err); }
   }
 );
+
+// GET /api/v1/pedidos/numero/:numero - acompanhamento por codigo do pedido
+router.get('/numero/:numero', authenticate, async (req, res, next) => {
+  try {
+    const numero = String(req.params.numero || '').trim();
+    if (!numero) {
+      throw new AppError('Informe o codigo do pedido de compra', 400, 'NUMERO_OBRIGATORIO');
+    }
+
+    const result = await query(
+      `SELECT pc.*, p.nome AS produto_nome, p.codigo AS produto_codigo,
+              f.nome AS fornecedor_nome, f.cnpj AS fornecedor_cnpj,
+              m.codigo AS maquina_codigo, m.nome AS maquina_nome,
+              d.nome AS departamento_nome, d.codigo AS departamento_codigo,
+              u1.nome AS criado_por_nome, u2.nome AS aprovado_por_nome,
+              u3.nome AS rejeitado_por_nome, us.nome AS aprovador_n1_nome
+       FROM pedidos_compra pc
+       LEFT JOIN produtos p ON p.id = pc.produto_id
+       LEFT JOIN fornecedores f ON f.id = pc.fornecedor_id
+       LEFT JOIN maquinas m ON m.id = pc.maquina_id
+       LEFT JOIN departamentos d ON d.id = pc.departamento_id
+       LEFT JOIN usuarios u1 ON u1.id = pc.criado_por
+       LEFT JOIN usuarios u2 ON u2.id = pc.aprovado_por
+       LEFT JOIN usuarios u3 ON u3.id = pc.rejeitado_por
+       LEFT JOIN usuarios us ON us.id = pc.aprovador_n1_id
+       WHERE UPPER(pc.numero) = UPPER($1)`,
+      [numero]
+    );
+
+    if (result.rows.length === 0) throw new NotFoundError('Pedido');
+    res.json(result.rows[0]);
+  } catch (err) { next(err); }
+});
 
 // POST /api/v1/pedidos/:id/aprovar
 // Fluxo usa limites configuraveis em configuracoes_sistema.

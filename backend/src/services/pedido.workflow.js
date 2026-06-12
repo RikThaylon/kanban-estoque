@@ -31,10 +31,11 @@ function normalizarAprovadores(aprovadores = {}) {
   };
 }
 
-function determinarStatusInicialPedido({ perfil, custoTotal, limites }) {
-  const isOperacional = ['comprador', 'facilitador'].includes(perfil);
+function determinarStatusInicialPedido({ perfil, usuarioId, aprovadorN1Id }) {
+  if (perfil === 'supervisor_turno' && usuarioId && aprovadorN1Id && usuarioId === aprovadorN1Id) {
+    return 'AGUARDANDO_GERENTE';
+  }
 
-  if (!isOperacional) return 'RASCUNHO';
   return 'AGUARDANDO_APROVACAO';
 }
 
@@ -85,8 +86,13 @@ function determinarProximaAprovacao({ pedido, usuario, limites, aprovadores }) {
 
     validarSupervisorResponsavel(pedido, usuario);
 
-    if (custo >= supervisor && !aprovadoresCompra.nivel2.includes(usuario.perfil)) {
-      return { novoStatus: 'AGUARDANDO_GERENTE', aprovadoPor: null };
+    if (custo >= supervisor) {
+      if (!aprovadoresCompra.nivel2.includes(usuario.perfil)) {
+        return { novoStatus: 'AGUARDANDO_GERENTE', aprovadoPor: null };
+      }
+      if (custo >= gerente && !aprovadoresCompra.nivel3.includes(usuario.perfil)) {
+        return { novoStatus: 'AGUARDANDO_DIRETORIA', aprovadoPor: null };
+      }
     }
     return { novoStatus: 'APROVADO', aprovadoPor: usuario.id };
   }
@@ -98,6 +104,9 @@ function determinarProximaAprovacao({ pedido, usuario, limites, aprovadores }) {
         403,
         'APROVACAO_INSUFICIENTE'
       );
+    }
+    if (custo >= gerente && !aprovadoresCompra.nivel3.includes(usuario.perfil)) {
+      return { novoStatus: 'AGUARDANDO_DIRETORIA', aprovadoPor: null };
     }
     return { novoStatus: 'APROVADO', aprovadoPor: usuario.id };
   }

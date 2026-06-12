@@ -50,6 +50,15 @@ describe('Pedidos Routes', () => {
     });
   });
 
+  describe('GET /api/v1/pedidos/numero/:numero', () => {
+    it('deve localizar pedido pelo numero para acompanhamento', async () => {
+      query.mockResolvedValueOnce({rows:[{id:'ped-10',numero:'PC-202606-0010',status:'AGUARDANDO_APROVACAO'}]});
+      const res = await request(app).get('/api/v1/pedidos/numero/PC-202606-0010').set('Authorization',authHeader('admin'));
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
+    });
+  });
+
   describe('POST /api/v1/pedidos', () => {
     const body = {
       produto_id:'11111111-1111-4111-b111-111111111111',
@@ -57,17 +66,15 @@ describe('Pedidos Routes', () => {
       quantidade_pedida:100, preco_unitario:45.00
     };
 
-    it('admin deve criar como RASCUNHO', async () => {
+    it('admin deve criar direto na fila de aprovacao', async () => {
       mockFluxoCompraPadrao();
       query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]}) // gerarNumeroPedido
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]}) // kanban_parametros
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]}) // produto
         .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]}) // maquina_produto
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[{id:'ped-1',numero:'PC-202605-0001',status:'RASCUNHO'}]}); // INSERT
+        .mockResolvedValueOnce({rows:[{id:'ped-1',numero:'PC-202605-0001',status:'AGUARDANDO_APROVACAO'}]}); // INSERT
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('admin')).send(body);
-      expect(res.status).toBe(201); expect(res.body.status).toBe('RASCUNHO');
+      expect(res.status).toBe(201); expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
     });
 
     it('comprador com custo < R$5000 deve criar AGUARDANDO_APROVACAO', async () => {
@@ -76,8 +83,6 @@ describe('Pedidos Routes', () => {
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
         .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-2',status:'AGUARDANDO_APROVACAO'}]});
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('comprador'))
         .send({...body,preco_unitario:10,quantidade_pedida:100}); // custo 1000
@@ -90,8 +95,6 @@ describe('Pedidos Routes', () => {
         .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
         .mockResolvedValueOnce({rows:[{estoque_atual:30}]})
         .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-3',status:'AGUARDANDO_APROVACAO'}]});
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('comprador'))
         .send({...body,preco_unitario:100,quantidade_pedida:100}); // custo 10000
@@ -109,8 +112,6 @@ describe('Pedidos Routes', () => {
         .mockResolvedValueOnce({rows:[{estoque_atual:30,custo_unitario:12}]})
         .mockResolvedValueOnce({rows:[{fornecedor_id:'33333333-3333-4333-b333-333333333333',preco_acordado:10}]})
         .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:'sup-1'}]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
         .mockResolvedValueOnce({rows:[{id:'ped-4',status:'AGUARDANDO_APROVACAO'}]});
 
       const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('facilitador'))
@@ -119,6 +120,28 @@ describe('Pedidos Routes', () => {
       expect(res.status).toBe(201);
       expect(res.body.status).toBe('AGUARDANDO_APROVACAO');
       expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO pedidos_compra'), expect.arrayContaining(['33333333-3333-4333-b333-333333333333', 10, 1000]));
+    });
+
+    it('supervisor responsavel que cria solicitacao encaminha para gerente', async () => {
+      query
+        .mockResolvedValueOnce({ rows: [{ valor: 'facilitador,comprador,supervisor_turno' }] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce({ rows: [] });
+      query.mockResolvedValueOnce({rows:[{numero:'PC-000'}]})
+        .mockResolvedValueOnce({rows:[{faixa_atual:'AMARELO',ponto_reposicao:50}]})
+        .mockResolvedValueOnce({rows:[{estoque_atual:30,custo_unitario:12}]})
+        .mockResolvedValueOnce({rows:[{fornecedor_id:'33333333-3333-4333-b333-333333333333',preco_acordado:10}]})
+        .mockResolvedValueOnce({rows:[{maquina_id:'maq-1',departamento_id:'dep-1',supervisor_id:USERS.supervisor_turno.id}]})
+        .mockResolvedValueOnce({rows:[{id:'ped-5',status:'AGUARDANDO_GERENTE'}]});
+
+      const res = await request(app).post('/api/v1/pedidos').set('Authorization',authHeader('supervisor_turno'))
+        .send({produto_id:body.produto_id,quantidade_pedida:100});
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('AGUARDANDO_GERENTE');
     });
 
     it('deve validar produto_id UUID', async () => {

@@ -1,43 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CheckCircle, X, Check, Send, PackageCheck, Clock, Eye, Ban } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ClipboardList, Plus, CheckCircle, X, Check, Send, PackageCheck, Eye, Ban } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
 import { formatMoney, formatDate } from '../utils/formatters';
 import { isReadOnlyPerfil } from '../utils/permissoes';
-
-const STATUS_STYLES = {
-  RASCUNHO: 'bg-gray-100 text-gray-700',
-  AGUARDANDO_APROVACAO: 'bg-purple-100 text-purple-700',
-  AGUARDANDO_GERENTE: 'bg-fuchsia-100 text-fuchsia-700',
-  AGUARDANDO_DIRETORIA: 'bg-pink-100 text-pink-700',
-  APROVADO: 'bg-blue-100 text-blue-700',
-  AGUARDANDO_CHEGADA: 'bg-indigo-100 text-indigo-700',
-  EMITIDO: 'bg-indigo-100 text-indigo-700',
-  EM_TRANSITO: 'bg-amber-100 text-amber-700',
-  RECEBIDO_PARCIAL: 'bg-teal-100 text-teal-700',
-  CONCLUIDO: 'bg-green-100 text-green-700',
-  RECEBIDO: 'bg-green-100 text-green-700',
-  CANCELADO: 'bg-red-100 text-red-700',
-  REJEITADO: 'bg-rose-200 text-rose-800',
-};
-
-const STATUS_LABELS = {
-  RASCUNHO: 'RASCUNHO',
-  AGUARDANDO_APROVACAO: 'AGUARDANDO APROVACAO N1',
-  AGUARDANDO_GERENTE: 'AGUARDANDO APROVACAO N2',
-  AGUARDANDO_DIRETORIA: 'AGUARDANDO APROVACAO N3',
-  APROVADO: 'APROVADO INTERNAMENTE',
-  AGUARDANDO_CHEGADA: 'AGUARDANDO CHEGADA',
-  EMITIDO: 'AGUARDANDO CHEGADA',
-  EM_TRANSITO: 'EM TRANSITO',
-  RECEBIDO_PARCIAL: 'RECEBIDO PARCIAL',
-  CONCLUIDO: 'CONCLUIDO',
-  RECEBIDO: 'CONCLUIDO',
-  CANCELADO: 'CANCELADO',
-  REJEITADO: 'REJEITADO',
-};
+import { STATUS_STYLES, statusLabel } from '../utils/pedidosStatus';
 
 const APROVADORES_PADRAO = {
   nivel1: ['supervisor_turno'],
@@ -64,8 +34,6 @@ const normalizarFluxoCompra = (config) => ({
   compradores: normalizarEtapaFluxo(config?.compradores, ['comprador']),
   recebedores: normalizarEtapaFluxo(config?.recebedores, ['comprador', 'facilitador']),
 });
-
-const statusLabel = (status) => STATUS_LABELS[status] || String(status || '').replace(/_/g, ' ');
 
 const Pedidos = () => {
   const { user } = useAuthStore();
@@ -169,11 +137,16 @@ const Pedidos = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
           <p className="text-navy-400 text-sm">Solicitacao, aprovacao, OC externa, chegada e NF</p>
         </div>
-        {podeSolicitarCompra && (
-          <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
-            <Plus className="w-4 h-4" /> Novo Pedido
-          </button>
-        )}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Link to="/pedidos/acompanhar" className="btn-secondary w-full sm:w-auto justify-center">
+            <ClipboardList className="w-4 h-4" /> Acompanhar Pedido
+          </Link>
+          {podeSolicitarCompra && (
+            <button onClick={() => { setPedidoTemplate(null); setOpenNovo(true); }} className="btn-primary w-full sm:w-auto justify-center">
+              <Plus className="w-4 h-4" /> Novo Pedido
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-navy-600 flex flex-wrap items-center gap-2">
@@ -245,7 +218,6 @@ const Pedidos = () => {
             onChange={(e) => { setStatusFiltro(e.target.value); setPage(1); }}
           >
             <option value="">Todos os status</option>
-            <option value="RASCUNHO">Rascunho</option>
             <option value="AGUARDANDO_APROVACAO">Aguardando aprovação (Nível 1)</option>
             <option value="AGUARDANDO_GERENTE">Aguardando gerente (Nível 2)</option>
             <option value="AGUARDANDO_DIRETORIA">Aguardando diretoria (Nível 3)</option>
@@ -405,6 +377,7 @@ const PedidoActions = ({ pedido, user, fluxo, onAprovar, onRejeitar, onEmitir, o
   const podeComprar = fluxo?.compradores?.includes(user?.perfil);
   const podeRegistrarRecebimento = fluxo?.recebedores?.includes(user?.perfil);
   const readOnly = isReadOnlyPerfil(user?.perfil);
+  const pedidoDoUsuario = pedido.criado_por && pedido.criado_por === user?.id;
 
   let podeAprovar = false;
   if (pedido.status === 'AGUARDANDO_APROVACAO') {
@@ -414,7 +387,7 @@ const PedidoActions = ({ pedido, user, fluxo, onAprovar, onRejeitar, onEmitir, o
   else if (pedido.status === 'AGUARDANDO_GERENTE') podeAprovar = podeAprovarN2;
   else if (pedido.status === 'AGUARDANDO_DIRETORIA') podeAprovar = podeAprovarN3;
 
-  podeAprovar = !readOnly && podeAprovar;
+  podeAprovar = !readOnly && podeAprovar && (!pedidoDoUsuario || user?.perfil === 'admin');
   const podeRejeitar = podeAprovar;
   const podeEmitir = !readOnly && pedido.status === 'APROVADO' && podeComprar;
   const podeReceber = !readOnly && podeRegistrarRecebimento && ['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'].includes(pedido.status);
@@ -567,13 +540,15 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
       queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
       const status = res.data?.status || '';
       pushToast({
-        tipo: status === 'RASCUNHO' ? 'info' : 'success',
+        tipo: 'success',
         titulo: `Pedido ${res.data?.numero || ''}`.trim(),
         mensagem: status === 'AGUARDANDO_APROVACAO'
           ? 'Solicitacao enviada para aprovacao do supervisor.'
           : status === 'AGUARDANDO_GERENTE'
             ? 'Solicitacao enviada para aprovacao do gerente de operacoes.'
-            : 'Pedido criado com sucesso.',
+            : status === 'AGUARDANDO_DIRETORIA'
+              ? 'Solicitacao enviada para aprovacao da diretoria.'
+              : 'Pedido criado e encaminhado no fluxo de compras.',
       });
       onClose();
     },

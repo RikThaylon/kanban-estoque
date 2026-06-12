@@ -12,6 +12,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Produtos = React.lazy(() => import('./pages/Produtos'));
 const ProdutoDetalhe = React.lazy(() => import('./pages/ProdutoDetalhe'));
 const Pedidos = React.lazy(() => import('./pages/Pedidos'));
+const AcompanharPedido = React.lazy(() => import('./pages/AcompanharPedido'));
 const Movimentacoes = React.lazy(() => import('./pages/Movimentacoes'));
 const Alertas = React.lazy(() => import('./pages/Alertas'));
 const Relatorios = React.lazy(() => import('./pages/Relatorios'));
@@ -110,6 +111,7 @@ function App() {
               <Route path="/produtos" element={<PageRoute pagina="produtos"><Produtos /></PageRoute>} />
               <Route path="/produtos/:id" element={<PageRoute pagina="produtos"><ProdutoDetalhe /></PageRoute>} />
               <Route path="/movimentacoes" element={<PageRoute pagina="movimentacoes"><Movimentacoes /></PageRoute>} />
+              <Route path="/pedidos/acompanhar" element={<PageRoute pagina="pedidos"><AcompanharPedido /></PageRoute>} />
               <Route path="/pedidos" element={<PageRoute pagina="pedidos"><Pedidos /></PageRoute>} />
               <Route path="/alertas" element={<PageRoute pagina="alertas"><Alertas /></PageRoute>} />
               <Route path="/relatorios" element={<PageRoute pagina="relatorios"><Relatorios /></PageRoute>} />
