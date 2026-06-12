@@ -4,6 +4,7 @@ import { Building2, Cog, Plus, X, Trash2, Edit3, Link as LinkIcon, ChevronDown, 
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatNumber } from '../utils/formatters';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const PERFIS_ADMIN = ['admin', 'plant_manager'];
 const PERFIS_VINCULAR = ['admin', 'plant_manager', 'gerente_operacoes', 'supervisor_turno'];
@@ -39,11 +40,17 @@ const Maquinas = () => {
 
   const desativarMaq = useMutation({
     mutationFn: (id) => api.delete(`/maquinas/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['maquinas'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maquinas'] });
+      invalidateOperationalData(queryClient);
+    },
   });
   const desativarDept = useMutation({
     mutationFn: (id) => api.delete(`/departamentos/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['departamentos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departamentos'] });
+      invalidateOperationalData(queryClient);
+    },
   });
 
   return (
@@ -162,6 +169,7 @@ const ProdutosVinculados = ({ maquinaId, podeVincular }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maquinas', maquinaId, 'detalhe'] });
       queryClient.invalidateQueries({ queryKey: ['maquinas'] });
+      invalidateOperationalData(queryClient);
     },
   });
 
@@ -209,7 +217,7 @@ const MaquinaModal = ({ maquina, departamentos, onClose }) => {
     mutationFn: () => isEdit
       ? api.patch(`/maquinas/${maquina.id}`, { ...form, departamento_id: form.departamento_id || null })
       : api.post('/maquinas', { ...form, departamento_id: form.departamento_id || null }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['maquinas'] }); onClose(); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['maquinas'] }); invalidateOperationalData(queryClient); onClose(); },
     onError: (e) => setErro(e.message || 'Erro'),
   });
 
@@ -315,6 +323,7 @@ const VincularProdutoModal = ({ maquina, onClose }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['maquinas'] });
       queryClient.invalidateQueries({ queryKey: ['maquinas', maquina.id, 'detalhe'] });
+      invalidateOperationalData(queryClient, produtoId);
       onClose();
     },
     onError: (e) => setErro(e.message || 'Erro'),

@@ -5,6 +5,7 @@ import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatNumber, formatDateTime } from '../utils/formatters';
 import { isReadOnlyPerfil } from '../utils/permissoes';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const TIPOS = [
   { value: 'ENTRADA', label: 'Entrada', icon: ArrowDownCircle, color: 'text-green-600', bg: 'bg-green-50' },
@@ -77,9 +78,7 @@ const Movimentacoes = () => {
   const aprovar = useMutation({
     mutationFn: (id) => api.post(`/movimentacoes/${id}/aprovar`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      invalidateOperationalData(queryClient);
     },
   });
 
@@ -87,7 +86,7 @@ const Movimentacoes = () => {
   const rejeitar = useMutation({
     mutationFn: ({ id, motivo }) => api.post(`/movimentacoes/${id}/rejeitar`, { motivo }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
+      invalidateOperationalData(queryClient);
       setOpenRejeitar(null);
     },
   });
@@ -300,9 +299,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
       observacao: observacao || undefined,
     }),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      invalidateOperationalData(queryClient, produtoId);
       if (res.data.aviso) {
         setAviso(res.data.aviso);
         setTimeout(onClose, 2500);

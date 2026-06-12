@@ -126,7 +126,12 @@ router.get('/sugestoes', authenticate, async (req, res, next) => {
   try {
     const result = await query(`
       SELECT p.id, p.codigo, p.nome, p.estoque_atual, p.custo_unitario,
-             kp.faixa_atual, kp.eoq, kp.ponto_reposicao, kp.estoque_seguranca, kp.demanda_diaria_media,
+             CASE
+               WHEN kp.estoque_seguranca IS NOT NULL AND p.estoque_atual <= kp.estoque_seguranca THEN 'VERMELHO'
+               WHEN kp.ponto_reposicao IS NOT NULL AND p.estoque_atual <= kp.ponto_reposicao THEN 'AMARELO'
+               ELSE kp.faixa_atual
+             END AS faixa_atual,
+             kp.eoq, kp.ponto_reposicao, kp.estoque_seguranca, kp.demanda_diaria_media,
              pf.fornecedor_id, f.nome AS fornecedor_nome, pf.preco_acordado, pf.lead_time_nominal_dias,
              CASE WHEN kp.demanda_diaria_media > 0
                THEN ROUND(((p.estoque_atual - kp.estoque_seguranca) / kp.demanda_diaria_media)::NUMERIC, 1)
@@ -141,9 +146,11 @@ router.get('/sugestoes', authenticate, async (req, res, next) => {
         LIMIT 1
       ) pf ON true
       LEFT JOIN fornecedores f ON f.id = pf.fornecedor_id
-      WHERE p.ativo = true AND kp.faixa_atual IN ('AMARELO', 'VERMELHO')
+      WHERE p.ativo = true
+        AND kp.ponto_reposicao IS NOT NULL
+        AND p.estoque_atual <= kp.ponto_reposicao
       ORDER BY
-        CASE kp.faixa_atual WHEN 'VERMELHO' THEN 0 WHEN 'AMARELO' THEN 1 END,
+        CASE WHEN kp.estoque_seguranca IS NOT NULL AND p.estoque_atual <= kp.estoque_seguranca THEN 0 ELSE 1 END,
         CASE WHEN kp.demanda_diaria_media > 0
           THEN (p.estoque_atual - kp.estoque_seguranca) / kp.demanda_diaria_media
           ELSE 999 END ASC

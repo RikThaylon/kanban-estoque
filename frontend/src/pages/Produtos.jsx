@@ -7,6 +7,7 @@ import FaixaBadge from '../components/kanban/FaixaBadge';
 import KanbanSawtoothChart from '../components/kanban/KanbanSawtoothChart';
 import { useAuthStore } from '../stores/authStore';
 import { formatMoney, formatNumber } from '../utils/formatters';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const PERFIS_GESTAO = ['admin', 'gerente_operacoes', 'supervisor_turno'];
 
@@ -44,7 +45,7 @@ const Produtos = () => {
 
   const desativar = useMutation({
     mutationFn: (id) => api.delete(`/produtos/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['produtos'] }),
+    onSuccess: () => invalidateOperationalData(queryClient),
   });
 
   const { data, isLoading } = useQuery({
@@ -397,7 +398,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
         return res;
       }
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['produtos'] }); onClose(); },
+    onSuccess: () => { invalidateOperationalData(queryClient); onClose(); },
     onError: (e) => setErro(e.message || 'Erro ao salvar'),
   });
 

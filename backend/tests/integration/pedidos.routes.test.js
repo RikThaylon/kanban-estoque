@@ -47,6 +47,7 @@ describe('Pedidos Routes', () => {
       query.mockResolvedValueOnce({rows:[{id:'p1',codigo:'VH-200',faixa_atual:'AMARELO',eoq:136}]});
       const res = await request(app).get('/api/v1/pedidos/sugestoes').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200); expect(Array.isArray(res.body)).toBe(true);
+      expect(query).toHaveBeenCalledWith(expect.stringContaining('p.estoque_atual <= kp.ponto_reposicao'));
     });
   });
 

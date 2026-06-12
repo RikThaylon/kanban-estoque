@@ -10,6 +10,7 @@ import FaixaBadge from '../components/kanban/FaixaBadge';
 import FormulaCard from '../components/kanban/FormulaCard';
 import ConsumptionChart from '../components/charts/ConsumptionChart';
 import { formatMoney, formatNumber } from '../utils/formatters';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 // ─── ErrorBoundary para proteger tabs de crash ────────────────────────────
 class TabErrorBoundary extends React.Component {
@@ -80,7 +81,7 @@ const ProdutoDetalhe = () => {
 
   const salvarAbc = useMutation({
     mutationFn: (classificacao_abc) => api.patch(`/produtos/${id}/classificacao-abc`, { classificacao_abc }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['produto', id] }),
+    onSuccess: () => invalidateOperationalData(queryClient, id),
   });
 
   // Dados dos fornecedores vinculados ao produto
@@ -118,8 +119,7 @@ const ProdutoDetalhe = () => {
     }),
     onSuccess: () => {
       setFornecedorForm({ fornecedor_id: '', prioridade: '', preco_acordado: '', lead_time_nominal_dias: '' });
-      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
-      queryClient.invalidateQueries({ queryKey: ['produto', id] });
+      invalidateOperationalData(queryClient, id);
     },
   });
 

@@ -8,6 +8,7 @@ import { useUiStore } from '../stores/uiStore';
 import { formatMoney, formatDate } from '../utils/formatters';
 import { isReadOnlyPerfil } from '../utils/permissoes';
 import { STATUS_STYLES, statusLabel } from '../utils/pedidosStatus';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const APROVADORES_PADRAO = {
   nivel1: ['supervisor_turno'],
@@ -71,8 +72,7 @@ const Pedidos = () => {
   const aprovar = useMutation({
     mutationFn: (id) => api.post(`/pedidos/${id}/aprovar`),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      invalidateOperationalData(queryClient, res.data?.produto_id);
       pushToast({
         tipo: res.data?.status === 'APROVADO' ? 'success' : 'info',
         titulo: `Pedido ${res.data?.numero || ''}`.trim(),
@@ -89,9 +89,8 @@ const Pedidos = () => {
       numero_oc_externa,
       fornecedor_id,
     }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+    onSuccess: (res) => {
+      invalidateOperationalData(queryClient, res.data?.produto_id);
       pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Pedido aguardando chegada para lancamento da NF.' });
       setOpenEmitir(null);
     },
@@ -99,18 +98,16 @@ const Pedidos = () => {
 
   const cancelar = useMutation({
     mutationFn: (id) => api.patch(`/pedidos/${id}/status`, { status: 'CANCELADO' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+    onSuccess: (res) => {
+      invalidateOperationalData(queryClient, res.data?.produto_id);
       pushToast({ tipo: 'warning', titulo: 'Pedido cancelado', mensagem: 'A fila de compras foi atualizada.' });
     },
   });
 
   const rejeitar = useMutation({
     mutationFn: ({ id, motivo }) => api.post(`/pedidos/${id}/rejeitar`, { motivo }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+    onSuccess: (res) => {
+      invalidateOperationalData(queryClient, res.data?.produto_id);
       pushToast({ tipo: 'warning', titulo: 'Pedido rejeitado', mensagem: 'O solicitante verá o retorno na fila de pedidos.' });
       setOpenRejeitar(null);
     },
@@ -536,8 +533,7 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
       maquina_id: maquinaId || undefined,
     }),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      invalidateOperationalData(queryClient, res.data?.produto_id);
       const status = res.data?.status || '';
       pushToast({
         tipo: 'success',
@@ -778,11 +774,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
       numero_nf: numeroNF.trim(),
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      invalidateOperationalData(queryClient, pedido.produto_id);
       pushToast({
         tipo: 'success',
         titulo: 'Recebimento registrado',

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { getSocket } from '../services/socket';
 import { useUiStore } from '../stores/uiStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 export const useSocket = () => {
   const queryClient = useQueryClient();
@@ -24,23 +25,20 @@ export const useSocket = () => {
     };
 
     const onFaixaMudou = (data) => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['produto', data.produto_id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      invalidateOperationalData(queryClient, data?.produto_id);
     };
 
     const onEstoqueAtualizado = (data) => {
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['produto', data.produto_id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'evolucao'] });
+      invalidateOperationalData(queryClient, data?.produto_id);
+    };
+
+    const onKanbanRecalculado = (data) => {
+      invalidateOperationalData(queryClient, data?.produto_id);
     };
 
     const onPedidoStatus = (data) => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
-      queryClient.invalidateQueries({ queryKey: ['pedido', data.pedido_id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      invalidateOperationalData(queryClient, data?.produto_id);
+      queryClient.invalidateQueries({ queryKey: ['pedido', data?.pedido_id] });
       const mensagens = {
         AGUARDANDO_APROVACAO: 'Nova solicitacao aguardando aprovacao interna N1.',
         AGUARDANDO_GERENTE: 'Solicitacao aguardando aprovacao interna N2.',
@@ -67,11 +65,7 @@ export const useSocket = () => {
     };
 
     const onMovimentacaoMudou = (data) => {
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['produto', data?.produto_id] });
-      queryClient.invalidateQueries({ queryKey: ['produtos'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['notificacoes'] });
+      invalidateOperationalData(queryClient, data?.produto_id);
       pushToast({
         tipo: data?.motivo ? 'warning' : 'info',
         titulo: 'Movimentacao de estoque',
@@ -82,6 +76,7 @@ export const useSocket = () => {
     syncAlerts();
 
     socket.on('faixa:mudou', onFaixaMudou);
+    socket.on('kanban:recalculado', onKanbanRecalculado);
     socket.on('estoque:atualizado', onEstoqueAtualizado);
     socket.on('pedido:status', onPedidoStatus);
     socket.on('alerta:novo', onAlertaNovo);
@@ -91,6 +86,7 @@ export const useSocket = () => {
 
     return () => {
       socket.off('faixa:mudou', onFaixaMudou);
+      socket.off('kanban:recalculado', onKanbanRecalculado);
       socket.off('estoque:atualizado', onEstoqueAtualizado);
       socket.off('pedido:status', onPedidoStatus);
       socket.off('alerta:novo', onAlertaNovo);

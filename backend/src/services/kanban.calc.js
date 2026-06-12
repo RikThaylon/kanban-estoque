@@ -149,6 +149,18 @@ async function recalcularKanban(produtoId, io = null) {
     }
   }
 
+  if (io) {
+    io.emit('kanban:recalculado', {
+      produto_id: produtoId,
+      faixa_anterior: faixaAnterior,
+      faixa_atual: result.faixa,
+      estoque_atual: parseFloat(produto.estoque_atual),
+      pr: result.PR,
+      es: result.ES,
+      eoq: result.EOQ,
+    });
+  }
+
   return result;
 }
 

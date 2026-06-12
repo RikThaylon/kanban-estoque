@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, X, Building2, MapPin, Mail, Phone } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const Fornecedores = () => {
   const { user } = useAuthStore();
@@ -18,7 +19,10 @@ const Fornecedores = () => {
 
   const desativar = useMutation({
     mutationFn: (id) => api.delete(`/fornecedores/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fornecedores'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
+      invalidateOperationalData(queryClient);
+    },
   });
 
   const handleEdit = (forn) => {
@@ -152,6 +156,7 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
+      invalidateOperationalData(queryClient);
       onClose();
     },
     onError: (e) => setErro(e.message || 'Erro ao salvar fornecedor'),

@@ -5,6 +5,7 @@ import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatMoney } from '../utils/formatters';
 import { PAGINA_LABELS, PAGINAS_SISTEMA, PERFIL_LABELS } from '../utils/permissoes';
+import { invalidateOperationalData } from '../utils/queryInvalidation';
 
 const Configuracoes = () => {
   const queryClient = useQueryClient();
@@ -108,6 +109,7 @@ const Configuracoes = () => {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'pedidos'] });
+      invalidateOperationalData(queryClient);
       setErro('');
       setSucesso('Configuracoes salvas.');
     },
@@ -142,6 +144,7 @@ const Configuracoes = () => {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'kanban'] });
+      invalidateOperationalData(queryClient);
       setErro('');
       setSucesso('Parametros Kanban salvos.');
     },
