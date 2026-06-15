@@ -72,7 +72,7 @@ const Dashboard = () => {
         <div>
           <p className="page-kicker">Centro de comando</p>
           <h1 className="text-2xl sm:text-3xl font-black text-steel-900">Dashboard Kanban</h1>
-          <p className="text-steel-500 text-sm mt-1">Visao geral do sistema de controle de estoque</p>
+          <p className="text-steel-500 text-sm mt-1">Visão geral do sistema de controle de estoque</p>
         </div>
         <div className="metric-card px-4 py-3 text-sm font-bold text-steel-700 w-full sm:w-auto">
           <span className="text-steel-500">Valor em estoque</span>

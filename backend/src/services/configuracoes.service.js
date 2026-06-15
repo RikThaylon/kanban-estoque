@@ -1,4 +1,6 @@
 const { query } = require('../config/database');
+const { PERFIS_VALIDOS } = require('../middleware/rbac');
+const { AppError } = require('../utils/errors');
 
 const CONFIG_DEFAULTS = {
   'pedidos.limite_supervisor': 5000,
@@ -59,6 +61,12 @@ const PERMISSAO_TO_CHAVE = {
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 const PERFIS_SEM_EXECUCAO_FLUXO_COMPRA = ['visualizador'];
+const PERFIS_APROVADORES_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
+  (perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil)
+);
+const PERFIS_FLUXO_COMPRA_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
+  (perfil) => !['admin', 'visualizador'].includes(perfil)
+);
 
 function parsePerfis(valor) {
   if (Array.isArray(valor)) return valor.filter(Boolean);
@@ -68,6 +76,109 @@ function parsePerfis(valor) {
 
 function serializePerfis(perfis) {
   return [...new Set(parsePerfis(perfis))].join(',');
+}
+
+function perfisSemAdmin(perfis) {
+  return parsePerfis(perfis).filter((perfil) => perfil !== 'admin');
+}
+
+function formatarRespostaPedidos(limites, cargosFluxo) {
+  return {
+    limite_supervisor: limites.supervisor,
+    limite_gerente: limites.gerente,
+    solicitantes: cargosFluxo.solicitantes,
+    aprovadores_nivel_1: cargosFluxo.aprovadores.nivel1,
+    aprovadores_nivel_2: cargosFluxo.aprovadores.nivel2,
+    aprovadores_nivel_3: cargosFluxo.aprovadores.nivel3,
+    compradores: cargosFluxo.compradores,
+    recebedores: cargosFluxo.recebedores,
+  };
+}
+
+function montarConfiguracoesPedidos(payload) {
+  const limiteSupervisor = Number(payload.limite_supervisor);
+  const limiteGerente = Number(payload.limite_gerente);
+
+  if (limiteGerente < limiteSupervisor) {
+    throw new AppError('Limite do gerente deve ser maior ou igual ao limite do supervisor', 400, 'LIMITE_INVALIDO');
+  }
+
+  const configuracoes = {
+    'pedidos.limite_supervisor': limiteSupervisor,
+    'pedidos.limite_gerente': limiteGerente,
+  };
+
+  const camposPerfis = {
+    solicitantes: 'pedidos.solicitantes',
+    aprovadores_nivel_1: 'pedidos.aprovadores_nivel_1',
+    aprovadores_nivel_2: 'pedidos.aprovadores_nivel_2',
+    aprovadores_nivel_3: 'pedidos.aprovadores_nivel_3',
+    compradores: 'pedidos.compradores',
+    recebedores: 'pedidos.recebedores',
+  };
+
+  for (const [campo, chave] of Object.entries(camposPerfis)) {
+    if (payload[campo] !== undefined) {
+      configuracoes[chave] = serializePerfis(perfisSemAdmin(payload[campo]));
+    }
+  }
+
+  return {
+    configuracoes,
+    limites: { supervisor: limiteSupervisor, gerente: limiteGerente },
+  };
+}
+
+function montarConfiguracoesKanban(payload) {
+  const nivelServicoPadrao = Number(payload.nivel_servico_padrao);
+  const ciclosEstimativaInicial = Number(payload.ciclos_estimativa_inicial);
+  const taxaCarregamentoPadrao = Number(payload.taxa_carregamento_padrao);
+
+  return {
+    configuracoes: {
+      'kanban.nivel_servico_padrao': nivelServicoPadrao,
+      'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
+      'kanban.taxa_carregamento_padrao': taxaCarregamentoPadrao,
+    },
+    resposta: {
+      nivel_servico_padrao: nivelServicoPadrao,
+      ciclos_estimativa_inicial: ciclosEstimativaInicial,
+      taxa_carregamento_padrao: taxaCarregamentoPadrao,
+    },
+  };
+}
+
+function validarTurnosUnicos(turnos) {
+  const ids = new Set(turnos.map((turno) => turno.id));
+  if (ids.size !== turnos.length) {
+    throw new AppError('Cada turno precisa ter um codigo unico', 400, 'TURNO_DUPLICADO');
+  }
+}
+
+function montarConfiguracoesTurnos(payload) {
+  const turnos = normalizarTurnos(payload.turnos);
+  validarTurnosUnicos(turnos);
+  return {
+    turnos,
+    configuracoes: {
+      'turnos.lista': JSON.stringify(turnos),
+    },
+  };
+}
+
+function montarConfiguracoesPermissoes(payload) {
+  const configuracoes = {
+    'permissoes.cadastrar_item': serializePerfis(payload.cadastrar_item),
+    'permissoes.editar_curva_abc': serializePerfis(payload.editar_curva_abc),
+  };
+
+  for (const pagina of PAGINAS_SISTEMA) {
+    if (Object.prototype.hasOwnProperty.call(payload.paginas || {}, pagina)) {
+      configuracoes[`permissoes.paginas.${pagina}`] = serializePerfis(payload.paginas[pagina]);
+    }
+  }
+
+  return configuracoes;
 }
 
 function normalizarTurnos(valor) {
@@ -262,6 +373,8 @@ module.exports = {
   CONFIG_DEFAULTS,
   PERMISSOES_CHAVES,
   PAGINAS_SISTEMA,
+  PERFIS_APROVADORES_CONFIGURAVEIS,
+  PERFIS_FLUXO_COMPRA_CONFIGURAVEIS,
   getConfiguracao,
   getLimitesAprovacaoPedido,
   getAprovadoresCompra,
@@ -272,6 +385,11 @@ module.exports = {
   normalizarTurnos,
   normalizarAprovadoresCompra,
   normalizarCargosFluxoCompra,
+  formatarRespostaPedidos,
+  montarConfiguracoesPedidos,
+  montarConfiguracoesKanban,
+  montarConfiguracoesTurnos,
+  montarConfiguracoesPermissoes,
   perfilPode,
   perfilTemPagina,
   serializePerfis,

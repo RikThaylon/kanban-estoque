@@ -77,7 +77,7 @@ const Pedidos = () => {
         tipo: res.data?.status === 'APROVADO' ? 'success' : 'info',
         titulo: `Pedido ${res.data?.numero || ''}`.trim(),
         mensagem: res.data?.status === 'APROVADO'
-          ? 'Aprovacao interna concluida. O comprador deve registrar fornecedor e numero da OC externa.'
+          ? 'Aprovação interna concluída. O comprador deve registrar fornecedor e número da OC externa.'
           : `Escalado para ${statusLabel(res.data?.status).toLowerCase()}.`,
       });
     },
@@ -91,7 +91,7 @@ const Pedidos = () => {
     }),
     onSuccess: (res) => {
       invalidateOperationalData(queryClient, res.data?.produto_id);
-      pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Pedido aguardando chegada para lancamento da NF.' });
+      pushToast({ tipo: 'success', titulo: 'OC externa registrada', mensagem: 'Pedido aguardando chegada para lançamento da NF.' });
       setOpenEmitir(null);
     },
   });
@@ -132,7 +132,7 @@ const Pedidos = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
-          <p className="text-navy-400 text-sm">Solicitacao, aprovacao, OC externa, chegada e NF</p>
+          <p className="text-navy-400 text-sm">Solicitação, aprovação, OC externa, chegada e NF</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Link to="/pedidos/acompanhar" className="btn-secondary w-full sm:w-auto justify-center">
@@ -148,15 +148,15 @@ const Pedidos = () => {
 
       <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-navy-600 flex flex-wrap items-center gap-2">
         <span className="font-semibold text-navy-800">Fluxo:</span>
-        <span>Solicitacao</span>
+        <span>Solicitação</span>
         <span className="text-navy-300">-&gt;</span>
-        <span>Aprovacao supervisor/gerente</span>
+        <span>Aprovação supervisor/gerente</span>
         <span className="text-navy-300">-&gt;</span>
         <span>Comprador registra OC</span>
         <span className="text-navy-300">-&gt;</span>
         <span>Aguardando chegada</span>
         <span className="text-navy-300">-&gt;</span>
-        <span>NF e conclusao</span>
+        <span>NF e conclusão</span>
       </div>
 
       {/* Sugestões de Compra */}
@@ -223,8 +223,8 @@ const Pedidos = () => {
             <option value="EMITIDO">Aguardando chegada (legado)</option>
             <option value="EM_TRANSITO">Em trânsito</option>
             <option value="RECEBIDO_PARCIAL">Recebido parcial</option>
-            <option value="CONCLUIDO">Concluido</option>
-            <option value="RECEBIDO">Concluido (legado)</option>
+            <option value="CONCLUIDO">Concluído</option>
+            <option value="RECEBIDO">Concluído (legado)</option>
             <option value="CANCELADO">Cancelado</option>
           </select>
         </div>
@@ -237,7 +237,7 @@ const Pedidos = () => {
                 <th className="p-4">Número</th>
                 <th className="p-4">Data</th>
                 <th className="p-4">Produto</th>
-                <th className="p-4">Maquina</th>
+                <th className="p-4">Máquina</th>
                 <th className="p-4">Fornecedor</th>
                 <th className="p-4 text-right">Qtd</th>
                 <th className="p-4 text-right">Total</th>
@@ -539,11 +539,11 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
         tipo: 'success',
         titulo: `Pedido ${res.data?.numero || ''}`.trim(),
         mensagem: status === 'AGUARDANDO_APROVACAO'
-          ? 'Solicitacao enviada para aprovacao do supervisor.'
+          ? 'Solicitação enviada para aprovação do supervisor.'
           : status === 'AGUARDANDO_GERENTE'
-            ? 'Solicitacao enviada para aprovacao do gerente de operacoes.'
+            ? 'Solicitação enviada para aprovação do gerente de operações.'
             : status === 'AGUARDANDO_DIRETORIA'
-              ? 'Solicitacao enviada para aprovacao da diretoria.'
+              ? 'Solicitação enviada para aprovação da diretoria.'
               : 'Pedido criado e encaminhado no fluxo de compras.',
       });
       onClose();
@@ -555,9 +555,9 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
     e.preventDefault();
     setErro('');
     if (!produtoId) return setErro('Selecione um produto');
-    if (carregandoMaquinas) return setErro('Aguarde carregar as maquinas vinculadas');
-    if ((maquinasProduto || []).length === 0) return setErro('Produto sem maquina vinculada. Vincule o item em Maquinas antes de solicitar compra.');
-    if (!maquinaId) return setErro('Selecione a maquina que precisa de reposicao');
+    if (carregandoMaquinas) return setErro('Aguarde carregar as máquinas vinculadas');
+    if ((maquinasProduto || []).length === 0) return setErro('Produto sem máquina vinculada. Vincule o item em Máquinas antes de solicitar compra.');
+    if (!maquinaId) return setErro('Selecione a máquina que precisa de reposição');
     if (podeEscolherFornecedor && !fornecedorId) return setErro('Selecione um fornecedor');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
     criar.mutate();
@@ -610,9 +610,9 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
 
           {produtoId && (
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Maquina solicitante</label>
+              <label className="block text-sm font-medium text-navy-700 mb-1">Máquina solicitante</label>
               {carregandoMaquinas ? (
-                <div className="input w-full text-navy-400">Carregando maquinas...</div>
+                <div className="input w-full text-navy-400">Carregando máquinas...</div>
               ) : (maquinasProduto || []).length > 0 ? (
                 <select value={maquinaId} onChange={e => setMaquinaId(e.target.value)} className="input w-full" required>
                   <option value="">Selecione...</option>
@@ -624,11 +624,11 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
                 </select>
               ) : (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md p-3">
-                  Produto sem maquina vinculada. Cadastre o vinculo em Maquinas antes de criar a solicitacao.
+                  Produto sem máquina vinculada. Cadastre o vínculo em Máquinas antes de criar a solicitação.
                 </div>
               )}
               {(maquinasProduto || []).length > 1 && (
-                <p className="text-xs text-navy-500 mt-1">Este item e usado em N maquinas; escolha a maquina correta para rotear o aprovador.</p>
+                <p className="text-xs text-navy-500 mt-1">Este item é usado em N máquinas; escolha a máquina correta para rotear o aprovador.</p>
               )}
             </div>
           )}
@@ -718,7 +718,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
     e.preventDefault();
     setErro('');
     if (!fornecedorId) return setErro('Selecione o fornecedor escolhido pelo comprador');
-    if (!numeroOc.trim()) return setErro('Informe o numero da OC externa');
+    if (!numeroOc.trim()) return setErro('Informe o número da OC externa');
     onConfirm({ id: pedido.id, fornecedor_id: fornecedorId, numero_oc_externa: numeroOc.trim() });
   };
 
@@ -731,7 +731,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-md p-3">
-            Pedido ja aprovado internamente. O comprador deve escolher o fornecedor e informar o numero da OC criada no sistema externo.
+            Pedido já aprovado internamente. O comprador deve escolher o fornecedor e informar o número da OC criada no sistema externo.
           </div>
           <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
             <strong>{pedido.numero}</strong> - {pedido.produto_codigo} - {pedido.produto_nome}
@@ -744,7 +744,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Numero da OC externa</label>
+            <label className="block text-sm font-medium text-navy-700 mb-1">Número da OC externa</label>
             <input value={numeroOc} onChange={e => setNumeroOc(e.target.value)} className="input w-full font-mono" required autoFocus />
           </div>
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -789,7 +789,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
     e.preventDefault();
     setErro('');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
-    if (!numeroNF.trim()) return setErro('Informe o numero da NF');
+    if (!numeroNF.trim()) return setErro('Informe o número da NF');
     receber.mutate();
   };
 
@@ -812,7 +812,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
               className="input w-full font-mono" required autoFocus />
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Numero da NF</label>
+            <label className="block text-sm font-medium text-navy-700 mb-1">Número da NF</label>
             <input type="text" value={numeroNF} onChange={e => setNumeroNF(e.target.value)} className="input w-full" required />
           </div>
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -852,9 +852,9 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
               <DetailRow label="Produto" value={`${p.produto_codigo} — ${p.produto_nome}`} />
               <DetailRow label="Fornecedor" value={p.fornecedor_nome} />
               {p.fornecedor_cnpj && <DetailRow label="CNPJ" value={p.fornecedor_cnpj} />}
-              {p.maquina_codigo && <DetailRow label="Maquina" value={`${p.maquina_codigo} - ${p.maquina_nome}`} />}
+              {p.maquina_codigo && <DetailRow label="Máquina" value={`${p.maquina_codigo} - ${p.maquina_nome}`} />}
               {p.departamento_nome && <DetailRow label="Departamento" value={`${p.departamento_codigo} — ${p.departamento_nome}`} />}
-              {p.aprovador_n1_nome && <DetailRow label="Supervisor responsavel" value={p.aprovador_n1_nome} />}
+              {p.aprovador_n1_nome && <DetailRow label="Supervisor responsável" value={p.aprovador_n1_nome} />}
               {p.motivo_rejeicao && <DetailRow label="Motivo rejeição" value={<span className="text-rose-700">{p.motivo_rejeicao}</span>} />}
               {p.rejeitado_por_nome && <DetailRow label="Rejeitado por" value={p.rejeitado_por_nome} />}
               <DetailRow label="Quantidade" value={p.quantidade_pedida} />

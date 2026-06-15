@@ -91,7 +91,7 @@ const PageRoute = ({ pagina, children }) => {
   if (!perfilTemPagina(permissoes, user?.perfil, pagina)) {
     return (
       <div className="p-8 text-center text-navy-500">
-        Voce nao tem acesso a esta pagina.
+        Você não tem acesso a esta página.
       </div>
     );
   }

@@ -91,7 +91,7 @@ const Usuarios = () => {
     setErroModal('');
     if ((modalAberto === 'novo' || modalAberto === 'senha')) {
       if (form.senha.length < SENHA_MIN || form.senha.length > SENHA_MAX || !SENHA_REGEX.test(form.senha)) {
-        setErroModal(`Senha deve ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres e nao pode conter espacos.`);
+        setErroModal(`Senha deve ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres e não pode conter espaços.`);
         return;
       }
     }
@@ -297,7 +297,7 @@ const Usuarios = () => {
                       maxLength={SENHA_MAX}
                       pattern="^\S+$"
                     />
-                    <p className="text-xs text-navy-400 mt-1">Minimo {SENHA_MIN} caracteres, sem espacos.</p>
+                    <p className="text-xs text-navy-400 mt-1">Mínimo {SENHA_MIN} caracteres, sem espaços.</p>
                   </div>
                 )}
               </div>

@@ -23,7 +23,7 @@ const ICONES = {
 };
 
 const LETRA_INFO = {
-  R: { label: 'Responsavel', cor: 'bg-emerald-500 text-white', desc: 'Executa a acao' },
+  R: { label: 'Responsável', cor: 'bg-emerald-500 text-white', desc: 'Executa a ação' },
   A: { label: 'Aprovador',   cor: 'bg-red-500 text-white',     desc: 'Responde pelo resultado' },
   C: { label: 'Consultado',  cor: 'bg-amber-400 text-white',   desc: 'Opina antes' },
   I: { label: 'Informado',   cor: 'bg-blue-400 text-white',    desc: 'Recebe ciencia' },
@@ -249,7 +249,7 @@ const Raci = () => {
                 {isAdmin && (
                   <div className="mt-2 flex items-center gap-2 text-xs text-navy-100">
                     <Save className="w-3.5 h-3.5" />
-                    Alteracoes salvas neste navegador
+                    Alterações salvas neste navegador
                   </div>
                 )}
               </div>

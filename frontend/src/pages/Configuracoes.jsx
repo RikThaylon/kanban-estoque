@@ -111,11 +111,11 @@ const Configuracoes = () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'pedidos'] });
       invalidateOperationalData(queryClient);
       setErro('');
-      setSucesso('Configuracoes salvas.');
+      setSucesso('Configurações salvas.');
     },
     onError: (e) => {
       setSucesso('');
-      setErro(e.message || 'Erro ao salvar configuracoes');
+      setErro(e.message || 'Erro ao salvar configurações');
     },
   });
 
@@ -128,11 +128,11 @@ const Configuracoes = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'permissoes'] });
       setErro('');
-      setSucesso('Permissoes salvas.');
+      setSucesso('Permissões salvas.');
     },
     onError: (e) => {
       setSucesso('');
-      setErro(e.message || 'Erro ao salvar permissoes');
+      setErro(e.message || 'Erro ao salvar permissões');
     },
   });
 
@@ -146,11 +146,11 @@ const Configuracoes = () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'kanban'] });
       invalidateOperationalData(queryClient);
       setErro('');
-      setSucesso('Parametros Kanban salvos.');
+      setSucesso('Parâmetros Kanban salvos.');
     },
     onError: (e) => {
       setSucesso('');
-      setErro(e.message || 'Erro ao salvar parametros Kanban');
+      setErro(e.message || 'Erro ao salvar parâmetros Kanban');
     },
   });
 
@@ -237,8 +237,8 @@ const Configuracoes = () => {
     <div className="space-y-6 pb-12 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Configuracoes</h1>
-          <p className="text-navy-400 text-sm">Regras administraveis do fluxo de compras</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Configurações</h1>
+          <p className="text-navy-400 text-sm">Regras administráveis do fluxo de compras</p>
         </div>
       </div>
 
@@ -248,7 +248,7 @@ const Configuracoes = () => {
             <Settings className="w-5 h-5 text-navy-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Fluxo de aprovacao de compra</h2>
+            <h2 className="font-bold text-navy-800">Fluxo de aprovação de compra</h2>
             <p className="text-xs text-navy-500">Somente admin altera cargos; demais perfis seguem as etapas configuradas.</p>
           </div>
         </div>
@@ -259,7 +259,7 @@ const Configuracoes = () => {
           {!isAdmin && (
             <div className="bg-surface-50 border border-surface-200 rounded-md p-3 flex gap-2 text-sm text-navy-600">
               <Lock className="w-4 h-4 shrink-0 mt-0.5" />
-              <p>Voce pode consultar o fluxo, mas apenas administradores salvam alteracoes nos cargos.</p>
+              <p>Você pode consultar o fluxo, mas apenas administradores salvam alterações nos cargos.</p>
             </div>
           )}
 
@@ -277,7 +277,7 @@ const Configuracoes = () => {
                 required
               />
               <p className="text-xs text-navy-500 mt-1">
-                Ate {formatMoney(supervisor)}, supervisor aprova. Acima disso, ele escala para gerente de operacoes.
+                Até {formatMoney(supervisor)}, supervisor aprova. Acima disso, ele escala para gerente de operações.
               </p>
             </div>
 
@@ -294,7 +294,7 @@ const Configuracoes = () => {
                 required
               />
               <p className="text-xs text-navy-500 mt-1">
-                Mantido por compatibilidade. No fluxo redesenhado, o gerente conclui a aprovacao.
+                Mantido por compatibilidade. No fluxo redesenhado, o gerente conclui a aprovação.
               </p>
             </div>
           </div>
@@ -302,7 +302,7 @@ const Configuracoes = () => {
           <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-2 text-sm text-amber-800">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <p>
-              Esses valores afetam os novos pedidos e as aprovacoes pendentes. Pedidos ja aprovados, emitidos ou recebidos nao sao reclassificados.
+              Esses valores afetam os novos pedidos e as aprovações pendentes. Pedidos já aprovados, emitidos ou recebidos não são reclassificados.
             </p>
           </div>
 
@@ -316,23 +316,23 @@ const Configuracoes = () => {
 
             <div className="space-y-4">
               <PermissionGroup
-                title="1. Solicitacao de compra"
-                description="Quem pode abrir pedidos para reposicao."
+                title="1. Solicitação de compra"
+                description="Quem pode abrir pedidos para reposição."
                 value={form.solicitantes}
                 perfis={perfisFluxoCompra}
                 disabled={isLoading || carregandoPermissoes || !isAdmin}
                 onToggle={(perfil) => toggleAprovador('solicitantes', perfil)}
               />
               <PermissionGroup
-                title="2. Aprovacao do supervisor"
-                description="Aprova quando o valor nao excede o teto; se exceder, escala para gerente."
+                title="2. Aprovação do supervisor"
+                description="Aprova quando o valor não excede o teto; se exceder, escala para gerente."
                 value={form.aprovadores_nivel_1}
                 perfis={perfisAprovadores}
                 disabled={isLoading || carregandoPermissoes || !isAdmin}
                 onToggle={(perfil) => toggleAprovador('aprovadores_nivel_1', perfil)}
               />
               <PermissionGroup
-                title="3. Aprovacao do gerente de operacoes"
+                title="3. Aprovação do gerente de operações"
                 description="Recebe somente os pedidos escalados acima do teto."
                 value={form.aprovadores_nivel_2}
                 perfis={perfisAprovadores}
@@ -341,14 +341,14 @@ const Configuracoes = () => {
               />
               <PermissionGroup
                 title="4. Registro da OC externa"
-                description="Quem registra fornecedor final e numero da ordem de compra."
+                description="Quem registra fornecedor final e número da ordem de compra."
                 value={form.compradores}
                 perfis={perfisFluxoCompra}
                 disabled={isLoading || carregandoPermissoes || !isAdmin}
                 onToggle={(perfil) => toggleAprovador('compradores', perfil)}
               />
               <PermissionGroup
-                title="5. NF e conclusao"
+                title="5. NF e conclusão"
                 description="Quem registra a NF quando o pedido chega."
                 value={form.recebedores}
                 perfis={perfisFluxoCompra}
@@ -366,7 +366,7 @@ const Configuracoes = () => {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <button type="submit" disabled={salvar.isPending || isLoading || invalido || !isAdmin} className="btn-primary justify-center">
               <Save className="w-4 h-4" />
-              {salvar.isPending ? 'Salvando...' : 'Salvar configuracoes'}
+              {salvar.isPending ? 'Salvando...' : 'Salvar configurações'}
             </button>
           </div>
         </div>
@@ -381,7 +381,7 @@ const Configuracoes = () => {
             <Settings className="w-5 h-5 text-navy-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Kanban padrao</h2>
+            <h2 className="font-bold text-navy-800">Kanban padrão</h2>
             <p className="text-xs text-navy-500">Valores usados no cadastro de novos produtos.</p>
           </div>
         </div>
@@ -389,7 +389,7 @@ const Configuracoes = () => {
         <div className="p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="label">Nivel de servico padrao</label>
+              <label className="label">Nível de serviço padrão</label>
               <select
                 className="input font-mono"
                 value={kanban.nivel_servico_padrao}
@@ -398,7 +398,7 @@ const Configuracoes = () => {
               >
                 {[90, 95, 98, 99].map((v) => <option key={v} value={v}>{v}%</option>)}
               </select>
-              <p className="text-xs text-navy-500 mt-1">Novo item nasce com este percentual. Padrao: 95%.</p>
+              <p className="text-xs text-navy-500 mt-1">Novo item nasce com este percentual. Padrão: 95%.</p>
             </div>
             <div>
               <label className="label">Custo para manter estoque</label>
@@ -426,7 +426,7 @@ const Configuracoes = () => {
                 className="input font-mono"
                 disabled={carregandoKanban}
               />
-              <p className="text-xs text-navy-500 mt-1">Uso 10 para dar base suficiente a Holt e regressao sem inventar historico longo.</p>
+              <p className="text-xs text-navy-500 mt-1">Use 10 para dar base suficiente a Holt e regressão sem inventar histórico longo.</p>
             </div>
           </div>
 
@@ -449,7 +449,7 @@ const Configuracoes = () => {
           </div>
           <div className="min-w-0">
             <h2 className="font-bold text-navy-800">Turnos operacionais</h2>
-            <p className="text-xs text-navy-500">Usados nas entradas e saidas de estoque.</p>
+            <p className="text-xs text-navy-500">Usados nas entradas e saídas de estoque.</p>
           </div>
         </div>
 
@@ -467,7 +467,7 @@ const Configuracoes = () => {
                 />
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <div>
-                    <label className="label">Inicio</label>
+                    <label className="label">Início</label>
                     <input
                       type="time"
                       value={turno.inicio}
@@ -511,7 +511,7 @@ const Configuracoes = () => {
             <ShieldCheck className="w-5 h-5 text-navy-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Permissoes por cargo</h2>
+            <h2 className="font-bold text-navy-800">Permissões por cargo</h2>
             <p className="text-xs text-navy-500">Admin sempre tem acesso total; marque os demais cargos autorizados.</p>
           </div>
         </div>
@@ -526,12 +526,12 @@ const Configuracoes = () => {
           />
 
           <div>
-            <h3 className="text-sm font-bold text-navy-800 mb-3">Acesso por pagina</h3>
+            <h3 className="text-sm font-bold text-navy-800 mb-3">Acesso por página</h3>
             <div className="overflow-x-auto rounded-md border border-surface-200">
               <table className="min-w-[920px] w-full text-sm">
                 <thead className="bg-surface-50 text-xs uppercase text-navy-400">
                   <tr>
-                    <th className="p-3 text-left">Pagina</th>
+                    <th className="p-3 text-left">Página</th>
                     {(permissoesData?.perfis || []).filter((perfil) => perfil !== 'admin').map((perfil) => (
                       <th key={perfil} className="p-3 text-center font-bold">{PERFIL_LABELS[perfil] || perfil}</th>
                     ))}
@@ -558,7 +558,7 @@ const Configuracoes = () => {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-navy-500 mt-2">Admin sempre acessa todas as paginas, mesmo quando nao aparece na matriz.</p>
+            <p className="text-xs text-navy-500 mt-2">Admin sempre acessa todas as páginas, mesmo quando não aparece na matriz.</p>
           </div>
           <PermissionGroup
             title="Editar curva ABC"
@@ -571,7 +571,7 @@ const Configuracoes = () => {
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <button type="submit" disabled={salvarPermissoes.isPending || carregandoPermissoes} className="btn-primary justify-center">
               <Save className="w-4 h-4" />
-              {salvarPermissoes.isPending ? 'Salvando...' : 'Salvar permissoes'}
+              {salvarPermissoes.isPending ? 'Salvando...' : 'Salvar permissões'}
             </button>
           </div>
         </div>
@@ -589,7 +589,7 @@ const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
   const steps = [
     {
       icon: ClipboardList,
-      title: 'Solicitacao',
+      title: 'Solicitação',
       status: 'Novo pedido',
       owner: formatPerfis(form.solicitantes),
       note: 'Abre a necessidade de compra.',
@@ -613,7 +613,7 @@ const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
       title: 'Comprador',
       status: 'OC externa',
       owner: formatPerfis(form.compradores),
-      note: 'Registra o numero da OC.',
+      note: 'Registra o número da OC.',
     },
     {
       icon: Truck,
@@ -624,7 +624,7 @@ const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
     },
     {
       icon: FileCheck2,
-      title: 'Concluido',
+      title: 'Concluído',
       status: 'NF registrada',
       owner: formatPerfis(form.recebedores),
       note: 'Comprador ou facilitador informa a NF.',

@@ -123,7 +123,7 @@ const ProdutoDetalhe = () => {
     },
   });
 
-  // Historico para o grafico linear interativo.
+  // Historico para o gráfico linear interativo.
   const historicoSerrote = useMemo(() => {
     if (!produto?.ultimas_movimentacoes?.length) return [];
     const movs = [...(produto.ultimas_movimentacoes || [])].reverse();
@@ -167,7 +167,7 @@ const ProdutoDetalhe = () => {
 
   const TABS = [
     { key: 'kanban', label: 'Kanban' },
-    { key: 'grafico', label: 'Grafico linear' },
+    { key: 'grafico', label: 'Gráfico linear' },
     { key: 'rastreamento', label: 'Rastreamento Matemático' },
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'fornecedores', label: 'Fornecedores' },
@@ -188,7 +188,7 @@ const ProdutoDetalhe = () => {
           <p className="text-navy-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
-          <button className="btn-secondary justify-center" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lancar Movimentacao</button>
+          <button className="btn-secondary justify-center" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lançar movimentação</button>
           <button className="btn-primary justify-center" onClick={() => navigate(`/pedidos?produto_id=${id}`)}>Emitir Pedido</button>
         </div>
       </div>
@@ -211,7 +211,7 @@ const ProdutoDetalhe = () => {
             </div>
             <p className="text-xs mt-2 opacity-80">
               {diasAteReposicao !== null
-                ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias ate o PR` : 'No ponto de reposicao ou abaixo')
+                ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias até o PR` : 'No ponto de reposição ou abaixo')
                 : 'Informe CMD para calcular'}
             </p>
           </div>
@@ -324,7 +324,7 @@ const ProdutoDetalhe = () => {
                 <>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-bold text-navy-800">Ciclo de reposicao Kanban</h3>
+                      <h3 className="font-bold text-navy-800">Ciclo de reposição Kanban</h3>
                       <p className="text-sm text-navy-400 mt-0.5">
                         {historicoSerrote.length > 0
                           ? 'Historico real por data e hora + ciclos estimados com tooltip por ponto'
@@ -338,7 +338,7 @@ const ProdutoDetalhe = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      ['todos', 'Todo historico'],
+                      ['todos', 'Todo histórico'],
                       ['7d', 'Ultimos 7 dias'],
                       ['dia', 'Zoom do dia'],
                     ].map(([value, label]) => (
@@ -368,7 +368,7 @@ const ProdutoDetalhe = () => {
                   <div className="text-4xl">📊</div>
                   <p className="font-bold text-navy-700">Parâmetros Kanban ainda não calculados</p>
                   <p className="text-sm text-navy-400 max-w-md">
-                    O grafico de ciclos sera exibido apos o sistema calcular ES, PR e EOQ a partir das movimentacoes e pedidos deste produto.
+                    O gráfico de ciclos será exibido após o sistema calcular ES, PR e EOQ a partir das movimentações e pedidos deste produto.
                     Registre pelo menos algumas semanas de movimentação para o modelo estatístico entrar em ação.
                   </p>
                 </div>
@@ -543,7 +543,7 @@ const ProdutoDetalhe = () => {
                   />
                 </div>
                 <p className="sm:col-span-3 text-xs text-navy-500">
-                  Prioridade 1 e o fornecedor principal; 2, 3, 4... sao secundarios usados como alternativas de compra.
+                  Prioridade 1 é o fornecedor principal; 2, 3, 4... são secundários usados como alternativas de compra.
                 </p>
               </form>
               {!fornecedoresVinculados || fornecedoresVinculados.length === 0 ? (

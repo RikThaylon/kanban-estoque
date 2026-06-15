@@ -7,35 +7,20 @@ const { audit } = require('../middleware/audit');
 const { createLimiter } = require('../middleware/rateLimiter');
 const { query, getClient } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
-const { AppError, NotFoundError } = require('../utils/errors');
+const { NotFoundError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { dispatchRecalculoKanban } = require('../services/recalculo.dispatcher');
+const {
+  UUID_REGEX,
+  PERFIS_APROVADORES_MOVIMENTACAO,
+  tipoRequerAprovacao,
+  calcularExecucaoMovimentacao,
+  validarMovimentacaoPendente,
+  validarAutoAprovacaoMovimentacao,
+} = require('../services/movimentacao.workflow');
 const logger = require('../utils/logger');
 
 const router = express.Router();
-
-// Tipos que exigem aprovação antes de afetar o estoque
-const TIPOS_REQUEREM_APROVACAO = ['AJUSTE_POSITIVO', 'AJUSTE_NEGATIVO', 'DEVOLUCAO'];
-
-// Quem pode aprovar movimentações pendentes
-const PERFIS_APROVADORES = ['admin', 'supervisor_turno', 'gerente_operacoes', 'plant_manager'];
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function aplicarDelta(tipo, estoqueAntes, qtd) {
-  switch (tipo) {
-    case 'ENTRADA':
-    case 'AJUSTE_POSITIVO':
-    case 'DEVOLUCAO':
-      return estoqueAntes + qtd;
-    case 'SAIDA':
-    case 'TRANSFERENCIA':
-    case 'AJUSTE_NEGATIVO':
-      return estoqueAntes - qtd;
-    default:
-      throw new AppError('Tipo de movimentação inválido', 400, 'TIPO_INVALIDO');
-  }
-}
 
 // ─── GET /api/v1/movimentacoes ──────────────────────────────────────────────
 router.get('/', authenticate, async (req, res, next) => {
@@ -115,7 +100,7 @@ router.post('/',
       const { produto_id, tipo, quantidade, turno, referencia, numero_documento, observacao } = req.body;
       const qtd = parseFloat(quantidade);
 
-      const requerAprovacao = TIPOS_REQUEREM_APROVACAO.includes(tipo);
+      const requerAprovacao = tipoRequerAprovacao(tipo);
       // Admin e supervisor_turno podem criar movimentações que precisariam aprovação
       // já no estado APROVADO (autoaprovam) — mas ainda assim preferimos PENDENTE
       // pra rastreio. Apenas operações instantâneas (ENTRADA/SAIDA) entram como EXECUTADO.
@@ -148,10 +133,7 @@ router.post('/',
       }
 
       // Tipo direto (ENTRADA/SAIDA): executa na hora
-      const estoqueDepois = aplicarDelta(tipo, estoqueAntes, qtd);
-      if (estoqueDepois < 0) {
-        throw new AppError('Estoque insuficiente para esta operação', 400, 'ESTOQUE_INSUFICIENTE');
-      }
+      const estoqueDepois = calcularExecucaoMovimentacao({ tipo, estoqueAtual: estoqueAntes, quantidade: qtd });
 
       const movRes = await client.query(
         `INSERT INTO movimentacoes
@@ -194,7 +176,7 @@ router.post('/',
 // ─── POST /api/v1/movimentacoes/:id/aprovar ─────────────────────────────────
 router.post('/:id/aprovar',
   authenticate,
-  authorize(...PERFIS_APROVADORES),
+  authorize(...PERFIS_APROVADORES_MOVIMENTACAO),
   audit('APROVAR_MOVIMENTACAO', 'movimentacoes'),
   [param('id').matches(UUID_REGEX)],
   validate,
@@ -211,14 +193,10 @@ router.post('/:id/aprovar',
       if (movRes.rows.length === 0) throw new NotFoundError('Movimentação');
       const mov = movRes.rows[0];
 
-      if (mov.status !== 'PENDENTE') {
-        throw new AppError(`Movimentação não está pendente (status atual: ${mov.status})`, 409, 'STATUS_INVALIDO');
-      }
+      validarMovimentacaoPendente(mov);
 
       // Não permitir auto-aprovação (criador != aprovador)
-      if (mov.criado_por === req.user.id && req.user.perfil !== 'admin') {
-        throw new AppError('Você não pode aprovar sua própria movimentação', 403, 'AUTO_APROVACAO_PROIBIDA');
-      }
+      validarAutoAprovacaoMovimentacao(mov, req.user);
 
       const prodRes = await client.query(
         'SELECT estoque_atual FROM produtos WHERE id = $1 FOR UPDATE',
@@ -228,11 +206,13 @@ router.post('/:id/aprovar',
 
       const estoqueAtual = parseFloat(prodRes.rows[0].estoque_atual);
       const qtd = parseFloat(mov.quantidade);
-      const estoqueDepois = aplicarDelta(mov.tipo, estoqueAtual, qtd);
+      const estoqueDepois = calcularExecucaoMovimentacao({
+        tipo: mov.tipo,
+        estoqueAtual,
+        quantidade: qtd,
+        contexto: 'aprovacao',
+      });
 
-      if (estoqueDepois < 0) {
-        throw new AppError('Estoque insuficiente no momento da aprovação', 400, 'ESTOQUE_INSUFICIENTE');
-      }
 
       await client.query(
         `UPDATE movimentacoes
@@ -277,7 +257,7 @@ router.post('/:id/aprovar',
 // ─── POST /api/v1/movimentacoes/:id/rejeitar ────────────────────────────────
 router.post('/:id/rejeitar',
   authenticate,
-  authorize(...PERFIS_APROVADORES),
+  authorize(...PERFIS_APROVADORES_MOVIMENTACAO),
   audit('REJEITAR_MOVIMENTACAO', 'movimentacoes'),
   [
     param('id').matches(UUID_REGEX),
@@ -291,9 +271,7 @@ router.post('/:id/rejeitar',
 
       const movRes = await query('SELECT status, criado_por FROM movimentacoes WHERE id = $1', [id]);
       if (movRes.rows.length === 0) throw new NotFoundError('Movimentação');
-      if (movRes.rows[0].status !== 'PENDENTE') {
-        throw new AppError(`Movimentação não está pendente (status: ${movRes.rows[0].status})`, 409, 'STATUS_INVALIDO');
-      }
+      validarMovimentacaoPendente(movRes.rows[0]);
 
       await query(
         `UPDATE movimentacoes

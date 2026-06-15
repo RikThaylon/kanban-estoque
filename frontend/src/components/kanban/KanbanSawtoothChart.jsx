@@ -47,7 +47,7 @@ const buildLinearCycleData = ({ cmd, leadTime, es, pr, emax, ciclos }) => {
     const estoqueChegada = Math.max(pr - cmd * leadTime, Math.max(es * 0.7, 0));
 
     rows.push({ x: atDay(inicio), dia: inicio, estoqueEstimado: emax, evento: `Inicio ciclo ${ciclo}` });
-    rows.push({ x: atDay(diaPedido), dia: diaPedido, estoqueEstimado: pr, evento: 'Ponto de reposicao' });
+    rows.push({ x: atDay(diaPedido), dia: diaPedido, estoqueEstimado: pr, evento: 'Ponto de reposição' });
     rows.push({ x: atDay(diaChegada), dia: diaChegada, estoqueEstimado: estoqueChegada, evento: 'Chegada do pedido' });
     rows.push({ x: atDay(diaReposicao), dia: diaReposicao, estoqueEstimado: emax, evento: 'Reposicao concluida' });
 
@@ -203,9 +203,9 @@ const KanbanSawtoothChart = ({
       </div>
 
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-4 px-3 pb-3 text-[11px] sm:text-xs text-steel-500 border-t border-steel-700/10 pt-2">
-        <span><strong>ES={formatValue(es)}</strong> seguranca</span>
-        <span><strong>PR={formatValue(pr)}</strong> reposicao</span>
-        <span><strong>EM={formatValue(emax)}</strong> maximo</span>
+        <span><strong>ES={formatValue(es)}</strong> segurança</span>
+        <span><strong>PR={formatValue(pr)}</strong> reposição</span>
+        <span><strong>EM={formatValue(emax)}</strong> máximo</span>
         <span><strong>CMD={formatValue(cmd)}/dia</strong></span>
         <span><strong>LT={formatValue(leadTime)} dias</strong></span>
       </div>

@@ -40,14 +40,14 @@ export const useSocket = () => {
       invalidateOperationalData(queryClient, data?.produto_id);
       queryClient.invalidateQueries({ queryKey: ['pedido', data?.pedido_id] });
       const mensagens = {
-        AGUARDANDO_APROVACAO: 'Nova solicitacao aguardando aprovacao interna N1.',
-        AGUARDANDO_GERENTE: 'Solicitacao aguardando aprovacao interna N2.',
-        AGUARDANDO_DIRETORIA: 'Solicitacao aguardando aprovacao interna N3.',
+        AGUARDANDO_APROVACAO: 'Nova solicitação aguardando aprovação interna N1.',
+        AGUARDANDO_GERENTE: 'Solicitação aguardando aprovação interna N2.',
+        AGUARDANDO_DIRETORIA: 'Solicitação aguardando aprovação interna N3.',
         APROVADO: 'Pedido aprovado internamente. Comprador deve registrar a OC externa.',
         AGUARDANDO_CHEGADA: 'OC externa registrada. Pedido aguardando chegada.',
         EMITIDO: 'OC externa registrada. Pedido aguardando chegada.',
-        CONCLUIDO: 'Pedido concluido com NF e estoque atualizado.',
-        RECEBIDO: 'Pedido concluido com NF e estoque atualizado.',
+        CONCLUIDO: 'Pedido concluído com NF e estoque atualizado.',
+        RECEBIDO: 'Pedido concluído com NF e estoque atualizado.',
         REJEITADO: 'Pedido rejeitado pelo aprovador.',
         CANCELADO: 'Pedido cancelado.',
       };
@@ -68,8 +68,8 @@ export const useSocket = () => {
       invalidateOperationalData(queryClient, data?.produto_id);
       pushToast({
         tipo: data?.motivo ? 'warning' : 'info',
-        titulo: 'Movimentacao de estoque',
-        mensagem: data?.motivo ? 'Uma movimentacao foi rejeitada.' : 'Uma movimentacao mudou de status.',
+        titulo: 'Movimentação de estoque',
+        mensagem: data?.motivo ? 'Uma movimentação foi rejeitada.' : 'Uma movimentação mudou de status.',
       });
     };
 

@@ -2,6 +2,13 @@ const {
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
   resolverVinculoMaquina,
+  normalizarStatusPedido,
+  podeAlterarStatusPedido,
+  validarMudancaStatusPedido,
+  validarRejeicaoPedido,
+  validarRecebedorPedido,
+  validarPedidoRecebivel,
+  calcularStatusRecebimento,
 } = require('../../src/services/pedido.workflow');
 
 const limites = {
@@ -197,6 +204,112 @@ describe('pedido.workflow', () => {
           nivel3: ['comprador'],
         },
       })).toThrow('Cargo nao autorizado');
+    });
+  });
+
+  describe('transicoes e permissoes de status', () => {
+    const cargosFluxo = {
+      compradores: ['comprador'],
+      recebedores: ['comprador', 'facilitador'],
+    };
+
+    it('normaliza status legados de emissao e recebimento', () => {
+      expect(normalizarStatusPedido('EMITIDO')).toBe('AGUARDANDO_CHEGADA');
+      expect(normalizarStatusPedido('RECEBIDO')).toBe('CONCLUIDO');
+      expect(normalizarStatusPedido('CANCELADO')).toBe('CANCELADO');
+    });
+
+    it('permite comprador colocar pedido aprovado aguardando chegada', () => {
+      expect(podeAlterarStatusPedido('comprador', 'AGUARDANDO_CHEGADA', null, 'APROVADO', cargosFluxo)).toBe(true);
+    });
+
+    it('bloqueia facilitador de emitir OC externa quando nao e comprador configurado', () => {
+      expect(podeAlterarStatusPedido('facilitador', 'AGUARDANDO_CHEGADA', null, 'APROVADO', cargosFluxo)).toBe(false);
+    });
+
+    it('exige OC externa ao marcar pedido como aguardando chegada', () => {
+      expect(() => validarMudancaStatusPedido({
+        statusAtual: 'APROVADO',
+        novoStatus: 'AGUARDANDO_CHEGADA',
+        usuario: { perfil: 'comprador' },
+        cargosFluxo,
+        fornecedorIdAtual: 'forn-1',
+      })).toThrow('OC criada');
+    });
+
+    it('exige fornecedor ao marcar pedido como aguardando chegada', () => {
+      expect(() => validarMudancaStatusPedido({
+        statusAtual: 'APROVADO',
+        novoStatus: 'AGUARDANDO_CHEGADA',
+        usuario: { perfil: 'comprador' },
+        cargosFluxo,
+        numeroOcExterna: 'OC-123',
+      })).toThrow('fornecedor');
+    });
+
+    it('orienta a usar endpoint de receber para status de recebimento', () => {
+      expect(() => validarMudancaStatusPedido({
+        statusAtual: 'AGUARDANDO_CHEGADA',
+        novoStatus: 'CONCLUIDO',
+        usuario: { perfil: 'comprador' },
+        cargosFluxo,
+      })).toThrow('Use POST /:id/receber');
+    });
+
+    it('valida rejeicao por aprovador N1 configurado', () => {
+      expect(() => validarRejeicaoPedido(
+        { status: 'AGUARDANDO_APROVACAO', criado_por: 'fac-1', aprovador_n1_id: 'sup-1' },
+        { id: 'sup-1', perfil: 'supervisor_turno' },
+        { nivel1: ['supervisor_turno'], nivel2: ['gerente_operacoes'], nivel3: ['plant_manager'] }
+      )).not.toThrow();
+    });
+
+    it('bloqueia rejeicao por supervisor de outro departamento', () => {
+      expect(() => validarRejeicaoPedido(
+        { status: 'AGUARDANDO_APROVACAO', criado_por: 'fac-1', aprovador_n1_id: 'sup-1' },
+        { id: 'sup-2', perfil: 'supervisor_turno' },
+        { nivel1: ['supervisor_turno'], nivel2: ['gerente_operacoes'], nivel3: ['plant_manager'] }
+      )).toThrow('supervisor responsavel');
+    });
+  });
+
+  describe('recebimento', () => {
+    it('permite recebedor configurado', () => {
+      expect(() => validarRecebedorPedido(
+        { perfil: 'facilitador' },
+        { recebedores: ['facilitador'] }
+      )).not.toThrow();
+    });
+
+    it('bloqueia cargo fora dos recebedores', () => {
+      expect(() => validarRecebedorPedido(
+        { perfil: 'supervisor_turno' },
+        { recebedores: ['facilitador'] }
+      )).toThrow('registrar recebimento');
+    });
+
+    it('permite receber pedido em status aguardando chegada', () => {
+      expect(() => validarPedidoRecebivel({ status: 'AGUARDANDO_CHEGADA' })).not.toThrow();
+    });
+
+    it('bloqueia recebimento em status aprovado', () => {
+      expect(() => validarPedidoRecebivel({ status: 'APROVADO' })).toThrow('Pedido nao pode ser recebido');
+    });
+
+    it('calcula recebimento parcial', () => {
+      expect(calcularStatusRecebimento({
+        quantidadePedida: 100,
+        quantidadeRecebidaAtual: 20,
+        quantidadeRecebida: 30,
+      })).toEqual({ totalRecebido: 50, novoStatus: 'RECEBIDO_PARCIAL' });
+    });
+
+    it('calcula recebimento concluido', () => {
+      expect(calcularStatusRecebimento({
+        quantidadePedida: 100,
+        quantidadeRecebidaAtual: 40,
+        quantidadeRecebida: 60,
+      })).toEqual({ totalRecebido: 100, novoStatus: 'CONCLUIDO' });
     });
   });
 });

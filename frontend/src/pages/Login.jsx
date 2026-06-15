@@ -33,7 +33,7 @@ const Login = () => {
               Controle industrial com ritmo de turno.
             </h1>
             <p className="mt-5 max-w-xl text-base text-steel-600">
-              Kanban, compras, maquinas e aprovacoes em uma interface feita para decisao rapida no chao de fabrica.
+              Kanban, compras, máquinas e aprovações em uma interface feita para decisão rápida no chão de fábrica.
             </p>
           </div>
 
@@ -85,7 +85,7 @@ const Login = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="block w-full rounded-md border border-surface-300 bg-white pl-10 pr-3 py-3 text-navy-900 placeholder:text-navy-300 focus:border-accent focus:ring-2 focus:ring-accent/20"
-                    placeholder="usuario"
+                    placeholder="usuário"
                     required
                     autoComplete="username"
                     autoCapitalize="none"

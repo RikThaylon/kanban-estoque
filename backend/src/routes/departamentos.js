@@ -6,10 +6,16 @@ const { audit } = require('../middleware/audit');
 const { validate } = require('../middleware/validate');
 const { query } = require('../config/database');
 const { NotFoundError } = require('../utils/errors');
+const {
+  UUID_REGEX,
+  PERFIS_GESTAO_DEPARTAMENTO,
+  PERFIS_EXCLUIR_DEPARTAMENTO,
+  CAMPOS_ATUALIZAVEIS_DEPARTAMENTO,
+  normalizarCodigoOperacional,
+  montarAtualizacaoOperacional,
+} = require('../services/operacional.workflow');
 
 const router = express.Router();
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PERFIS_GESTAO = ['admin', 'gerente_operacoes', 'plant_manager'];
 
 /** Lista todos os departamentos com supervisor, contagem de máquinas */
 router.get('/', authenticate, async (req, res, next) => {
@@ -26,7 +32,7 @@ router.get('/', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.get('/:id', authenticate, [param('id').matches(UUID)], validate, async (req, res, next) => {
+router.get('/:id', authenticate, [param('id').matches(UUID_REGEX)], validate, async (req, res, next) => {
   try {
     const result = await query(`
       SELECT d.*, u.nome AS supervisor_nome, u.username AS supervisor_username
@@ -40,13 +46,13 @@ router.get('/:id', authenticate, [param('id').matches(UUID)], validate, async (r
 });
 
 router.post('/',
-  authenticate, authorize(...PERFIS_GESTAO),
+  authenticate, authorize(...PERFIS_GESTAO_DEPARTAMENTO),
   audit('CRIAR_DEPARTAMENTO', 'departamentos'),
   [
     body('codigo').isString().trim().isLength({ min: 2, max: 30 }),
     body('nome').isString().trim().isLength({ min: 2, max: 120 }),
     body('descricao').optional().isString().trim().isLength({ max: 1000 }),
-    body('supervisor_id').optional({ nullable: true }).matches(UUID),
+    body('supervisor_id').optional({ nullable: true }).matches(UUID_REGEX),
   ], validate,
   async (req, res, next) => {
     try {
@@ -54,7 +60,7 @@ router.post('/',
       const r = await query(
         `INSERT INTO departamentos (codigo, nome, descricao, supervisor_id)
          VALUES ($1, $2, $3, $4) RETURNING *`,
-        [codigo.toUpperCase(), nome, descricao, supervisor_id || null]
+        [normalizarCodigoOperacional(codigo), nome, descricao, supervisor_id || null]
       );
       res.status(201).json(r.rows[0]);
     } catch (err) { next(err); }
@@ -62,25 +68,18 @@ router.post('/',
 );
 
 router.patch('/:id',
-  authenticate, authorize(...PERFIS_GESTAO),
+  authenticate, authorize(...PERFIS_GESTAO_DEPARTAMENTO),
   audit('EDITAR_DEPARTAMENTO', 'departamentos'),
   [
-    param('id').matches(UUID),
+    param('id').matches(UUID_REGEX),
     body('nome').optional().isString().trim().isLength({ min: 2, max: 120 }),
     body('descricao').optional({ nullable: true }).isString().trim().isLength({ max: 1000 }),
-    body('supervisor_id').optional({ nullable: true }).custom(v => !v || UUID.test(v)),
+    body('supervisor_id').optional({ nullable: true }).custom(v => !v || UUID_REGEX.test(v)),
     body('ativo').optional().isBoolean(),
   ], validate,
   async (req, res, next) => {
     try {
-      const fields = ['nome', 'descricao', 'supervisor_id', 'ativo'];
-      const sets = []; const params = [];
-      fields.forEach(f => {
-        if (req.body[f] !== undefined) {
-          params.push(req.body[f] === '' ? null : req.body[f]);
-          sets.push(`${f} = $${params.length}`);
-        }
-      });
+      const { sets, params } = montarAtualizacaoOperacional(req.body, CAMPOS_ATUALIZAVEIS_DEPARTAMENTO);
       if (sets.length === 0) return res.status(400).json({ error: 'NO_CHANGES' });
       params.push(req.params.id);
       const r = await query(
@@ -94,9 +93,9 @@ router.patch('/:id',
 );
 
 router.delete('/:id',
-  authenticate, authorize('admin', 'plant_manager'),
+  authenticate, authorize(...PERFIS_EXCLUIR_DEPARTAMENTO),
   audit('DESATIVAR_DEPARTAMENTO', 'departamentos'),
-  [param('id').matches(UUID)], validate,
+  [param('id').matches(UUID_REGEX)], validate,
   async (req, res, next) => {
     try {
       const r = await query(

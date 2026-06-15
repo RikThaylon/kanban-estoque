@@ -8,17 +8,17 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const TITLES = {
-  dashboard: ['Centro de comando', 'Visao operacional do estoque Kanban'],
-  produtos: ['Catalogo tecnico', 'Itens, parametros e curvas de consumo'],
-  movimentacoes: ['Movimentacoes', 'Entradas, saidas e ajustes de estoque'],
-  pedidos: ['Compras e aprovacao', 'Solicitacoes, status e recebimentos'],
-  grafo: ['Grafo de relacionamentos', 'Pecas, maquinas, compras e responsaveis'],
-  maquinas: ['Maquinas e departamentos', 'Vinculos produtivos e responsaveis'],
-  alertas: ['Alertas', 'Riscos e pendencias do sistema'],
-  relatorios: ['Relatorios', 'Analise gerencial e exportacoes'],
-  usuarios: ['Usuarios', 'Perfis e acessos'],
+  dashboard: ['Centro de comando', 'Visão operacional do estoque Kanban'],
+  produtos: ['Catálogo técnico', 'Itens, parâmetros e curvas de consumo'],
+  movimentacoes: ['Movimentações', 'Entradas, saídas e ajustes de estoque'],
+  pedidos: ['Compras e aprovação', 'Solicitações, status e recebimentos'],
+  grafo: ['Grafo de relacionamentos', 'Peças, máquinas, compras e responsáveis'],
+  maquinas: ['Máquinas e departamentos', 'Vínculos produtivos e responsáveis'],
+  alertas: ['Alertas', 'Riscos e pendências do sistema'],
+  relatorios: ['Relatórios', 'Análise gerencial e exportações'],
+  usuarios: ['Usuários', 'Perfis e acessos'],
   fornecedores: ['Fornecedores', 'Base de compra e lead times'],
-  configuracoes: ['Configuracoes', 'Regras administrativas do fluxo'],
+  configuracoes: ['Configurações', 'Regras administrativas do fluxo'],
   raci: ['Matriz RACI', 'Responsabilidades do processo'],
 };
 
@@ -30,7 +30,7 @@ const Header = () => {
 
   const [title, subtitle] = useMemo(() => {
     const key = location.pathname.split('/').filter(Boolean)[0] || 'dashboard';
-    return TITLES[key] || ['Kanban Estoque', 'Operacao industrial'];
+    return TITLES[key] || ['Kanban Estoque', 'Operação industrial'];
   }, [location.pathname]);
 
   const { data: notificacoes } = useQuery({
@@ -92,7 +92,7 @@ const Header = () => {
 
           <div className="flex items-center gap-2">
             <div className="text-right hidden md:block">
-              <p className="text-sm font-bold text-steel-900 leading-tight truncate max-w-[150px]">{user?.nome || 'Usuario'}</p>
+              <p className="text-sm font-bold text-steel-900 leading-tight truncate max-w-[150px]">{user?.nome || 'Usuário'}</p>
               <p className="text-xs text-steel-500 capitalize">{(user?.perfil || 'Perfil').replace(/_/g, ' ')}</p>
             </div>
             <div className="w-9 h-9 rounded-md bg-steel-900 flex items-center justify-center text-accent shrink-0">

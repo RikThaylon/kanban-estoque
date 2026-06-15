@@ -9,18 +9,23 @@ const { query } = require('../config/database');
 const { env } = require('../config/env');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError } = require('../utils/errors');
+const {
+  SENHA_MIN,
+  SENHA_MAX,
+  SENHA_REGEX,
+  validarPermissaoEdicaoUsuario,
+  montarAtualizacaoUsuario,
+  validarDesativacaoUsuario,
+  erroUsuarioDuplicado,
+} = require('../services/usuario.workflow');
 
 const router = express.Router();
-const SENHA_MIN = 8;
-const SENHA_MAX = 100;
-const SENHA_REGEX = /^\S+$/;
 
 const validarSenha = (campo) => body(campo)
   .isString().withMessage('Senha obrigatoria')
   .isLength({ min: SENHA_MIN, max: SENHA_MAX }).withMessage(`Senha precisa ter entre ${SENHA_MIN} e ${SENHA_MAX} caracteres`)
   .matches(SENHA_REGEX).withMessage('Senha nao pode conter espacos');
 
-// Lista usuarios — admin e visualizadores podem listar; demais nao
 router.get('/', authenticate, authorize('admin', 'plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes', 'visualizador'),
   async (req, res, next) => {
     try {
@@ -37,19 +42,17 @@ router.get('/', authenticate, authorize('admin', 'plant_manager', 'gerente_engen
   }
 );
 
-// Lista cargos disponíveis (ajuda no frontend para preencher selects)
 router.get('/cargos', authenticate, async (req, res) => {
   res.json({ cargos: PERFIS_VALIDOS });
 });
 
-// Criar usuario (somente admin)
 router.post('/', authenticate, authorize('admin'), audit('CRIAR_USUARIO', 'usuarios'),
   [
-    body('nome').trim().isLength({ min: 1, max: 120 }).withMessage('Nome obrigatório'),
+    body('nome').trim().isLength({ min: 1, max: 120 }).withMessage('Nome obrigatorio'),
     body('username').trim().isLength({ min: 3, max: 60 }).matches(/^[a-zA-Z0-9._-]+$/)
-      .withMessage('Username só pode conter letras, números, ponto, hífen e underline'),
+      .withMessage('Username so pode conter letras, numeros, ponto, hifen e underline'),
     validarSenha('senha'),
-    body('perfil').isIn(PERFIS_VALIDOS).withMessage('Perfil inválido'),
+    body('perfil').isIn(PERFIS_VALIDOS).withMessage('Perfil invalido'),
   ], validate,
   async (req, res, next) => {
     try {
@@ -63,10 +66,7 @@ router.post('/', authenticate, authorize('admin'), audit('CRIAR_USUARIO', 'usuar
       );
       res.status(201).json(result.rows[0]);
     } catch (err) {
-      if (err.code === '23505') {
-        return res.status(409).json({ error: 'CONFLICT', message: 'Usuário já existe', code: 409 });
-      }
-      next(err);
+      next(erroUsuarioDuplicado(err, 'Usuario ja existe') || err);
     }
   }
 );
@@ -77,73 +77,46 @@ router.get('/:id', authenticate, async (req, res, next) => {
       'SELECT id, nome, username, perfil, ativo, ultimo_login, criado_em FROM usuarios WHERE id = $1',
       [req.params.id]
     );
-    if (result.rows.length === 0) throw new NotFoundError('Usuário');
+    if (result.rows.length === 0) throw new NotFoundError('Usuario');
     res.json(result.rows[0]);
   } catch (err) { next(err); }
 });
 
-// Atualizar usuario — admin pode tudo; usuario pode atualizar so o proprio nome
 router.patch('/:id', authenticate, audit('ATUALIZAR_USUARIO', 'usuarios'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const isAdmin = req.user.perfil === 'admin';
-      const isSelf = req.user.id === id;
-      if (!isAdmin && !isSelf) {
-        return res.status(403).json({ error: 'FORBIDDEN', message: 'Sem permissão', code: 403 });
-      }
+      validarPermissaoEdicaoUsuario(req.user, id);
 
-      // Campos permitidos para o proprio usuario (sem alterar perfil/ativo)
-      const camposProprios = ['nome'];
-      const camposAdmin = ['nome', 'username', 'perfil', 'ativo'];
-      const allowed = isAdmin ? camposAdmin : camposProprios;
-
-      // Valida perfil se for admin alterando
-      if (isAdmin && req.body.perfil !== undefined && !PERFIS_VALIDOS.includes(req.body.perfil)) {
-        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Perfil inválido', code: 400 });
-      }
-
-      const fields = []; const values = []; let idx = 1;
-      for (const key of allowed) {
-        if (req.body[key] !== undefined) {
-          fields.push(`${key} = $${idx++}`);
-          values.push(req.body[key]);
-        }
-      }
+      const { fields, values, nextIndex: idx } = montarAtualizacaoUsuario(req.body, req.user);
       if (fields.length === 0) {
         return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Nada para atualizar', code: 400 });
       }
+
       fields.push('atualizado_em = NOW()');
       values.push(id);
       const result = await query(
         `UPDATE usuarios SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, nome, username, perfil, ativo`,
         values
       );
-      if (result.rows.length === 0) throw new NotFoundError('Usuário');
+      if (result.rows.length === 0) throw new NotFoundError('Usuario');
       res.json(result.rows[0]);
     } catch (err) {
-      if (err.code === '23505') {
-        return res.status(409).json({ error: 'CONFLICT', message: 'Username já existe', code: 409 });
-      }
-      next(err);
+      next(erroUsuarioDuplicado(err, 'Username ja existe') || err);
     }
   }
 );
 
-// Soft delete (somente admin)
 router.delete('/:id', authenticate, authorize('admin'), audit('DESATIVAR_USUARIO', 'usuarios'),
   async (req, res, next) => {
     try {
-      if (req.user.id === req.params.id) {
-        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Você não pode desativar seu próprio usuário', code: 400 });
-      }
+      validarDesativacaoUsuario(req.user, req.params.id);
       await query('UPDATE usuarios SET ativo = false, atualizado_em = NOW() WHERE id = $1', [req.params.id]);
-      res.json({ message: 'Usuário desativado' });
+      res.json({ message: 'Usuario desativado' });
     } catch (err) { next(err); }
   }
 );
 
-// Reset de senha (somente admin)
 router.post('/:id/reset-senha', authenticate, authorize('admin'), audit('RESET_SENHA', 'usuarios'),
   [validarSenha('nova_senha')], validate,
   async (req, res, next) => {

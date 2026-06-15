@@ -32,16 +32,16 @@ const Sidebar = () => {
   const menuItems = [
     { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { key: 'produtos', path: '/produtos', icon: Package, label: 'Produtos' },
-    { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentacoes' },
+    { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentações' },
     { key: 'pedidos', path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra' },
     { key: 'grafo', path: '/grafo', icon: Network, label: 'Grafo' },
     { key: 'fornecedores', path: '/fornecedores', icon: Truck, label: 'Fornecedores' },
-    { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configuracoes' },
-    { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Maquinas' },
+    { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configurações' },
+    { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Máquinas' },
     { key: 'alertas', path: '/alertas', icon: AlertTriangle, label: 'Alertas' },
     { key: 'raci', path: '/raci', icon: GitBranch, label: 'Matriz RACI' },
-    { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatorios' },
-    { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuarios' },
+    { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatórios' },
+    { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuários' },
   ];
 
   const filteredItems = menuItems.filter(item => perfilTemPagina(permissoes, user?.perfil, item.key));
@@ -57,7 +57,7 @@ const Sidebar = () => {
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
-      aria-label="Navegacao principal"
+      aria-label="Navegação principal"
     >
       <div className="h-16 flex items-center justify-between border-b border-white/10 px-4">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">

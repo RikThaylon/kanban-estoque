@@ -52,12 +52,12 @@ const AcompanharPedido = () => {
             <ArrowLeft className="w-4 h-4" /> Voltar para pedidos
           </Link>
           <h1 className="mt-3 text-xl sm:text-2xl font-bold text-navy-800">Acompanhar Pedido</h1>
-          <p className="text-sm text-navy-400">Consulte o andamento pelo codigo do pedido de compra.</p>
+          <p className="text-sm text-navy-400">Consulte o andamento pelo código do pedido de compra.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
-        <label className="block text-sm font-bold text-navy-700 mb-2">Codigo do pedido</label>
+        <label className="block text-sm font-bold text-navy-700 mb-2">Código do pedido</label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
@@ -79,15 +79,15 @@ const AcompanharPedido = () => {
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <div>
-            <strong>Pedido nao encontrado.</strong>
-            <p className="mt-1">{buscarPedido.error?.message || 'Confira o codigo e tente novamente.'}</p>
+            <strong>Pedido não encontrado.</strong>
+            <p className="mt-1">{buscarPedido.error?.message || 'Confira o código e tente novamente.'}</p>
           </div>
         </div>
       )}
 
       {!pedido && !buscarPedido.isError && (
         <div className="rounded-md border border-dashed border-surface-300 bg-white/70 p-8 text-center text-navy-400">
-          Digite o codigo do pedido para consultar o status.
+          Digite o código do pedido para consultar o status.
         </div>
       )}
 
@@ -135,12 +135,12 @@ const AcompanharPedido = () => {
               <ResumoLinha label="Produto" value={`${pedido.produto_codigo || '-'} - ${pedido.produto_nome || '-'}`} />
               <ResumoLinha label="Quantidade" value={pedido.quantidade_pedida} />
               <ResumoLinha label="Fornecedor" value={pedido.fornecedor_nome || '-'} />
-              <ResumoLinha label="Maquina" value={pedido.maquina_codigo ? `${pedido.maquina_codigo} - ${pedido.maquina_nome || ''}` : '-'} />
+              <ResumoLinha label="Máquina" value={pedido.maquina_codigo ? `${pedido.maquina_codigo} - ${pedido.maquina_nome || ''}` : '-'} />
               <ResumoLinha label="Departamento" value={pedido.departamento_nome || '-'} />
               <ResumoLinha label="Supervisor" value={pedido.aprovador_n1_nome || '-'} />
               <ResumoLinha label="Criado por" value={pedido.criado_por_nome || '-'} />
               <ResumoLinha label="Criado em" value={formatDate(pedido.criado_em)} />
-              <ResumoLinha label="Previsao" value={pedido.data_prevista ? formatDate(pedido.data_prevista) : '-'} />
+              <ResumoLinha label="Previsão" value={pedido.data_prevista ? formatDate(pedido.data_prevista) : '-'} />
               <ResumoLinha label="OC externa" value={pedido.numero_oc_externa || '-'} mono />
               <ResumoLinha label="Recebido" value={pedido.quantidade_recebida || 0} />
             </div>

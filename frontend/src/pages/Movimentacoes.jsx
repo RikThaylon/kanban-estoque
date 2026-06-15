@@ -109,9 +109,9 @@ const Movimentacoes = () => {
       </div>
 
       <div className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-navy-600">
-        <strong className="text-navy-800">Fluxo:</strong> entradas e saidas executadas atualizam o estoque na hora.
-        Ajustes, devolucoes e transferencias ficam pendentes quando exigem aprovacao; so alteram o saldo depois da aprovacao.
-        Recebimento de compra tambem entra como movimentacao de entrada.
+        <strong className="text-navy-800">Fluxo:</strong> entradas e saídas executadas atualizam o estoque na hora.
+        Ajustes, devoluções e transferências ficam pendentes quando exigem aprovação; só alteram o saldo depois da aprovação.
+        Recebimento de compra também entra como movimentação de entrada.
       </div>
 
       {/* Tabs */}
@@ -316,7 +316,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
     setAviso('');
     if (!produtoId) return setErro('Selecione um produto');
     if (!quantidade || parseFloat(quantidade) <= 0) return setErro('Quantidade deve ser > 0');
-    if (!turno) return setErro('Selecione o turno da movimentacao');
+    if (!turno) return setErro('Selecione o turno da movimentação');
     criar.mutate();
   };
 

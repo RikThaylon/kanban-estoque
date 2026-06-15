@@ -6,65 +6,20 @@ const { query } = require('../config/database');
 const { perfilTemPagina } = require('../services/configuracoes.service');
 const { AppError } = require('../utils/errors');
 const logger = require('../utils/logger');
+const {
+  UUID_REGEX,
+  FAIXAS_GRAFO,
+  STATUS_PEDIDO_GRAFO,
+  LIMITE_PEDIDOS_GRAFO_PADRAO,
+  clampLimit,
+  toNumber,
+  addNode,
+  addEdge,
+  buildOptions,
+  normalizarFiltrosGrafo,
+} = require('../services/grafo.workflow');
 
 const router = express.Router();
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const FAIXAS = ['VERDE', 'AMARELO', 'VERMELHO', 'SEM_DADOS'];
-const STATUS_PEDIDO = [
-  'RASCUNHO',
-  'AGUARDANDO_APROVACAO',
-  'AGUARDANDO_GERENTE',
-  'AGUARDANDO_DIRETORIA',
-  'APROVADO',
-  'AGUARDANDO_CHEGADA',
-  'EMITIDO',
-  'EM_TRANSITO',
-  'RECEBIDO_PARCIAL',
-  'CONCLUIDO',
-  'RECEBIDO',
-  'CANCELADO',
-  'REJEITADO',
-];
-
-function clampLimit(value, fallback = 120) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(200, Math.max(20, parsed));
-}
-
-function toNumber(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function addNode(nodes, node) {
-  if (!node?.id || nodes.has(node.id)) return;
-  nodes.set(node.id, {
-    metrics: {},
-    ...node,
-  });
-}
-
-function addEdge(edges, edge) {
-  if (!edge?.source || !edge?.target || edges.has(edge.id)) return;
-  edges.set(edge.id, edge);
-}
-
-function buildOptions(values, fields) {
-  const map = new Map();
-  values.forEach((row) => {
-    const id = row[fields.id];
-    if (!id || map.has(id)) return;
-    map.set(id, {
-      id,
-      label: row[fields.label] || row[fields.codigo] || id,
-      subtitle: row[fields.subtitle] || row[fields.codigo] || null,
-    });
-  });
-  return Array.from(map.values()).sort((a, b) => String(a.label).localeCompare(String(b.label)));
-}
 
 async function autorizarGrafo(req, res, next) {
   try {
@@ -251,7 +206,7 @@ async function fetchPurchaseLinks(produtoIds, filters) {
     params.push(filters.data_fim);
   }
 
-  params.push(clampLimit(filters.pedidos_limit, 80));
+  params.push(clampLimit(filters.pedidos_limit, LIMITE_PEDIDOS_GRAFO_PADRAO));
 
   const result = await query(`
     SELECT pc.id, pc.numero, pc.produto_id, pc.fornecedor_id, pc.maquina_id, pc.departamento_id,
@@ -276,13 +231,13 @@ router.get('/relacionamentos',
   authenticate,
   autorizarGrafo,
   [
-    validateQuery('produto_id').optional().matches(UUID).withMessage('produto_id invalido'),
-    validateQuery('maquina_id').optional().matches(UUID).withMessage('maquina_id invalido'),
-    validateQuery('departamento_id').optional().matches(UUID).withMessage('departamento_id invalido'),
-    validateQuery('supervisor_id').optional().matches(UUID).withMessage('supervisor_id invalido'),
-    validateQuery('fornecedor_id').optional().matches(UUID).withMessage('fornecedor_id invalido'),
-    validateQuery('faixa').optional().isIn(FAIXAS).withMessage('faixa invalida'),
-    validateQuery('status_pedido').optional().isIn(STATUS_PEDIDO).withMessage('status_pedido invalido'),
+    validateQuery('produto_id').optional().matches(UUID_REGEX).withMessage('produto_id invalido'),
+    validateQuery('maquina_id').optional().matches(UUID_REGEX).withMessage('maquina_id invalido'),
+    validateQuery('departamento_id').optional().matches(UUID_REGEX).withMessage('departamento_id invalido'),
+    validateQuery('supervisor_id').optional().matches(UUID_REGEX).withMessage('supervisor_id invalido'),
+    validateQuery('fornecedor_id').optional().matches(UUID_REGEX).withMessage('fornecedor_id invalido'),
+    validateQuery('faixa').optional().isIn(FAIXAS_GRAFO).withMessage('faixa invalida'),
+    validateQuery('status_pedido').optional().isIn(STATUS_PEDIDO_GRAFO).withMessage('status_pedido invalido'),
     validateQuery('estoque').optional().isIn(['critico', 'reposicao']).withMessage('estoque invalido'),
     validateQuery('busca').optional().trim().isLength({ max: 120 }).withMessage('busca muito longa'),
     validateQuery('data_inicio').optional().isISO8601().withMessage('data_inicio invalida'),
@@ -292,20 +247,7 @@ router.get('/relacionamentos',
   validate,
   async (req, res, next) => {
     try {
-      const filters = {
-        produto_id: req.query.produto_id || null,
-        maquina_id: req.query.maquina_id || null,
-        departamento_id: req.query.departamento_id || null,
-        supervisor_id: req.query.supervisor_id || null,
-        fornecedor_id: req.query.fornecedor_id || null,
-        faixa: req.query.faixa || null,
-        status_pedido: req.query.status_pedido || null,
-        estoque: req.query.estoque || null,
-        busca: req.query.busca ? String(req.query.busca).trim() : '',
-        data_inicio: req.query.data_inicio || null,
-        data_fim: req.query.data_fim || null,
-        pedidos_limit: req.query.pedidos_limit,
-      };
+      const filters = normalizarFiltrosGrafo(req.query);
 
       const limit = clampLimit(req.query.limit);
       const productQuery = buildProductQuery(filters, limit);

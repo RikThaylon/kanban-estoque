@@ -381,7 +381,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
             turno: form.turno_inicial,
             numero_documento: form.documento_inicial || undefined,
             referencia: 'Entrada inicial',
-            observacao: 'Estoque inicial informado na insercao do item existente',
+            observacao: 'Estoque inicial informado na inserção do item existente',
           });
         }
 
@@ -498,7 +498,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
             <div className="rounded-lg border border-red-200 bg-red-50/50 p-4">
               <h3 className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Entrada inicial do item existente</h3>
               <p className="text-xs text-navy-500 mb-3">
-                Use quando o material ja existe fisicamente no estoque e esta sendo trazido para o sistema.
+                Use quando o material já existe fisicamente no estoque e está sendo trazido para o sistema.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -514,7 +514,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                   />
                 </div>
                 <div>
-                  <Label>Turno da insercao</Label>
+                  <Label>Turno da inserção</Label>
                   <select
                     className="input"
                     value={form.turno_inicial}
@@ -583,7 +583,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
 
               {/* Grafico linear interativo */}
               <div className="mt-4">
-                <p className="text-xs font-bold text-navy-500 mb-2">Visualizacao do ciclo Kanban estimado ({kanbanDefaults?.ciclos_estimativa_inicial || 10} ciclos)</p>
+                <p className="text-xs font-bold text-navy-500 mb-2">Visualização do ciclo Kanban estimado ({kanbanDefaults?.ciclos_estimativa_inicial || 10} ciclos)</p>
                 <KanbanSawtoothChart
                   cmd={kanbanPreview?.cmd || 0}
                   leadTime={kanbanPreview?.lt || 0}

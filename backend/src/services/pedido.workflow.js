@@ -6,6 +6,150 @@ const APROVADORES_PADRAO = {
   nivel3: ['plant_manager', 'admin'],
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
+const STATUS_AGUARDANDO_APROVACAO = ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA'];
+const STATUS_RECEBIVEIS = ['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL'];
+const STATUS_RECEBIMENTO_VIA_ENDPOINT = ['CONCLUIDO', 'RECEBIDO', 'RECEBIDO_PARCIAL'];
+const TRANSICOES_PEDIDO = {
+  RASCUNHO: ['AGUARDANDO_APROVACAO', 'AGUARDANDO_GERENTE', 'AGUARDANDO_DIRETORIA', 'APROVADO', 'CANCELADO'],
+  AGUARDANDO_APROVACAO: ['AGUARDANDO_GERENTE', 'APROVADO', 'CANCELADO', 'REJEITADO'],
+  AGUARDANDO_GERENTE: ['APROVADO', 'CANCELADO', 'REJEITADO'],
+  AGUARDANDO_DIRETORIA: ['APROVADO', 'CANCELADO', 'REJEITADO'],
+  APROVADO: ['AGUARDANDO_CHEGADA', 'EMITIDO', 'CANCELADO'],
+  AGUARDANDO_CHEGADA: ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  EMITIDO: ['EM_TRANSITO', 'RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  EM_TRANSITO: ['RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  RECEBIDO_PARCIAL: ['CONCLUIDO', 'RECEBIDO', 'CANCELADO'],
+  CONCLUIDO: [],
+  RECEBIDO: [],
+  CANCELADO: [],
+  REJEITADO: [],
+};
+
+function perfilNoFluxo(perfil, perfis = []) {
+  if (perfil === 'admin') return true;
+  return Array.isArray(perfis) && perfis.includes(perfil);
+}
+
+function perfilPodeAprovarNivel(perfil, aprovadores, nivel) {
+  if (perfil === 'admin') return true;
+  return Array.isArray(aprovadores?.[nivel]) && aprovadores[nivel].includes(perfil);
+}
+
+function nivelAprovacaoDoStatus(statusAtual) {
+  if (statusAtual === 'AGUARDANDO_GERENTE') return 'nivel2';
+  if (statusAtual === 'AGUARDANDO_DIRETORIA') return 'nivel3';
+  return 'nivel1';
+}
+
+function normalizarStatusPedido(status) {
+  if (status === 'EMITIDO') return 'AGUARDANDO_CHEGADA';
+  if (status === 'RECEBIDO') return 'CONCLUIDO';
+  return status;
+}
+
+function podeAlterarStatusPedido(perfil, novoStatus, aprovadores, statusAtual, cargosFluxo = {}) {
+  if (perfil === 'admin') return true;
+  if (['CANCELADO', 'REJEITADO'].includes(novoStatus)) {
+    return perfilPodeAprovarNivel(perfil, aprovadores, nivelAprovacaoDoStatus(statusAtual));
+  }
+  if (['AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO'].includes(novoStatus)) {
+    return perfilNoFluxo(perfil, cargosFluxo.compradores);
+  }
+  if (STATUS_RECEBIMENTO_VIA_ENDPOINT.includes(novoStatus)) {
+    return perfilNoFluxo(perfil, cargosFluxo.recebedores);
+  }
+  return false;
+}
+
+function pedidoEstaAguardandoAprovacao(status) {
+  return STATUS_AGUARDANDO_APROVACAO.includes(status);
+}
+
+function validarPedidoAguardandoAprovacao(pedido, acao = 'aprovar') {
+  if (pedidoEstaAguardandoAprovacao(pedido.status)) return;
+  const verbo = acao === 'rejeitar' ? 'pode ser rejeitado' : 'esta aguardando aprovacao';
+  const code = 'STATUS_INVALIDO';
+  if (acao === 'rejeitar') {
+    throw new AppError(`Pedido nao ${verbo} neste status: ${pedido.status}`, 400, code);
+  }
+  throw new AppError(`Pedido nao ${verbo} (status atual: ${pedido.status})`, 400, code);
+}
+
+function validarRejeicaoPedido(pedido, usuario, aprovadores) {
+  validarPedidoAguardandoAprovacao(pedido, 'rejeitar');
+
+  if (pedido.status === 'AGUARDANDO_APROVACAO' && !perfilPodeAprovarNivel(usuario.perfil, aprovadores, 'nivel1')) {
+    throw new AppError('Cargo nao autorizado para aprovacao interna N1. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
+  }
+  if (
+    pedido.status === 'AGUARDANDO_APROVACAO'
+    && usuario.perfil === 'supervisor_turno'
+    && pedido.aprovador_n1_id
+    && pedido.aprovador_n1_id !== usuario.id
+  ) {
+    throw new AppError('Rejeicao restrita ao supervisor responsavel pelo departamento', 403, 'SUPERVISOR_RESPONSAVEL');
+  }
+  if (pedido.status === 'AGUARDANDO_GERENTE' && !perfilPodeAprovarNivel(usuario.perfil, aprovadores, 'nivel2')) {
+    throw new AppError('Cargo nao autorizado para aprovacao interna N2. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
+  }
+  if (pedido.status === 'AGUARDANDO_DIRETORIA' && !perfilPodeAprovarNivel(usuario.perfil, aprovadores, 'nivel3')) {
+    throw new AppError('Cargo nao autorizado para aprovacao interna N3. Ajuste em Configuracoes > Aprovacao de pedidos.', 403, 'FORBIDDEN');
+  }
+}
+
+function validarMudancaStatusPedido({
+  statusAtual,
+  novoStatus,
+  usuario,
+  aprovadores,
+  cargosFluxo,
+  numeroOcExterna,
+  fornecedorIdAtual,
+  fornecedorIdSolicitado,
+}) {
+  if (!TRANSICOES_PEDIDO[statusAtual]?.includes(novoStatus)) {
+    throw new AppError(`Transicao invalida: ${statusAtual} -> ${novoStatus}`, 400, 'TRANSICAO_INVALIDA');
+  }
+
+  if (novoStatus === 'APROVADO' && usuario.perfil !== 'admin') {
+    throw new AppError('Use POST /:id/aprovar para aprovar pedidos', 400, 'USE_APROVAR_ENDPOINT');
+  }
+
+  if (STATUS_RECEBIMENTO_VIA_ENDPOINT.includes(novoStatus)) {
+    throw new AppError('Use POST /:id/receber para registrar recebimento com quantidade e NF', 400, 'USE_RECEBER_ENDPOINT');
+  }
+
+  if (!podeAlterarStatusPedido(usuario.perfil, novoStatus, aprovadores, statusAtual, cargosFluxo)) {
+    throw new AppError('Seu perfil nao pode alterar pedido para este status', 403, 'FORBIDDEN');
+  }
+
+  if (novoStatus === 'AGUARDANDO_CHEGADA') {
+    if (!numeroOcExterna) {
+      throw new AppError('Informe o numero da OC criada no sistema externo', 400, 'OC_EXTERNA_OBRIGATORIA');
+    }
+    if (!fornecedorIdSolicitado && !fornecedorIdAtual) {
+      throw new AppError('Comprador deve escolher o fornecedor antes de marcar como aguardando chegada', 400, 'FORNECEDOR_OBRIGATORIO');
+    }
+  }
+}
+
+function validarRecebedorPedido(usuario, cargosFluxo) {
+  if (!perfilNoFluxo(usuario.perfil, cargosFluxo.recebedores)) {
+    throw new AppError('Seu cargo nao pode registrar recebimento neste fluxo', 403, 'FORBIDDEN');
+  }
+}
+
+function validarPedidoRecebivel(pedido) {
+  if (!STATUS_RECEBIVEIS.includes(pedido.status)) {
+    throw new AppError('Pedido nao pode ser recebido neste status', 400, 'STATUS_INVALIDO');
+  }
+}
+
+function calcularStatusRecebimento({ quantidadePedida, quantidadeRecebidaAtual = 0, quantidadeRecebida }) {
+  const totalRecebido = Number(quantidadeRecebidaAtual) + Number(quantidadeRecebida);
+  const novoStatus = totalRecebido >= Number(quantidadePedida) ? 'CONCLUIDO' : 'RECEBIDO_PARCIAL';
+  return { totalRecebido, novoStatus };
+}
 
 function normalizarLimites(limites = {}) {
   return {
@@ -126,6 +270,21 @@ function determinarProximaAprovacao({ pedido, usuario, limites, aprovadores }) {
 }
 
 module.exports = {
+  TRANSICOES_PEDIDO,
+  STATUS_AGUARDANDO_APROVACAO,
+  STATUS_RECEBIVEIS,
+  perfilNoFluxo,
+  perfilPodeAprovarNivel,
+  nivelAprovacaoDoStatus,
+  normalizarStatusPedido,
+  podeAlterarStatusPedido,
+  pedidoEstaAguardandoAprovacao,
+  validarPedidoAguardandoAprovacao,
+  validarRejeicaoPedido,
+  validarMudancaStatusPedido,
+  validarRecebedorPedido,
+  validarPedidoRecebivel,
+  calcularStatusRecebimento,
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
   normalizarAprovadores,

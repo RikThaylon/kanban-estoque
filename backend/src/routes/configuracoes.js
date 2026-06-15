@@ -4,7 +4,6 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { validate } = require('../middleware/validate');
-const { AppError } = require('../utils/errors');
 const {
   getLimitesAprovacaoPedido,
   getCargosFluxoCompra,
@@ -12,17 +11,16 @@ const {
   getTurnosOperacionais,
   getPermissoesOperacionais,
   PAGINAS_SISTEMA,
-  normalizarTurnos,
   salvarConfiguracoes,
-  serializePerfis,
+  formatarRespostaPedidos,
+  montarConfiguracoesPedidos,
+  montarConfiguracoesKanban,
+  montarConfiguracoesTurnos,
+  montarConfiguracoesPermissoes,
+  PERFIS_APROVADORES_CONFIGURAVEIS,
+  PERFIS_FLUXO_COMPRA_CONFIGURAVEIS,
 } = require('../services/configuracoes.service');
 const { PERFIS_VALIDOS } = require('../middleware/rbac');
-const PERFIS_APROVADORES_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
-  (perfil) => !['admin', 'comprador', 'facilitador', 'visualizador'].includes(perfil)
-);
-const PERFIS_FLUXO_COMPRA_CONFIGURAVEIS = PERFIS_VALIDOS.filter(
-  (perfil) => !['admin', 'visualizador'].includes(perfil)
-);
 
 const router = express.Router();
 
@@ -32,16 +30,7 @@ router.get('/pedidos', authenticate, async (req, res, next) => {
       getLimitesAprovacaoPedido(),
       getCargosFluxoCompra({ incluirAdmin: false }),
     ]);
-    res.json({
-      limite_supervisor: limites.supervisor,
-      limite_gerente: limites.gerente,
-      solicitantes: cargosFluxo.solicitantes,
-      aprovadores_nivel_1: cargosFluxo.aprovadores.nivel1,
-      aprovadores_nivel_2: cargosFluxo.aprovadores.nivel2,
-      aprovadores_nivel_3: cargosFluxo.aprovadores.nivel3,
-      compradores: cargosFluxo.compradores,
-      recebedores: cargosFluxo.recebedores,
-    });
+    res.json(formatarRespostaPedidos(limites, cargosFluxo));
   } catch (err) {
     next(err);
   }
@@ -70,51 +59,13 @@ router.patch('/pedidos',
   validate,
   async (req, res, next) => {
     try {
-      const limiteSupervisor = Number(req.body.limite_supervisor);
-      const limiteGerente = Number(req.body.limite_gerente);
-
-      if (limiteGerente < limiteSupervisor) {
-        throw new AppError('Limite do gerente deve ser maior ou igual ao limite do supervisor', 400, 'LIMITE_INVALIDO');
-      }
-
-      const configuracoes = {
-        'pedidos.limite_supervisor': limiteSupervisor,
-        'pedidos.limite_gerente': limiteGerente,
-      };
-
-      if (req.body.solicitantes !== undefined) {
-        configuracoes['pedidos.solicitantes'] = serializePerfis(req.body.solicitantes.filter((perfil) => perfil !== 'admin'));
-      }
-      if (req.body.aprovadores_nivel_1 !== undefined) {
-        configuracoes['pedidos.aprovadores_nivel_1'] = serializePerfis(req.body.aprovadores_nivel_1.filter((perfil) => perfil !== 'admin'));
-      }
-      if (req.body.aprovadores_nivel_2 !== undefined) {
-        configuracoes['pedidos.aprovadores_nivel_2'] = serializePerfis(req.body.aprovadores_nivel_2.filter((perfil) => perfil !== 'admin'));
-      }
-      if (req.body.aprovadores_nivel_3 !== undefined) {
-        configuracoes['pedidos.aprovadores_nivel_3'] = serializePerfis(req.body.aprovadores_nivel_3.filter((perfil) => perfil !== 'admin'));
-      }
-      if (req.body.compradores !== undefined) {
-        configuracoes['pedidos.compradores'] = serializePerfis(req.body.compradores.filter((perfil) => perfil !== 'admin'));
-      }
-      if (req.body.recebedores !== undefined) {
-        configuracoes['pedidos.recebedores'] = serializePerfis(req.body.recebedores.filter((perfil) => perfil !== 'admin'));
-      }
+      const { configuracoes, limites } = montarConfiguracoesPedidos(req.body);
 
       await salvarConfiguracoes(configuracoes, req.user.id);
 
       const cargosFluxo = await getCargosFluxoCompra({ incluirAdmin: false });
 
-      res.json({
-        limite_supervisor: limiteSupervisor,
-        limite_gerente: limiteGerente,
-        solicitantes: cargosFluxo.solicitantes,
-        aprovadores_nivel_1: cargosFluxo.aprovadores.nivel1,
-        aprovadores_nivel_2: cargosFluxo.aprovadores.nivel2,
-        aprovadores_nivel_3: cargosFluxo.aprovadores.nivel3,
-        compradores: cargosFluxo.compradores,
-        recebedores: cargosFluxo.recebedores,
-      });
+      res.json(formatarRespostaPedidos(limites, cargosFluxo));
     } catch (err) {
       next(err);
     }
@@ -141,21 +92,9 @@ router.patch('/kanban',
   validate,
   async (req, res, next) => {
     try {
-      const nivelServicoPadrao = Number(req.body.nivel_servico_padrao);
-      const ciclosEstimativaInicial = Number(req.body.ciclos_estimativa_inicial);
-      const taxaCarregamentoPadrao = Number(req.body.taxa_carregamento_padrao);
-
-      await salvarConfiguracoes({
-        'kanban.nivel_servico_padrao': nivelServicoPadrao,
-        'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
-        'kanban.taxa_carregamento_padrao': taxaCarregamentoPadrao,
-      }, req.user.id);
-
-      res.json({
-        nivel_servico_padrao: nivelServicoPadrao,
-        ciclos_estimativa_inicial: ciclosEstimativaInicial,
-        taxa_carregamento_padrao: taxaCarregamentoPadrao,
-      });
+      const { configuracoes, resposta } = montarConfiguracoesKanban(req.body);
+      await salvarConfiguracoes(configuracoes, req.user.id);
+      res.json(resposta);
     } catch (err) {
       next(err);
     }
@@ -184,15 +123,9 @@ router.patch('/turnos',
   validate,
   async (req, res, next) => {
     try {
-      const turnos = normalizarTurnos(req.body.turnos);
-      const ids = new Set(turnos.map((turno) => turno.id));
-      if (ids.size !== turnos.length) {
-        throw new AppError('Cada turno precisa ter um codigo unico', 400, 'TURNO_DUPLICADO');
-      }
+      const { turnos, configuracoes } = montarConfiguracoesTurnos(req.body);
 
-      await salvarConfiguracoes({
-        'turnos.lista': JSON.stringify(turnos),
-      }, req.user.id);
+      await salvarConfiguracoes(configuracoes, req.user.id);
 
       res.json({ turnos });
     } catch (err) {
@@ -231,16 +164,7 @@ router.patch('/permissoes',
   validate,
   async (req, res, next) => {
     try {
-      const configuracoes = {
-        'permissoes.cadastrar_item': serializePerfis(req.body.cadastrar_item),
-        'permissoes.editar_curva_abc': serializePerfis(req.body.editar_curva_abc),
-      };
-
-      for (const pagina of PAGINAS_SISTEMA) {
-        if (req.body.paginas?.[pagina]) {
-          configuracoes[`permissoes.paginas.${pagina}`] = serializePerfis(req.body.paginas[pagina]);
-        }
-      }
+      const configuracoes = montarConfiguracoesPermissoes(req.body);
 
       await salvarConfiguracoes(configuracoes, req.user.id);
 

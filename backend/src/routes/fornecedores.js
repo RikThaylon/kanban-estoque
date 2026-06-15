@@ -5,10 +5,16 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { query } = require('../config/database');
-const { AppError, NotFoundError } = require('../utils/errors');
+const { NotFoundError } = require('../utils/errors');
+const {
+  MODAIS_VALIDOS,
+  CAMPOS_ATUALIZAVEIS_FORNECEDOR,
+  nullSeVazio,
+  montarAtualizacaoFornecedor,
+  erroFornecedorDoBanco,
+} = require('../services/fornecedor.workflow');
 
 const router = express.Router();
-const MODAIS_VALIDOS = ['rodoviario', 'aereo', 'maritimo', 'ferroviario', 'expresso', 'motoboy', 'correios'];
 
 const validarFornecedor = [
   body('cnpj').optional({ checkFalsy: true }).trim().isLength({ min: 14, max: 18 }).withMessage('CNPJ deve ter entre 14 e 18 caracteres'),
@@ -23,17 +29,7 @@ const validarFornecedor = [
 ];
 
 function tratarErroFornecedor(err, next) {
-  if (err.code === '23505') {
-    return next(new AppError('Fornecedor com este CNPJ ja existe', 409, 'CONFLICT'));
-  }
-  if (err.code === '23514') {
-    return next(new AppError('Dados do fornecedor invalidos', 400, 'VALIDATION_ERROR'));
-  }
-  return next(err);
-}
-
-function nullSeVazio(valor) {
-  return valor === '' || valor === undefined ? null : valor;
+  return next(erroFornecedorDoBanco(err) || err);
 }
 
 // GET /api/v1/fornecedores
@@ -102,14 +98,7 @@ router.patch('/:id', authenticate, authorize('admin'), audit('ATUALIZAR_FORNECED
   validate,
   async (req, res, next) => {
     try {
-      const allowed = ['nome', 'cnpj', 'contato_nome', 'contato_email', 'contato_telefone', 'cidade', 'estado', 'modal_padrao', 'prazo_pagamento_dias', 'avaliacao', 'ativo'];
-      const fields = []; const values = []; let idx = 1;
-      for (const key of allowed) {
-        if (req.body[key] !== undefined) {
-          fields.push(`${key} = $${idx++}`);
-          values.push(key === 'ativo' ? req.body[key] : nullSeVazio(req.body[key]));
-        }
-      }
+      const { fields, values, nextIndex: idx } = montarAtualizacaoFornecedor(req.body, CAMPOS_ATUALIZAVEIS_FORNECEDOR);
       if (fields.length === 0) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Nenhum campo', code: 400 });
       fields.push(`atualizado_em = NOW()`);
       values.push(req.params.id);

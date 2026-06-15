@@ -4,13 +4,19 @@ const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { validate } = require('../middleware/validate');
-const { query, getClient } = require('../config/database');
+const { query } = require('../config/database');
 const { NotFoundError } = require('../utils/errors');
+const {
+  UUID_REGEX,
+  PERFIS_ADMIN_MAQUINA,
+  PERFIS_VINCULAR_MAQUINA,
+  CAMPOS_ATUALIZAVEIS_MAQUINA,
+  normalizarCodigoOperacional,
+  montarAtualizacaoOperacional,
+  normalizarVinculoMaquinaProduto,
+} = require('../services/operacional.workflow');
 
 const router = express.Router();
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PERFIS_ADMIN = ['admin', 'plant_manager'];
-const PERFIS_VINCULAR = ['admin', 'plant_manager', 'gerente_operacoes', 'supervisor_turno'];
 
 /** Lista máquinas (com departamento e contagem de produtos) */
 router.get('/', authenticate, async (req, res, next) => {
@@ -31,7 +37,7 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 /** Detalhe de máquina + produtos vinculados */
-router.get('/:id', authenticate, [param('id').matches(UUID)], validate, async (req, res, next) => {
+router.get('/:id', authenticate, [param('id').matches(UUID_REGEX)], validate, async (req, res, next) => {
   try {
     const m = await query(`
       SELECT m.*, d.nome AS departamento_nome, d.codigo AS departamento_codigo
@@ -54,13 +60,13 @@ router.get('/:id', authenticate, [param('id').matches(UUID)], validate, async (r
 });
 
 router.post('/',
-  authenticate, authorize(...PERFIS_ADMIN),
+  authenticate, authorize(...PERFIS_ADMIN_MAQUINA),
   audit('CRIAR_MAQUINA', 'maquinas'),
   [
     body('codigo').isString().trim().isLength({ min: 2, max: 30 }),
     body('nome').isString().trim().isLength({ min: 2, max: 120 }),
     body('descricao').optional().isString().trim().isLength({ max: 1000 }),
-    body('departamento_id').optional({ nullable: true }).custom(v => !v || UUID.test(v)),
+    body('departamento_id').optional({ nullable: true }).custom(v => !v || UUID_REGEX.test(v)),
     body('localizacao').optional().isString().trim().isLength({ max: 100 }),
   ], validate,
   async (req, res, next) => {
@@ -69,7 +75,7 @@ router.post('/',
       const r = await query(
         `INSERT INTO maquinas (codigo, nome, descricao, departamento_id, localizacao)
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [codigo.toUpperCase(), nome, descricao, departamento_id || null, localizacao]
+        [normalizarCodigoOperacional(codigo), nome, descricao, departamento_id || null, localizacao]
       );
       res.status(201).json(r.rows[0]);
     } catch (err) { next(err); }
@@ -77,19 +83,12 @@ router.post('/',
 );
 
 router.patch('/:id',
-  authenticate, authorize(...PERFIS_ADMIN),
+  authenticate, authorize(...PERFIS_ADMIN_MAQUINA),
   audit('EDITAR_MAQUINA', 'maquinas'),
-  [param('id').matches(UUID)], validate,
+  [param('id').matches(UUID_REGEX)], validate,
   async (req, res, next) => {
     try {
-      const fields = ['nome', 'descricao', 'departamento_id', 'localizacao', 'ativo'];
-      const sets = []; const params = [];
-      fields.forEach(f => {
-        if (req.body[f] !== undefined) {
-          params.push(req.body[f] === '' ? null : req.body[f]);
-          sets.push(`${f} = $${params.length}`);
-        }
-      });
+      const { sets, params } = montarAtualizacaoOperacional(req.body, CAMPOS_ATUALIZAVEIS_MAQUINA);
       if (sets.length === 0) return res.status(400).json({ error: 'NO_CHANGES' });
       params.push(req.params.id);
       const r = await query(
@@ -103,9 +102,9 @@ router.patch('/:id',
 );
 
 router.delete('/:id',
-  authenticate, authorize(...PERFIS_ADMIN),
+  authenticate, authorize(...PERFIS_ADMIN_MAQUINA),
   audit('DESATIVAR_MAQUINA', 'maquinas'),
-  [param('id').matches(UUID)], validate,
+  [param('id').matches(UUID_REGEX)], validate,
   async (req, res, next) => {
     try {
       const r = await query(
@@ -122,17 +121,17 @@ router.delete('/:id',
 
 /** POST /api/v1/maquinas/:id/produtos — vincular produto à máquina */
 router.post('/:id/produtos',
-  authenticate, authorize(...PERFIS_VINCULAR),
+  authenticate, authorize(...PERFIS_VINCULAR_MAQUINA),
   audit('VINCULAR_PRODUTO_MAQUINA', 'maquina_produto'),
   [
-    param('id').matches(UUID),
-    body('produto_id').matches(UUID),
+    param('id').matches(UUID_REGEX),
+    body('produto_id').matches(UUID_REGEX),
     body('consumo_estimado_diario').optional().isFloat({ min: 0 }),
     body('observacao').optional().isString().trim().isLength({ max: 500 }),
   ], validate,
   async (req, res, next) => {
     try {
-      const { produto_id, consumo_estimado_diario, observacao } = req.body;
+      const vinculo = normalizarVinculoMaquinaProduto(req.body);
       const r = await query(
         `INSERT INTO maquina_produto (maquina_id, produto_id, consumo_estimado_diario, observacao)
          VALUES ($1, $2, $3, $4)
@@ -140,7 +139,7 @@ router.post('/:id/produtos',
            consumo_estimado_diario = EXCLUDED.consumo_estimado_diario,
            observacao = EXCLUDED.observacao
          RETURNING *`,
-        [req.params.id, produto_id, consumo_estimado_diario || 0, observacao]
+        [req.params.id, vinculo.produto_id, vinculo.consumo_estimado_diario, vinculo.observacao]
       );
       res.status(201).json(r.rows[0]);
     } catch (err) { next(err); }
@@ -149,9 +148,9 @@ router.post('/:id/produtos',
 
 /** DELETE /api/v1/maquinas/:id/produtos/:produto_id — desvincular */
 router.delete('/:id/produtos/:produto_id',
-  authenticate, authorize(...PERFIS_VINCULAR),
+  authenticate, authorize(...PERFIS_VINCULAR_MAQUINA),
   audit('DESVINCULAR_PRODUTO_MAQUINA', 'maquina_produto'),
-  [param('id').matches(UUID), param('produto_id').matches(UUID)], validate,
+  [param('id').matches(UUID_REGEX), param('produto_id').matches(UUID_REGEX)], validate,
   async (req, res, next) => {
     try {
       const r = await query(

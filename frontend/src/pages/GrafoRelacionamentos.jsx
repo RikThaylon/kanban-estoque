@@ -43,8 +43,8 @@ const NODE_W = 150;
 const NODE_H = 58;
 
 const TYPE_META = {
-  produto: { label: 'Pecas', icon: Package, color: '#d71920', bg: '#fff1f1', column: 1 },
-  maquina: { label: 'Maquinas', icon: Cog, color: '#1f2937', bg: '#f3f4f6', column: 3 },
+  produto: { label: 'Peças', icon: Package, color: '#d71920', bg: '#fff1f1', column: 1 },
+  maquina: { label: 'Máquinas', icon: Cog, color: '#1f2937', bg: '#f3f4f6', column: 3 },
   departamento: { label: 'Departamentos', icon: Building2, color: '#475569', bg: '#f8fafc', column: 4 },
   supervisor: { label: 'Supervisores', icon: UserRound, color: '#0f766e', bg: '#ecfdf5', column: 5 },
   fornecedor: { label: 'Fornecedores', icon: Truck, color: '#92400e', bg: '#fffbeb', column: 4 },
@@ -82,14 +82,14 @@ function labelStatus(status) {
     AGUARDANDO_DIRETORIA: 'Aguardando diretoria',
     AGUARDANDO_CHEGADA: 'Aguardando chegada',
     RECEBIDO_PARCIAL: 'Recebido parcial',
-    CONCLUIDO: 'Concluido',
+    CONCLUIDO: 'Concluído',
     APROVADO: 'Aprovado',
     CANCELADO: 'Cancelado',
     REJEITADO: 'Rejeitado',
-    EM_TRANSITO: 'Em transito',
+    EM_TRANSITO: 'Em trânsito',
     PREFERENCIAL: 'Preferencial',
     ALTERNATIVO: 'Alternativo',
-    RESPONSAVEL: 'Responsavel',
+    RESPONSAVEL: 'Responsável',
     VINCULADA: 'Vinculada',
     SUPERVISIONADO: 'Supervisionado',
     PEDIDO: 'Pedido',
@@ -179,8 +179,8 @@ const EmptyGraph = () => (
       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-white border border-steel-700/10">
         <Network className="h-6 w-6 text-steel-500" />
       </div>
-      <h3 className="font-bold text-steel-900">Nenhuma relacao encontrada</h3>
-      <p className="mt-1 text-sm text-steel-500">Ajuste os filtros ou cadastre vinculos entre produto, maquina e fornecedor.</p>
+      <h3 className="font-bold text-steel-900">Nenhuma relação encontrada</h3>
+      <p className="mt-1 text-sm text-steel-500">Ajuste os filtros ou cadastre vínculos entre produto, máquina e fornecedor.</p>
     </div>
   </div>
 );
@@ -305,7 +305,7 @@ const GrafoRelacionamentos = () => {
           <p className="page-kicker">Mapa operacional</p>
           <h1 className="text-xl sm:text-2xl font-black text-steel-900">Grafo de Relacionamentos</h1>
           <p className="mt-1 text-sm text-steel-500">
-            Peca, estoque, maquina, departamento, supervisor, fornecedor e pedido em uma unica leitura.
+            Peça, estoque, máquina, departamento, supervisor, fornecedor e pedido em uma única leitura.
           </p>
         </div>
         <button type="button" onClick={() => refetch()} className="btn-secondary w-full sm:w-auto">
@@ -328,7 +328,7 @@ const GrafoRelacionamentos = () => {
                 className="input pl-9"
                 value={draft.busca}
                 onChange={(event) => updateDraft('busca', event.target.value)}
-                placeholder="Codigo ou nome da peca"
+                placeholder="Código ou nome da peça"
               />
             </div>
           </label>
@@ -348,8 +348,8 @@ const GrafoRelacionamentos = () => {
             <span className="label">Estoque</span>
             <select className="input" value={draft.estoque} onChange={(event) => updateDraft('estoque', event.target.value)}>
               <option value="">Qualquer saldo</option>
-              <option value="critico">Abaixo do estoque de seguranca</option>
-              <option value="reposicao">Abaixo do ponto de reposicao</option>
+              <option value="critico">Abaixo do estoque de segurança</option>
+              <option value="reposicao">Abaixo do ponto de reposição</option>
             </select>
           </label>
 
@@ -364,7 +364,7 @@ const GrafoRelacionamentos = () => {
           </label>
 
           <label className="block">
-            <span className="label">Maquina</span>
+            <span className="label">Máquina</span>
             <select className="input" value={draft.maquina_id} onChange={(event) => updateDraft('maquina_id', event.target.value)}>
               <option value="">Todas</option>
               {(options.maquinas || []).map((item) => (
@@ -417,7 +417,7 @@ const GrafoRelacionamentos = () => {
           </label>
 
           <label className="block">
-            <span className="label">Pedido criado ate</span>
+            <span className="label">Pedido criado até</span>
             <div className="relative">
               <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
               <input
@@ -444,18 +444,18 @@ const GrafoRelacionamentos = () => {
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          Nao foi possivel carregar o grafo: {error.message}
+          Não foi possível carregar o grafo: {error.message}
         </div>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
-        <StatCard label="Pecas" value={data?.stats?.produtos} />
-        <StatCard label="Maquinas" value={data?.stats?.maquinas} />
+        <StatCard label="Peças" value={data?.stats?.produtos} />
+        <StatCard label="Máquinas" value={data?.stats?.maquinas} />
         <StatCard label="Departamentos" value={data?.stats?.departamentos} />
         <StatCard label="Supervisores" value={data?.stats?.supervisores} />
         <StatCard label="Fornecedores" value={data?.stats?.fornecedores} />
         <StatCard label="Pedidos" value={data?.stats?.pedidos} />
-        <StatCard label="Relacoes" value={data?.stats?.relacionamentos} />
+        <StatCard label="Relações" value={data?.stats?.relacionamentos} />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -464,7 +464,7 @@ const GrafoRelacionamentos = () => {
             <div className="flex items-center gap-2">
               <Network className="h-5 w-5 text-steel-800" />
               <div>
-                <h2 className="font-bold text-steel-900">Mapa de vinculos</h2>
+                <h2 className="font-bold text-steel-900">Mapa de vínculos</h2>
                 <p className="text-xs text-steel-500">Arraste o mapa e use a roda do mouse para aproximar.</p>
               </div>
             </div>
@@ -628,11 +628,11 @@ const GrafoRelacionamentos = () => {
           <div className="card p-4">
             <div className="mb-3 flex items-center gap-2">
               <MousePointer2 className="h-5 w-5 text-steel-700" />
-              <h2 className="font-bold text-steel-900">Detalhe do no</h2>
+              <h2 className="font-bold text-steel-900">Detalhe do nó</h2>
             </div>
             {!selectedNode ? (
               <div className="rounded-md border border-dashed border-steel-700/20 p-4 text-sm text-steel-500">
-                Selecione um no no mapa para ver status, metricas e relacoes diretas.
+                Selecione um nó no mapa para ver status, métricas e relações diretas.
               </div>
             ) : (
               <div className="space-y-4">
@@ -661,17 +661,17 @@ const GrafoRelacionamentos = () => {
                     {['produto', 'maquina', 'departamento', 'supervisor', 'fornecedor'].includes(selectedNode.type) && (
                       <button type="button" onClick={() => focoNo(selectedNode)} className="btn-primary min-h-9 px-3 text-xs">
                         <Search className="h-4 w-4" />
-                        Focar neste no
+                        Focar neste nó
                       </button>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="mb-2 text-xs font-bold uppercase text-steel-500">Metricas</h4>
+                  <h4 className="mb-2 text-xs font-bold uppercase text-steel-500">Métricas</h4>
                   <div className="grid grid-cols-1 gap-2">
                     {Object.entries(selectedNode.metrics || {}).filter(([, value]) => value !== null && value !== undefined && value !== '').length === 0 ? (
-                      <div className="rounded-md bg-steel-50 p-3 text-sm text-steel-500">Sem metricas adicionais.</div>
+                      <div className="rounded-md bg-steel-50 p-3 text-sm text-steel-500">Sem métricas adicionais.</div>
                     ) : (
                       Object.entries(selectedNode.metrics || {})
                         .filter(([, value]) => value !== null && value !== undefined && value !== '')
@@ -691,14 +691,14 @@ const GrafoRelacionamentos = () => {
           <div className="card p-4">
             <div className="mb-3 flex items-center gap-2">
               <Network className="h-5 w-5 text-steel-700" />
-              <h2 className="font-bold text-steel-900">Relacoes diretas</h2>
+              <h2 className="font-bold text-steel-900">Relações diretas</h2>
             </div>
             {!selectedNode ? (
-              <p className="text-sm text-steel-500">Escolha um no para listar as conexoes.</p>
+              <p className="text-sm text-steel-500">Escolha um nó para listar as conexões.</p>
             ) : selectedRelations.length === 0 ? (
               <div className="flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
                 <AlertTriangle className="h-4 w-4" />
-                No sem conexoes visiveis com os filtros atuais.
+                Nó sem conexões visíveis com os filtros atuais.
               </div>
             ) : (
               <div className="space-y-2">

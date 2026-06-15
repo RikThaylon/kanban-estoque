@@ -2,18 +2,16 @@ const express = require('express');
 const { authenticate } = require('../middleware/auth');
 const { query } = require('../config/database');
 const { classificacaoABC } = require('../services/kanban.math');
+const {
+  buildPeriodoSQL,
+  limitarRanking,
+  limitarMesesPrevisao,
+  calcularCustoTotalPeriodo,
+} = require('../services/relatorio.workflow');
 
 const router = express.Router();
 
 // Helper: clausula de período aplicada à coluna criado_em
-function buildPeriodoSQL(periodo, alias = 'm.criado_em') {
-  const dias = parseInt(periodo, 10);
-  if (Number.isFinite(dias) && dias > 0 && dias <= 3650) {
-    return `${alias} >= NOW() - INTERVAL '${dias} days'`;
-  }
-  return `${alias} >= NOW() - INTERVAL '30 days'`;
-}
-
 // ─── GET /api/v1/relatorios/curva-abc ───────────────────────────────────────
 router.get('/curva-abc', authenticate, async (req, res, next) => {
   try {
@@ -67,7 +65,7 @@ router.get('/pedidos-periodo', authenticate, async (req, res, next) => {
       ${where} ORDER BY pc.data_recebimento DESC
     `, params);
 
-    const custoTotal = result.rows.reduce((s, r) => s + (parseFloat(r.custo_total) || 0), 0);
+    const custoTotal = calcularCustoTotalPeriodo(result.rows);
     res.json({ pedidos: result.rows, custo_total_periodo: custoTotal });
   } catch (err) { next(err); }
 });
@@ -94,7 +92,7 @@ router.get('/rupturas-historico', authenticate, async (req, res, next) => {
 router.get('/top-solicitantes', authenticate, async (req, res, next) => {
   try {
     const periodoSQL = buildPeriodoSQL(req.query.periodo);
-    const limite = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const limite = limitarRanking(req.query.limit);
 
     const result = await query(`
       SELECT u.id AS usuario_id, u.nome, u.username, u.perfil,
@@ -124,7 +122,7 @@ router.get('/top-solicitantes', authenticate, async (req, res, next) => {
 router.get('/top-produtos-saida', authenticate, async (req, res, next) => {
   try {
     const periodoSQL = buildPeriodoSQL(req.query.periodo);
-    const limite = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const limite = limitarRanking(req.query.limit);
 
     const result = await query(`
       SELECT p.id AS produto_id, p.codigo, p.nome, p.unidade, p.classificacao_abc,
@@ -255,7 +253,7 @@ router.get('/estatisticas-gerais', authenticate, async (req, res, next) => {
 // Retorna previsão de saída de caixa por mês de chegada (não por data de emissão).
 router.get('/previsao-gastos-mensal', authenticate, async (req, res, next) => {
   try {
-    const meses = Math.min(parseInt(req.query.meses, 10) || 12, 24);
+    const meses = limitarMesesPrevisao(req.query.meses);
 
     // Status que ainda vão chegar (excluindo RECEBIDO total, CANCELADO, REJEITADO, RASCUNHO, AGUARDANDO_*)
     const result = await query(`

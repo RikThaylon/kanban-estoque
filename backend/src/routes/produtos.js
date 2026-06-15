@@ -1,17 +1,23 @@
 const express = require('express');
-const { body, param, query: qv } = require('express-validator');
+const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { createLimiter } = require('../middleware/rateLimiter');
-const { query, getClient } = require('../config/database');
+const { query } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
-const { recalcularKanban } = require('../services/kanban.calc');
 const { calcularParametrosKanban, buildEstimatedKanbanSeries } = require('../services/kanban.math');
 const { getKanbanSeries } = require('../services/kanban.repo');
 const { perfilPode, getKanbanDefaults } = require('../services/configuracoes.service');
+const {
+  resolverParametrosCadastroProduto,
+  montarAtualizacaoProduto,
+  normalizarVinculoFornecedorProduto,
+  normalizarListaFornecedoresProduto,
+  limitarSemanasHistorico,
+} = require('../services/produto.workflow');
 
 const router = express.Router();
 
@@ -107,20 +113,24 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
         taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
       } = req.body;
       const defaultsKanban = await getKanbanDefaults();
-      const nivelServicoFinal = nivel_servico ? Number(nivel_servico) : defaultsKanban.nivel_servico_padrao;
-      const custoPedidoFinal = custo_pedido !== undefined && custo_pedido !== null && custo_pedido !== ''
-        ? Number(custo_pedido)
-        : 100;
-      const taxaCarregamentoFinal = taxa_carregamento !== undefined && taxa_carregamento !== null && taxa_carregamento !== ''
-        ? Number(taxa_carregamento)
-        : defaultsKanban.taxa_carregamento_padrao;
+      const {
+        nivelServicoFinal,
+        custoPedidoFinal,
+        taxaCarregamentoFinal,
+        cmdInicial,
+        leadTimeInicial,
+      } = resolverParametrosCadastroProduto({
+        custo_pedido,
+        taxa_carregamento,
+        nivel_servico,
+        cmd_inicial,
+        lead_time_inicial,
+      }, defaultsKanban);
       const result = await query(
         `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
       );
-      const cmdInicial = Number(cmd_inicial || 0);
-      const leadTimeInicial = Number(lead_time_inicial || 0);
       const seriesEstimadas = buildEstimatedKanbanSeries({
         cmd: cmdInicial,
         leadTime: leadTimeInicial,
@@ -221,11 +231,7 @@ router.patch('/:id', authenticate, authorize('admin', 'gerente_operacoes', 'supe
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const allowed = ['nome', 'descricao', 'unidade', 'categoria_id', 'custo_unitario', 'custo_pedido', 'taxa_carregamento', 'nivel_servico', 'localizacao'];
-      const fields = []; const values = []; let idx = 1;
-      for (const key of allowed) {
-        if (req.body[key] !== undefined) { fields.push(`${key} = $${idx++}`); values.push(req.body[key]); }
-      }
+      const { fields, values, nextIndex: idx } = montarAtualizacaoProduto(req.body);
       if (fields.length === 0) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Nenhum campo para atualizar', code: 400 });
       fields.push(`atualizado_em = NOW()`);
       values.push(id);
@@ -286,8 +292,7 @@ router.post('/:id/fornecedores', authenticate, authorize('admin', 'gerente_opera
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias } = req.body;
-      if (!fornecedor_id) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'fornecedor_id obrigatorio', code: 400 });
+      const vinculo = normalizarVinculoFornecedorProduto(req.body);
       const result = await query(
         `INSERT INTO produto_fornecedor (produto_id, fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias)
          VALUES ($1,$2,$3,$4,$5)
@@ -297,7 +302,7 @@ router.post('/:id/fornecedores', authenticate, authorize('admin', 'gerente_opera
            lead_time_nominal_dias = EXCLUDED.lead_time_nominal_dias,
            ativo = true
          RETURNING *`,
-        [id, fornecedor_id, prioridade || 1, preco_acordado, lead_time_nominal_dias]
+        [id, vinculo.fornecedor_id, vinculo.prioridade, vinculo.preco_acordado, vinculo.lead_time_nominal_dias]
       );
       res.status(201).json(result.rows[0]);
     } catch (err) { next(err); }
@@ -309,12 +314,12 @@ router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operac
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { fornecedores } = req.body; // Array de {fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias}
+      const fornecedores = normalizarListaFornecedoresProduto(req.body.fornecedores);
       await query('DELETE FROM produto_fornecedor WHERE produto_id = $1', [id]);
       for (const f of fornecedores) {
         await query(
           'INSERT INTO produto_fornecedor (produto_id, fornecedor_id, prioridade, preco_acordado, lead_time_nominal_dias) VALUES ($1,$2,$3,$4,$5)',
-          [id, f.fornecedor_id, f.prioridade || 1, f.preco_acordado, f.lead_time_nominal_dias]
+          [id, f.fornecedor_id, f.prioridade, f.preco_acordado, f.lead_time_nominal_dias]
         );
       }
       res.json({ message: 'Fornecedores atualizados' });
@@ -325,7 +330,7 @@ router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operac
 // GET /api/v1/produtos/:id/historico-consumo
 router.get('/:id/historico-consumo', authenticate, async (req, res, next) => {
   try {
-    const semanas = Math.min(52, Math.max(1, parseInt(req.query.semanas) || 12));
+    const semanas = limitarSemanasHistorico(req.query.semanas);
     const result = await query(`
       SELECT date_trunc('week', criado_em) AS semana,
              COALESCE(SUM(CASE WHEN tipo IN ('SAIDA','TRANSFERENCIA') THEN quantidade ELSE 0 END), 0) AS consumo
