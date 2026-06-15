@@ -208,6 +208,123 @@
   .card table tbody tr:hover {
     background: rgba(215, 25, 32, 0.06);
   }
+
+  .auth-page {
+    position: relative;
+    isolation: isolate;
+    background:
+      linear-gradient(118deg, rgba(215, 25, 32, 0.18), transparent 33%),
+      linear-gradient(242deg, rgba(8, 122, 74, 0.16), transparent 44%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(235, 239, 236, 0.96)),
+      repeating-linear-gradient(90deg, rgba(5, 5, 5, 0.055) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(0deg, rgba(5, 5, 5, 0.045) 0 1px, transparent 1px 34px);
+  }
+
+  .auth-page::before,
+  .auth-page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .auth-page::before {
+    background:
+      linear-gradient(102deg, transparent 0 18%, rgba(255, 255, 255, 0.56) 18% 19%, transparent 19% 44%, rgba(215, 25, 32, 0.09) 44% 45%, transparent 45%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.28), transparent 38%, rgba(5, 5, 5, 0.055) 76%);
+    transform: skewY(-7deg) translateY(-9%);
+  }
+
+  .auth-page::after {
+    background:
+      repeating-linear-gradient(115deg, transparent 0 22px, rgba(255, 255, 255, 0.18) 22px 23px, transparent 23px 88px),
+      linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.66) 72%, rgba(255, 255, 255, 0.92));
+    mix-blend-mode: multiply;
+    opacity: 0.72;
+  }
+
+  .liquid-glass {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.42)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.10));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.86),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.32),
+      0 24px 70px rgba(5, 5, 5, 0.13);
+    backdrop-filter: blur(26px) saturate(1.28);
+    -webkit-backdrop-filter: blur(26px) saturate(1.28);
+  }
+
+  .liquid-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.62), transparent 34%),
+      linear-gradient(315deg, rgba(255, 255, 255, 0.36), transparent 48%);
+    opacity: 0.72;
+  }
+
+  .liquid-glass > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .auth-panel {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.36),
+      0 38px 95px rgba(5, 5, 5, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.44);
+  }
+
+  .auth-panel::after {
+    content: "";
+    position: absolute;
+    top: -80%;
+    left: -42%;
+    z-index: 0;
+    width: 44%;
+    height: 240%;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+    transform: rotate(18deg);
+    animation: glassSweep 6.4s ease-in-out infinite;
+  }
+
+  .auth-field input {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      0 10px 24px rgba(5, 5, 5, 0.07);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: background-color 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  }
+
+  .auth-field:focus-within input {
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow:
+      0 0 0 4px rgba(215, 25, 32, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      0 12px 26px rgba(5, 5, 5, 0.08);
+    outline: none;
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .liquid-glass {
+      background: rgba(255, 255, 255, 0.90);
+    }
+
+    .auth-field input {
+      background: rgba(255, 255, 255, 0.96);
+    }
+  }
 }
 
 @layer utilities {
@@ -265,3 +382,18 @@
 }
 
 .animate-slide-in { animation: slideIn 0.24s ease-out; }
+
+@keyframes glassSweep {
+  0%, 64% { transform: translateX(0) rotate(18deg); opacity: 0; }
+  72% { opacity: 0.75; }
+  100% { transform: translateX(310%) rotate(18deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel::after,
+  .animate-fade-in,
+  .animate-pulse-dot,
+  .animate-slide-in {
+    animation: none;
+  }
+}
