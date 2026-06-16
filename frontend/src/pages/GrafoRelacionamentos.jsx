@@ -277,7 +277,7 @@ const GrafoRelacionamentos = () => {
 
   const handleWheel = (event) => {
     event.preventDefault();
-    const next = Math.min(1.55, Math.max(0.62, zoom + (event.deltaY > 0 ? -0.08 : 0.08)));
+    const next = Math.min(2.0, Math.max(0.4, zoom + (event.deltaY > 0 ? -0.1 : 0.1)));
     setZoom(Number(next.toFixed(2)));
   };
 
@@ -470,11 +470,11 @@ const GrafoRelacionamentos = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.max(0.62, Number((value - 0.1).toFixed(2))))}>
+              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.max(0.4, Number((value - 0.1).toFixed(2))))}>
                 <ZoomOut className="h-4 w-4" />
               </button>
               <span className="min-w-14 text-center font-mono text-sm font-bold text-steel-700">{Math.round(zoom * 100)}%</span>
-              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.min(1.55, Number((value + 0.1).toFixed(2))))}>
+              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.min(2.0, Number((value + 0.1).toFixed(2))))}>
                 <ZoomIn className="h-4 w-4" />
               </button>
               <button type="button" className="btn-secondary min-h-9 px-3" onClick={resetView}>

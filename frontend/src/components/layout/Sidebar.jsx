@@ -52,8 +52,8 @@ const Sidebar = () => {
   return (
     <aside
       className={`fixed top-0 left-0 h-screen text-white transition-all duration-300 z-20 flex flex-col
-        bg-[linear-gradient(180deg,#000000_0%,#00123D_58%,#000000_100%)]
-        border-r border-white/10 shadow-[18px_0_48px_rgba(0,18,61,0.30)]
+        bg-[linear-gradient(180deg,#0a1628_0%,#0f2140_50%,#0a1628_100%)]
+        border-r border-white/8 shadow-[4px_0_24px_rgba(0,18,61,0.20)]
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
@@ -101,11 +101,15 @@ const Sidebar = () => {
       </nav>
 
       {sidebarOpen && (
-        <div className="m-3 rounded-md border border-white/10 bg-white/[0.06] p-3 text-xs text-white/[0.54]">
-          <div className="font-bold text-white/85">Turno conectado</div>
-          <div className="mt-1 truncate">{user?.nome || 'Operador'}</div>
-          <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full w-2/3 bg-accent" />
+        <div className="m-3 rounded-lg border border-white/8 bg-white/[0.05] p-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {(user?.nome || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="font-semibold text-white/90 truncate">{user?.nome || 'Operador'}</div>
+              <div className="text-white/45 text-[10px] capitalize">{(user?.perfil || 'perfil').replace(/_/g, ' ')}</div>
+            </div>
           </div>
         </div>
       )}
