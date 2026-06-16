@@ -290,7 +290,7 @@ const Relatorios = () => {
                   <XAxis dataKey="mes_chegada" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => 'R$ ' + (v / 1000).toFixed(0) + 'k'} />
                   <Tooltip formatter={(v) => formatMoney(v)} />
-                  <Bar dataKey="valor_total_previsto" name="Valor previsto (em aberto)" fill="#6366F1" />
+                  <Bar dataKey="valor_total_previsto" name="Valor previsto (em aberto)" fill="#005DFF" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -336,7 +336,7 @@ const Relatorios = () => {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="giro" name="Giro (vezes/ano)" fill="#3B82F6" />
+                <Bar dataKey="giro" name="Giro (vezes/ano)" fill="#0088FF" />
               </BarChart>
             </ResponsiveContainer>
           </div>

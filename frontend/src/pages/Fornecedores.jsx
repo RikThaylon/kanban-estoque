@@ -59,12 +59,12 @@ const Fornecedores = () => {
         {isLoading ? (
           <div className="col-span-full text-center p-8 text-navy-400">Carregando fornecedores...</div>
         ) : fornecedores?.length === 0 ? (
-          <div className="col-span-full text-center p-8 text-navy-400 bg-white rounded-xl border border-surface-200">
+          <div className="col-span-full text-center p-8 text-navy-400 bg-white rounded-lg border border-surface-200">
             Nenhum fornecedor cadastrado.
           </div>
         ) : (
           fornecedores?.map(forn => (
-            <div key={forn.id} className="bg-white rounded-xl border border-surface-200 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
+            <div key={forn.id} className="bg-white rounded-lg border border-surface-200 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => handleEdit(forn)} className="p-1.5 text-navy-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar">
@@ -178,7 +178,7 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-5 border-b border-surface-200 flex justify-between items-center">
           <h2 className="text-xl font-bold text-navy-800">{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>

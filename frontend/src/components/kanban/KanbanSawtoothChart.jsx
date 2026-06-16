@@ -142,38 +142,38 @@ const KanbanSawtoothChart = ({
       <div className="h-[260px] sm:h-[320px] w-full p-2 sm:p-4" style={{ minHeight: height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 12, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E1E1" />
-            <ReferenceArea y1={0} y2={es} fill="#FEE2E2" fillOpacity={0.55} />
-            <ReferenceArea y1={es} y2={pr} fill="#FEF3C7" fillOpacity={0.55} />
-            <ReferenceArea y1={pr} y2={emax} fill="#D1FAE5" fillOpacity={0.45} />
-            <ReferenceLine y={es} stroke="#DC2626" strokeDasharray="5 5" label={{ value: 'ES', fill: '#DC2626', fontSize: 11 }} />
-            <ReferenceLine y={pr} stroke="#B45309" strokeDasharray="5 5" label={{ value: 'PR', fill: '#B45309', fontSize: 11 }} />
-            <ReferenceLine y={emax} stroke="#1A5C36" strokeDasharray="5 5" label={{ value: 'EM', fill: '#1A5C36', fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8EEF7" />
+            <ReferenceArea y1={0} y2={es} fill="#FFE1E6" fillOpacity={0.55} />
+            <ReferenceArea y1={es} y2={pr} fill="#FFF3D6" fillOpacity={0.55} />
+            <ReferenceArea y1={pr} y2={emax} fill="#E7F6EF" fillOpacity={0.45} />
+            <ReferenceLine y={es} stroke="#CC2030" strokeDasharray="5 5" label={{ value: 'ES', fill: '#CC2030', fontSize: 11 }} />
+            <ReferenceLine y={pr} stroke="#B86700" strokeDasharray="5 5" label={{ value: 'PR', fill: '#B86700', fontSize: 11 }} />
+            <ReferenceLine y={emax} stroke="#0B7A4B" strokeDasharray="5 5" label={{ value: 'EM', fill: '#0B7A4B', fontSize: 11 }} />
             <XAxis
               dataKey="x"
               type="number"
               domain={['dataMin', 'dataMax']}
               scale="time"
               tickFormatter={(value) => formatDateTime(value)}
-              tick={{ fill: '#555555', fontSize: 11, fontWeight: 700 }}
+              tick={{ fill: '#3F4959', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               domain={[0, yMax]}
               tickFormatter={formatValue}
-              tick={{ fill: '#555555', fontSize: 11, fontWeight: 700 }}
+              tick={{ fill: '#3F4959', fontSize: 11, fontWeight: 700 }}
               axisLine={false}
               tickLine={false}
               width={48}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#050505', strokeDasharray: '4 4' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#000000', strokeDasharray: '4 4' }} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
             <Line
               name="Estoque estimado"
               type="linear"
               dataKey="estoqueEstimado"
-              stroke="#050505"
+              stroke="#000000"
               strokeWidth={2.5}
               dot={{ r: 3 }}
               activeDot={{ r: 6 }}
@@ -183,7 +183,7 @@ const KanbanSawtoothChart = ({
               name="Estoque real"
               type="linear"
               dataKey="estoqueReal"
-              stroke="#2D6CDF"
+              stroke="#005DFF"
               strokeWidth={2}
               dot={{ r: 3 }}
               activeDot={{ r: 6 }}
@@ -194,7 +194,7 @@ const KanbanSawtoothChart = ({
                 dataKey="x"
                 height={22}
                 travellerWidth={10}
-                stroke="#E11D2E"
+                stroke="#0088FF"
                 tickFormatter={(value) => formatDateTime(value)}
               />
             )}

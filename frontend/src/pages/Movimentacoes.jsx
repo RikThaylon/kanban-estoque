@@ -322,7 +322,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-navy-800">Nova movimentação</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
@@ -440,7 +440,7 @@ const RejeitarModal = ({ movimentacao, onClose, onConfirm, loading }) => {
   };
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-red-700">Rejeitar movimentação</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>

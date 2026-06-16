@@ -4,22 +4,24 @@
 
 :root {
   --app-bg: #ffffff;
-  --app-bg-2: #f5f5f5;
-  --panel: rgba(255, 255, 255, 0.94);
+  --app-bg-2: #f2f7ff;
+  --panel: rgba(255, 255, 255, 0.96);
   --panel-strong: #ffffff;
-  --line: rgba(5, 5, 5, 0.12);
-  --line-strong: rgba(5, 5, 5, 0.22);
-  --ink: #050505;
-  --muted: #555555;
-  --muted-2: #858585;
-  --accent: #d71920;
+  --line: rgba(0, 68, 204, 0.14);
+  --line-strong: rgba(0, 68, 204, 0.28);
+  --ink: #000000;
+  --muted: #3f4959;
+  --muted-2: #667085;
+  --primary: #005dff;
+  --primary-deep: #0044cc;
+  --accent: #0088ff;
   --accent-ink: #ffffff;
-  --signal: #087a4a;
-  --warning: #b86c0c;
-  --danger: #d71920;
-  --focus: rgba(215, 25, 32, 0.26);
-  --panel-shadow: 0 18px 42px rgba(5, 5, 5, 0.11);
-  --control-shadow: 0 8px 18px rgba(5, 5, 5, 0.10);
+  --signal: #0b7a4b;
+  --warning: #b86700;
+  --danger: #cc2030;
+  --focus: rgba(0, 136, 255, 0.28);
+  --panel-shadow: 0 18px 46px rgba(0, 36, 96, 0.12);
+  --control-shadow: 0 8px 18px rgba(0, 93, 255, 0.12);
 }
 
 @layer base {
@@ -39,9 +41,9 @@
     min-height: 100dvh;
     overscroll-behavior-y: none;
     background:
-      linear-gradient(90deg, rgba(5, 5, 5, 0.035) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(5, 5, 5, 0.028) 1px, transparent 1px),
-      linear-gradient(135deg, var(--app-bg-2) 0%, var(--app-bg) 48%, #eeeeee 100%);
+      linear-gradient(90deg, rgba(0, 93, 255, 0.045) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(0, 68, 204, 0.035) 1px, transparent 1px),
+      linear-gradient(135deg, var(--app-bg-2) 0%, var(--app-bg) 48%, #edf5ff 100%);
     background-size: 44px 44px, 44px 44px, 100% 100%;
     letter-spacing: 0;
   }
@@ -74,6 +76,20 @@
     touch-action: manipulation;
   }
 
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 96px;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--primary);
+  }
+
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
@@ -84,7 +100,7 @@
   }
 
   ::selection {
-    background: rgba(215, 25, 32, 0.22);
+    background: rgba(0, 136, 255, 0.22);
     color: var(--ink);
   }
 }
@@ -94,14 +110,14 @@
   .btn-secondary,
   .btn-success,
   .btn-danger {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50;
     box-shadow: var(--control-shadow);
   }
 
   .btn-primary {
     color: var(--accent-ink);
-    background: linear-gradient(135deg, #ef3037 0%, #d71920 54%, #a90000 100%);
-    border: 1px solid rgba(169, 0, 0, 0.34);
+    background: linear-gradient(135deg, #0088ff 0%, #005dff 56%, #0044cc 100%);
+    border: 1px solid rgba(0, 68, 204, 0.36);
   }
 
   .btn-primary:hover {
@@ -111,32 +127,32 @@
 
   .btn-secondary {
     color: var(--ink);
-    background: linear-gradient(180deg, #ffffff, #f5f5f5);
+    background: linear-gradient(180deg, #ffffff, #f7f9fc);
     border: 1px solid var(--line-strong);
   }
 
   .btn-secondary:hover {
-    border-color: rgba(5, 5, 5, 0.36);
+    border-color: rgba(0, 93, 255, 0.42);
     background: #ffffff;
   }
 
   .btn-success {
     @apply text-white;
-    background: linear-gradient(135deg, #262626, #050505);
-    border: 1px solid rgba(215, 25, 32, 0.38);
+    background: linear-gradient(135deg, #0b7a4b, #075033);
+    border: 1px solid rgba(11, 122, 75, 0.38);
   }
 
   .btn-danger {
     @apply text-white;
-    background: linear-gradient(135deg, #ef3037, #b80000);
-    border: 1px solid rgba(215, 25, 32, 0.32);
+    background: linear-gradient(135deg, #e03248, #9d1824);
+    border: 1px solid rgba(204, 32, 48, 0.32);
   }
 
   .card {
     border-radius: 8px;
     border: 1px solid var(--line);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 247, 247, 0.94));
+      linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 249, 252, 0.95));
     box-shadow: var(--panel-shadow);
     backdrop-filter: blur(16px);
   }
@@ -144,7 +160,7 @@
   .input-field,
   .input {
     @apply w-full rounded-md px-3 py-2 text-sm transition-all duration-150;
-    min-height: 42px;
+    min-height: 44px;
     color: var(--ink);
     border: 1px solid var(--line-strong);
     background: rgba(255, 255, 255, 0.92);
@@ -158,9 +174,9 @@
 
   .input-field:focus,
   .input:focus {
-    border-color: rgba(215, 25, 32, 0.62);
+    border-color: rgba(0, 93, 255, 0.62);
     background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
     outline: none;
   }
 
@@ -182,7 +198,7 @@
     border-radius: 8px;
     border: 1px solid var(--line);
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 247, 247, 0.92));
+      linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.94));
     box-shadow: var(--panel-shadow);
   }
 
@@ -206,18 +222,18 @@
   }
 
   .card table tbody tr:hover {
-    background: rgba(215, 25, 32, 0.06);
+    background: rgba(0, 136, 255, 0.07);
   }
 
   .auth-page {
     position: relative;
     isolation: isolate;
     background:
-      linear-gradient(118deg, rgba(215, 25, 32, 0.18), transparent 33%),
-      linear-gradient(242deg, rgba(8, 122, 74, 0.16), transparent 44%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(235, 239, 236, 0.96)),
-      repeating-linear-gradient(90deg, rgba(5, 5, 5, 0.055) 0 1px, transparent 1px 34px),
-      repeating-linear-gradient(0deg, rgba(5, 5, 5, 0.045) 0 1px, transparent 1px 34px);
+      linear-gradient(118deg, rgba(0, 93, 255, 0.20), transparent 33%),
+      linear-gradient(242deg, rgba(0, 136, 255, 0.16), transparent 44%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.96)),
+      repeating-linear-gradient(90deg, rgba(0, 68, 204, 0.052) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(0deg, rgba(0, 93, 255, 0.040) 0 1px, transparent 1px 34px);
   }
 
   .auth-page::before,
@@ -231,8 +247,8 @@
 
   .auth-page::before {
     background:
-      linear-gradient(102deg, transparent 0 18%, rgba(255, 255, 255, 0.56) 18% 19%, transparent 19% 44%, rgba(215, 25, 32, 0.09) 44% 45%, transparent 45%),
-      linear-gradient(154deg, rgba(255, 255, 255, 0.28), transparent 38%, rgba(5, 5, 5, 0.055) 76%);
+      linear-gradient(102deg, transparent 0 18%, rgba(255, 255, 255, 0.56) 18% 19%, transparent 19% 44%, rgba(0, 93, 255, 0.10) 44% 45%, transparent 45%),
+      linear-gradient(154deg, rgba(255, 255, 255, 0.28), transparent 38%, rgba(0, 0, 0, 0.055) 76%);
     transform: skewY(-7deg) translateY(-9%);
   }
 
@@ -541,7 +557,7 @@
     background: var(--accent);
     font-size: 24px;
     font-weight: 900;
-    box-shadow: 0 18px 38px rgba(215, 25, 32, 0.32);
+    box-shadow: 0 18px 38px rgba(0, 93, 255, 0.30);
     flex: 0 0 auto;
   }
 
@@ -584,7 +600,7 @@
   .auth-field:focus-within input {
     background: rgba(255, 255, 255, 0.86);
     box-shadow:
-      0 0 0 4px rgba(215, 25, 32, 0.12),
+      0 0 0 4px rgba(0, 136, 255, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.92),
       0 12px 26px rgba(5, 5, 5, 0.08);
     outline: none;
@@ -604,9 +620,9 @@
 @layer utilities {
   .industrial-surface {
     background:
-      linear-gradient(90deg, rgba(5, 5, 5, 0.075) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(5, 5, 5, 0.055) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 247, 247, 0.92));
+      linear-gradient(90deg, rgba(0, 93, 255, 0.075) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(0, 68, 204, 0.052) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(247, 249, 252, 0.94));
     background-size: 24px 24px, 24px 24px, 100% 100%;
   }
 
@@ -865,10 +881,10 @@
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(215, 25, 32, 0.38);
+  background: rgba(0, 93, 255, 0.38);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(215, 25, 32, 0.58); }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 93, 255, 0.58); }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -909,14 +925,14 @@
 .reference-auth-page {
   position: relative;
   background:
-    linear-gradient(105deg, rgba(215, 25, 32, 0.12), transparent 29%),
-    linear-gradient(250deg, rgba(17, 122, 100, 0.20), transparent 47%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 242, 239, 0.96));
+    linear-gradient(105deg, rgba(0, 93, 255, 0.14), transparent 29%),
+    linear-gradient(250deg, rgba(0, 136, 255, 0.20), transparent 47%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(239, 246, 255, 0.96));
 }
 
 .reference-auth-page::before {
   background:
-    linear-gradient(101deg, transparent 0 13%, rgba(255, 255, 255, 0.72) 13% 15%, transparent 15% 42%, rgba(215, 25, 32, 0.12) 42% 43.5%, transparent 43.5%),
+    linear-gradient(101deg, transparent 0 13%, rgba(255, 255, 255, 0.72) 13% 15%, transparent 15% 42%, rgba(0, 93, 255, 0.13) 42% 43.5%, transparent 43.5%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.18), transparent 43%, rgba(5, 5, 5, 0.035) 78%);
   transform: none;
 }
@@ -1041,7 +1057,7 @@
   background: var(--accent);
   font-size: 18px;
   font-weight: 900;
-  box-shadow: 0 16px 32px rgba(215, 25, 32, 0.30);
+  box-shadow: 0 16px 32px rgba(0, 93, 255, 0.30);
   flex: 0 0 auto;
 }
 
@@ -1072,8 +1088,8 @@
 .reference-field:focus-within input {
   background: rgba(255, 255, 255, 0.92);
   box-shadow:
-    0 0 0 1px rgba(5, 5, 5, 0.58),
-    0 0 0 4px rgba(5, 5, 5, 0.06),
+    0 0 0 1px rgba(0, 93, 255, 0.58),
+    0 0 0 4px rgba(0, 136, 255, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.94);
   outline: none;
 }

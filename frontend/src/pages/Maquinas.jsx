@@ -223,7 +223,7 @@ const MaquinaModal = ({ maquina, departamentos, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
           <h2 className="text-lg font-bold text-navy-800">{isEdit ? 'Editar máquina' : 'Nova máquina'}</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
@@ -274,7 +274,7 @@ const DepartamentoModal = ({ departamento, usuarios, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
           <h2 className="text-lg font-bold text-navy-800">{isEdit ? 'Editar departamento' : 'Novo departamento'}</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
@@ -331,7 +331,7 @@ const VincularProdutoModal = ({ maquina, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-navy-800">Vincular produto a {maquina.codigo}</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>

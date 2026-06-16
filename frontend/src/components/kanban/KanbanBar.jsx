@@ -10,9 +10,17 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
   
   // Definir cor da faixa atual
   let faixaColor = 'bg-surface-300';
-  if (estoqueAtual <= es) faixaColor = 'bg-kanban-vermelho';
-  else if (estoqueAtual <= pr) faixaColor = 'bg-kanban-amarelo';
-  else if (estoqueAtual > pr) faixaColor = 'bg-kanban-verde';
+  let setaColor = 'border-t-surface-300';
+  if (estoqueAtual <= es) {
+    faixaColor = 'bg-kanban-vermelho';
+    setaColor = 'border-t-kanban-vermelho';
+  } else if (estoqueAtual <= pr) {
+    faixaColor = 'bg-kanban-amarelo';
+    setaColor = 'border-t-kanban-amarelo';
+  } else if (estoqueAtual > pr) {
+    faixaColor = 'bg-kanban-verde';
+    setaColor = 'border-t-kanban-verde';
+  }
 
   return (
     <div className={`w-full ${className}`}>
@@ -59,7 +67,7 @@ const KanbanBar = ({ estoqueAtual, es, pr, emax, className = '' }) => {
           <div className={`px-1.5 py-0.5 rounded-md text-white text-[10px] font-black shadow-sm whitespace-nowrap ${faixaColor}`}>
             Atual: {estoqueAtual}
           </div>
-          <div className={`w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent ${faixaColor.replace('bg-', 'border-t-')}`}></div>
+          <div className={`w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent ${setaColor}`}></div>
         </div>
       </div>
     </div>

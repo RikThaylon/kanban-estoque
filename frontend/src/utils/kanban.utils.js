@@ -3,10 +3,10 @@
  */
 export const getZoneColor = (type) => {
   switch (type) {
-    case 'es': return '#DC2626'; // Vermelho
-    case 'pr': return '#B45309'; // Amarelo
-    case 'verde': return '#1A5C36'; // Verde
-    default: return '#E5E7EB';
+    case 'es': return '#CC2030'; // Vermelho operacional
+    case 'pr': return '#B86700'; // Amarelo operacional
+    case 'verde': return '#0B7A4B'; // Verde operacional
+    default: return '#E8EEF7';
   }
 };
 

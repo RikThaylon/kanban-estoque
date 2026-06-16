@@ -51,33 +51,33 @@ const Header = () => {
   const badgeTotal = alertsUnread + (notificacoes || 0);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-steel-700/10 bg-[rgba(247,248,245,0.78)] backdrop-blur-xl px-3 sm:px-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
+    <header className="sticky top-0 z-10 border-b border-primary/15 bg-white/85 backdrop-blur-xl px-3 shadow-[0_10px_28px_rgba(0,68,204,0.06)] sm:px-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
       <div className="h-16 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={toggleSidebar}
-            className="p-2 -ml-1 rounded-md text-steel-600 hover:text-steel-900 hover:bg-white/70 transition-colors"
+            className="p-2 -ml-1 rounded-md text-steel-600 hover:text-primary hover:bg-blue-50 transition-colors"
             aria-label="Alternar menu"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-steel-500 hidden sm:block">Kanban Estoque</p>
+            <p className="text-[10px] uppercase font-bold text-primary hidden sm:block">Brimajor Kanban</p>
             <h1 className="font-display text-base sm:text-lg font-bold text-steel-900 leading-tight truncate">{title}</h1>
             <p className="text-xs text-steel-500 hidden md:block truncate">{subtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white/70 border border-steel-700/10 rounded-md text-sm shadow-control">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white/80 border border-primary/15 rounded-md text-sm shadow-control">
             <Radio className={`w-4 h-4 ${isSocketConnected ? 'text-signal-green' : 'text-signal-red'}`} />
             <span className="text-steel-700 font-bold">{isSocketConnected ? 'Online' : 'Offline'}</span>
           </div>
 
           <Link
             to="/alertas"
-            className="relative p-2 text-steel-600 hover:text-steel-900 hover:bg-white/70 rounded-md transition-colors"
+            className="relative p-2 text-steel-600 hover:text-primary hover:bg-blue-50 rounded-md transition-colors"
             aria-label="Alertas"
           >
             <Bell className="w-5 h-5" />
@@ -88,19 +88,19 @@ const Header = () => {
             )}
           </Link>
 
-          <div className="h-7 w-px bg-steel-700/10 hidden sm:block" />
+          <div className="h-7 w-px bg-primary/15 hidden sm:block" />
 
           <div className="flex items-center gap-2">
             <div className="text-right hidden md:block">
               <p className="text-sm font-bold text-steel-900 leading-tight truncate max-w-[150px]">{user?.nome || 'Usuário'}</p>
               <p className="text-xs text-steel-500 capitalize">{(user?.perfil || 'Perfil').replace(/_/g, ' ')}</p>
             </div>
-            <div className="w-9 h-9 rounded-md bg-steel-900 flex items-center justify-center text-accent shrink-0">
+            <div className="w-9 h-9 rounded-md bg-black flex items-center justify-center text-accent shrink-0 shadow-control">
               <User className="w-5 h-5" />
             </div>
             <button
               onClick={logout}
-              className="p-2 text-steel-600 hover:text-signal-red hover:bg-white/70 rounded-md transition-colors"
+              className="p-2 text-steel-600 hover:text-signal-red hover:bg-red-50 rounded-md transition-colors"
               title="Sair do sistema"
               aria-label="Sair"
             >

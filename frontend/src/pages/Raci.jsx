@@ -123,7 +123,7 @@ const Raci = () => {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar problema..."
-            className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-surface-200 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde bg-white"
+            className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-surface-200 focus:ring-2 focus:ring-kanban-verde focus:border-kanban-verde bg-white"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -155,9 +155,9 @@ const Raci = () => {
               onClick={() => abrir(p)}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
-              className={`relative text-left rounded-2xl border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
+              className={`relative text-left rounded-lg border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
             >
-              <motion.div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-3">
+              <motion.div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-3">
                 <Icone className="w-5 h-5 text-navy-700" />
               </motion.div>
               <motion.h3 className="font-bold text-navy-800 leading-tight mb-1">
@@ -323,7 +323,7 @@ const Fluxograma = ({ problema, canEdit, onChangeStep, onAddStep, onRemoveStep }
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="bg-surface-50 border border-surface-200 rounded-xl p-4 flex gap-4 items-start"
+              className="bg-surface-50 border border-surface-200 rounded-lg p-4 flex gap-4 items-start"
             >
               <div className="w-8 h-8 rounded-full bg-navy-700 text-white flex items-center justify-center font-bold text-sm shrink-0">
                 {i + 1}
@@ -452,7 +452,7 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
         </table>
       </div>
 
-      <div className="bg-surface-50 rounded-xl p-4">
+      <div className="bg-surface-50 rounded-lg p-4">
         <h5 className="text-xs font-bold text-navy-500 uppercase tracking-wide mb-2">Legenda</h5>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Object.entries(LETRA_INFO).map(([letra, info]) => (

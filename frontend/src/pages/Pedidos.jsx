@@ -169,7 +169,7 @@ const Pedidos = () => {
           {sugestoes?.length > 0 ? (
             <div className="flex gap-4 pb-2">
               {sugestoes.slice(0, 8).map(sug => (
-                <div key={sug.id} className="min-w-[280px] max-w-[280px] bg-white border border-surface-200 rounded-xl p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div key={sug.id} className="min-w-[280px] max-w-[280px] bg-white border border-surface-200 rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
                   <div className={`absolute top-0 left-0 w-1 h-full ${sug.faixa_atual === 'VERMELHO' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                   <div>
                     <div className="flex justify-between items-start mb-2 pl-2 gap-2">
@@ -429,7 +429,7 @@ const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
   const [motivo, setMotivo] = useState('');
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-rose-700">Rejeitar pedido</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
@@ -565,7 +565,7 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
           <h2 className="text-lg font-bold text-navy-800">{template ? 'Gerar pedido a partir da sugestão' : 'Novo pedido de compra'}</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
@@ -724,7 +724,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-navy-800">Registrar OC externa</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
@@ -795,7 +795,7 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-navy-800">Registrar NF e concluir</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
@@ -838,7 +838,7 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
           <h2 className="text-lg font-bold text-navy-800">Detalhe do pedido</h2>
           <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>

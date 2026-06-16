@@ -63,14 +63,15 @@ const ToastRail = () => {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed right-3 top-20 z-50 grid w-[min(360px,calc(100vw-1.5rem))] gap-2">
+    <div className="fixed right-3 top-20 z-50 grid w-[min(380px,calc(100vw-1.5rem))] gap-2" aria-live="polite">
       {toasts.map((toast) => (
         <button
           key={toast.id}
           type="button"
           onClick={() => dismissToast(toast.id)}
-          className={`rounded-lg border bg-white p-3 text-left shadow-panel transition hover:-translate-y-0.5 ${
-            toast.tipo === 'success' ? 'border-green-200' : toast.tipo === 'warning' ? 'border-amber-200' : 'border-red-200'
+          role="status"
+          className={`rounded-md border-l-4 bg-white p-3 text-left shadow-panel transition hover:-translate-y-0.5 ${
+            toast.tipo === 'success' ? 'border-green-500' : toast.tipo === 'warning' ? 'border-amber-500' : 'border-red-500'
           }`}
         >
           <div className="text-sm font-bold text-steel-900">{toast.titulo}</div>

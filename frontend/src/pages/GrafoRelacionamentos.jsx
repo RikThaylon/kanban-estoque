@@ -43,13 +43,13 @@ const NODE_W = 150;
 const NODE_H = 58;
 
 const TYPE_META = {
-  produto: { label: 'Peças', icon: Package, color: '#d71920', bg: '#fff1f1', column: 1 },
-  maquina: { label: 'Máquinas', icon: Cog, color: '#1f2937', bg: '#f3f4f6', column: 3 },
-  departamento: { label: 'Departamentos', icon: Building2, color: '#475569', bg: '#f8fafc', column: 4 },
-  supervisor: { label: 'Supervisores', icon: UserRound, color: '#0f766e', bg: '#ecfdf5', column: 5 },
-  fornecedor: { label: 'Fornecedores', icon: Truck, color: '#92400e', bg: '#fffbeb', column: 4 },
-  estoque: { label: 'Estoque', icon: Warehouse, color: '#0369a1', bg: '#eff6ff', column: 2 },
-  pedido: { label: 'Pedidos', icon: ShoppingCart, color: '#7f1d1d', bg: '#fef2f2', column: 0 },
+  produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
+  maquina: { label: 'Máquinas', icon: Cog, color: '#000000', bg: '#F7F9FC', column: 3 },
+  departamento: { label: 'Departamentos', icon: Building2, color: '#3F4959', bg: '#FFFFFF', column: 4 },
+  supervisor: { label: 'Supervisores', icon: UserRound, color: '#0088FF', bg: '#EAF6FF', column: 5 },
+  fornecedor: { label: 'Fornecedores', icon: Truck, color: '#0044CC', bg: '#F2F7FF', column: 4 },
+  estoque: { label: 'Estoque', icon: Warehouse, color: '#0088FF', bg: '#EAF6FF', column: 2 },
+  pedido: { label: 'Pedidos', icon: ShoppingCart, color: '#00123D', bg: '#F7F9FC', column: 0 },
 };
 
 const STATUS_PEDIDO = [
@@ -98,11 +98,11 @@ function labelStatus(status) {
 }
 
 function statusColor(status) {
-  if (status === 'VERMELHO' || status === 'REJEITADO' || status === 'CANCELADO') return '#d71920';
-  if (status === 'AMARELO' || status === 'AGUARDANDO_APROVACAO' || status === 'AGUARDANDO_GERENTE') return '#b86c0c';
-  if (status === 'VERDE' || status === 'CONCLUIDO' || status === 'APROVADO') return '#087a4a';
-  if (status === 'AGUARDANDO_CHEGADA' || status === 'EM_TRANSITO' || status === 'RECEBIDO_PARCIAL') return '#0369a1';
-  return '#64748b';
+  if (status === 'VERMELHO' || status === 'REJEITADO' || status === 'CANCELADO') return '#CC2030';
+  if (status === 'AMARELO' || status === 'AGUARDANDO_APROVACAO' || status === 'AGUARDANDO_GERENTE') return '#B86700';
+  if (status === 'VERDE' || status === 'CONCLUIDO' || status === 'APROVADO') return '#0B7A4B';
+  if (status === 'AGUARDANDO_CHEGADA' || status === 'EM_TRANSITO' || status === 'RECEBIDO_PARCIAL') return '#005DFF';
+  return '#667085';
 }
 
 function buildParams(filtros) {
@@ -499,7 +499,7 @@ const GrafoRelacionamentos = () => {
                       : 'border-steel-700/10 bg-steel-50 text-steel-400'
                   }`}
                 >
-                  <Icon className="h-4 w-4" style={{ color: tiposVisiveis[type] ? meta.color : '#94a3b8' }} />
+                  <Icon className="h-4 w-4" style={{ color: tiposVisiveis[type] ? meta.color : '#91A0B7' }} />
                   {meta.label}
                 </button>
               );
@@ -532,10 +532,10 @@ const GrafoRelacionamentos = () => {
             >
               <defs>
                 <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#91A0B7" />
                 </marker>
                 <pattern id="grid-grafo" width="32" height="32" patternUnits="userSpaceOnUse">
-                  <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#e5e7eb" strokeWidth="1" />
+                  <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E8EEF7" strokeWidth="1" />
                 </pattern>
               </defs>
               <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
@@ -550,7 +550,7 @@ const GrafoRelacionamentos = () => {
                       <path
                         d={buildPath(source, target)}
                         fill="none"
-                        stroke={highlighted ? '#64748b' : '#cbd5e1'}
+                        stroke={highlighted ? '#667085' : '#CDD7E6'}
                         strokeWidth={highlighted ? 2.2 : 1.4}
                         markerEnd="url(#arrow-grafo)"
                       />
@@ -561,7 +561,7 @@ const GrafoRelacionamentos = () => {
                           textAnchor="middle"
                           fontSize="10"
                           fontWeight="700"
-                          fill="#475569"
+                          fill="#3F4959"
                           paintOrder="stroke"
                           stroke="#ffffff"
                           strokeWidth="4"
@@ -597,19 +597,19 @@ const GrafoRelacionamentos = () => {
                         width={NODE_W}
                         height={NODE_H}
                         rx="8"
-                        fill={selected ? '#fff7ed' : meta.bg}
-                        stroke={selected ? '#d71920' : meta.color}
+                        fill={selected ? '#DCEBFF' : meta.bg}
+                        stroke={selected ? '#005DFF' : meta.color}
                         strokeWidth={selected ? 2.5 : 1.4}
-                        filter={selected ? 'drop-shadow(0 10px 14px rgba(215,25,32,0.18))' : 'none'}
+                        filter={selected ? 'drop-shadow(0 10px 14px rgba(0,93,255,0.18))' : 'none'}
                       />
                       <circle cx="19" cy="20" r="10" fill="#ffffff" stroke={meta.color} strokeWidth="1" />
                       <foreignObject x="13" y="14" width="12" height="12">
                         <Icon size={12} color={meta.color} />
                       </foreignObject>
-                      <text x="35" y="18" fontSize="12" fontWeight="900" fill="#111827">
+                      <text x="35" y="18" fontSize="12" fontWeight="900" fill="#000000">
                         {compactText(node.label, 16)}
                       </text>
-                      <text x="35" y="35" fontSize="10" fontWeight="600" fill="#64748b">
+                      <text x="35" y="35" fontSize="10" fontWeight="600" fill="#667085">
                         {compactText(node.subtitle, 18)}
                       </text>
                       <circle cx="134" cy="15" r="5" fill={statusColor(node.status)} />

@@ -406,7 +406,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white z-10">
           <h2 className="text-lg font-bold text-navy-800">
             {isEdit ? `Editar produto ${produto.codigo}` : (isInsercao ? 'Inserir item existente' : 'Cadastrar produto')}

@@ -126,7 +126,7 @@ const Usuarios = () => {
 
   if (!isAdmin && !['plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'].includes(user?.perfil)) {
     return (
-      <div className="bg-white rounded-xl p-8 text-center text-navy-400">
+      <div className="bg-white rounded-lg p-8 text-center text-navy-400">
         Acesso restrito.
       </div>
     );
@@ -144,7 +144,7 @@ const Usuarios = () => {
         {isAdmin && (
           <button
             onClick={abrirNovo}
-            className="flex items-center gap-2 bg-kanban-verde hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-2 bg-kanban-verde hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold shadow-sm transition-colors"
           >
             <UserPlus className="w-4 h-4" /> Novo usuário
           </button>
@@ -155,7 +155,7 @@ const Usuarios = () => {
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg text-red-700 text-sm">{erro}</div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-navy-400" />
@@ -227,7 +227,7 @@ const Usuarios = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+              className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
