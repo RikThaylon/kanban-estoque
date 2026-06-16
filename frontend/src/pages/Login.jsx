@@ -25,7 +25,7 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-between p-12 text-white relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm text-xl font-bold shadow-lg">
+            <div className="flex items-center justify-center w-8 h-8 rounded bg-blue-600 text-lg font-bold shadow-sm">
               B
             </div>
             <span className="text-xl font-bold tracking-wide text-white">Brimajor Kanban</span>
@@ -63,12 +63,12 @@ const Login = () => {
       </div>
 
       {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-slate-50 relative">
-        <div className="w-full max-w-md space-y-8 bg-white shadow-xl rounded-2xl p-8 sm:p-10 border border-slate-100">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-gray-50 relative">
+        <div className="w-full max-w-md space-y-8 bg-white shadow-xl rounded-2xl p-8 sm:p-10 border border-gray-100">
           
           <div className="text-center lg:text-left">
             <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 text-white text-xl font-bold shadow-lg">
+              <div className="flex items-center justify-center w-8 h-8 rounded bg-blue-600 text-white text-lg font-bold shadow-sm">
                 B
               </div>
               <span className="text-xl font-bold text-gray-900">Brimajor Kanban</span>
@@ -144,24 +144,18 @@ const Login = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-800 focus:ring-blue-800"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Manter conectado
                 </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="#" className="font-semibold text-blue-600 hover:text-blue-500">
-                  Esqueci a senha?
-                </a>
               </div>
             </div>
 
             <button 
               type="submit" 
               disabled={loading || !username || !senha} 
-              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-blue-800 px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-[#003366] px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#002244] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#003366] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
                 <>
