@@ -41,26 +41,18 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Isometric illustration - well positioned with blue fade */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Isometric illustration - full panel watermark with blue fade */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <img 
             src="/supply-chain-flow.jpg" 
             alt="Fluxo logístico industrial" 
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[110%] max-w-none object-cover object-center opacity-60"
-            style={{ height: '65%' }}
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-25"
           />
-          {/* Blue fade overlay - top */}
+          {/* Blue overlay - ensures text readability */}
           <div 
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(to bottom, #0f172a 25%, rgba(15, 23, 42, 0.3) 55%, rgba(15, 23, 42, 0.7) 80%, #0f172a 100%)'
-            }}
-          />
-          {/* Blue fade overlay - sides */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(to right, #0f172a 0%, transparent 20%, transparent 80%, #0f172a 100%)'
+              background: 'linear-gradient(180deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.4) 45%, rgba(15,23,42,0.5) 65%, rgba(15,23,42,0.9) 100%)'
             }}
           />
         </div>
