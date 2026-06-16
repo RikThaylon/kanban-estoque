@@ -22,8 +22,8 @@ const Login = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       {/* Left side - Welcome/Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-900 flex-col justify-between p-12 text-white">
-        <div>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-900 flex-col justify-between p-12 text-white relative overflow-hidden">
+        <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm text-xl font-bold shadow-lg">
               B
@@ -32,27 +32,24 @@ const Login = () => {
           </div>
         </div>
         
-        <div className="max-w-xl">
-          <div className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-2 py-1 mb-6 text-[10px] font-bold tracking-widest text-white uppercase backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
-            Linha de estoque viva
-          </div>
+        <div className="max-w-2xl relative z-10">
           <h1 className="text-4xl lg:text-5xl font-black mb-6 leading-[1.1] tracking-tight">
             Controle industrial com visão de comando em tempo real.
           </h1>
-          <p className="text-blue-100 text-lg leading-relaxed font-medium mb-12">
+          <p className="text-blue-100 text-lg leading-relaxed font-medium">
             Kanban, compras, máquinas e aprovações em uma superfície operacional para decisão rápida no chão de fábrica.
           </p>
-          <div className="relative w-full max-w-md mx-auto aspect-video">
-            <img 
-              src="/supply-chain-flow.png" 
-              alt="Fluxo logístico" 
-              className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl mix-blend-screen opacity-90"
-            />
-          </div>
         </div>
 
-        <div className="flex items-center gap-6 text-sm text-blue-200">
+        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]">
+          <img 
+            src="/supply-chain-flow.png" 
+            alt="Fluxo logístico" 
+            className="w-full max-w-2xl scale-125 lg:scale-150 mix-blend-lighten opacity-40 translate-y-12 lg:translate-y-24"
+          />
+        </div>
+
+        <div className="relative z-10 flex items-center gap-6 text-sm text-blue-200">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
             <span>Sessão 100% segura</span>
