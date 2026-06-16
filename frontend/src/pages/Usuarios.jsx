@@ -126,7 +126,7 @@ const Usuarios = () => {
 
   if (!isAdmin && !['plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'].includes(user?.perfil)) {
     return (
-      <div className="bg-white rounded-lg p-8 text-center text-navy-400">
+      <div className="bg-white rounded-lg p-8 text-center text-steel-400">
         Acesso restrito.
       </div>
     );
@@ -136,8 +136,8 @@ const Usuarios = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800">Usuários</h1>
-          <p className="text-navy-400 text-sm">
+          <h1 className="text-2xl font-bold text-steel-800">Usuários</h1>
+          <p className="text-steel-400 text-sm">
             {isAdmin ? 'Gerencie usuários e cargos do sistema' : 'Visualização dos usuários cadastrados'}
           </p>
         </div>
@@ -158,12 +158,12 @@ const Usuarios = () => {
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-navy-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-steel-400" />
           </div>
         ) : (
           <div className="overflow-x-auto">
           <table className="min-w-[720px] w-full">
-            <thead className="bg-surface-50 text-xs uppercase tracking-wide text-navy-400">
+            <thead className="bg-surface-50 text-xs uppercase tracking-wide text-steel-400">
               <tr>
                 <th className="text-left px-4 py-3">Nome</th>
                 <th className="text-left px-4 py-3">Usuário</th>
@@ -175,8 +175,8 @@ const Usuarios = () => {
             <tbody className="divide-y divide-surface-100">
               {usuarios.map((u) => (
                 <tr key={u.id} className="hover:bg-surface-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-navy-800">{u.nome}</td>
-                  <td className="px-4 py-3 font-mono text-sm text-navy-600">{u.username}</td>
+                  <td className="px-4 py-3 font-medium text-steel-800">{u.nome}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-steel-600">{u.username}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${corPorTipo[tipoPerfil(u.perfil)]}`}>
                       {tipoPerfil(u.perfil) === 'visualizador' && <Eye className="w-3 h-3" />}
@@ -192,10 +192,10 @@ const Usuarios = () => {
                   <td className="px-4 py-3 text-right">
                     {isAdmin && (
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => abrirEditar(u)} title="Editar" className="p-2 hover:bg-surface-100 rounded-lg text-navy-500">
+                        <button onClick={() => abrirEditar(u)} title="Editar" className="p-2 hover:bg-surface-100 rounded-lg text-steel-500">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => abrirSenha(u)} title="Resetar senha" className="p-2 hover:bg-surface-100 rounded-lg text-navy-500">
+                        <button onClick={() => abrirSenha(u)} title="Resetar senha" className="p-2 hover:bg-surface-100 rounded-lg text-steel-500">
                           <KeyRound className="w-4 h-4" />
                         </button>
                         {u.id !== user?.id && (
@@ -231,12 +231,12 @@ const Usuarios = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-navy-800">
+                <h2 className="text-lg font-bold text-steel-800">
                   {modalAberto === 'novo' && 'Novo usuário'}
                   {modalAberto === 'editar' && `Editar ${usuarioEdit?.nome}`}
                   {modalAberto === 'senha' && `Resetar senha — ${usuarioEdit?.nome}`}
                 </h2>
-                <button onClick={fechar} className="text-navy-400 hover:text-navy-700 p-1 rounded-full">
+                <button onClick={fechar} className="text-steel-400 hover:text-steel-700 p-1 rounded-full">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -250,7 +250,7 @@ const Usuarios = () => {
                 {modalAberto !== 'senha' && (
                   <>
                     <div>
-                      <label className="text-xs font-semibold text-navy-600">Nome</label>
+                      <label className="text-xs font-semibold text-steel-600">Nome</label>
                       <input
                         value={form.nome}
                         onChange={(e) => setForm({ ...form, nome: e.target.value })}
@@ -258,7 +258,7 @@ const Usuarios = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-navy-600">Usuário (login)</label>
+                      <label className="text-xs font-semibold text-steel-600">Usuário (login)</label>
                       <input
                         value={form.username}
                         onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
@@ -267,7 +267,7 @@ const Usuarios = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-navy-600">Cargo</label>
+                      <label className="text-xs font-semibold text-steel-600">Cargo</label>
                       <select
                         value={form.perfil}
                         onChange={(e) => setForm({ ...form, perfil: e.target.value })}
@@ -277,7 +277,7 @@ const Usuarios = () => {
                           <option key={p.value} value={p.value}>{p.label}</option>
                         ))}
                       </select>
-                      <p className="text-xs text-navy-400 mt-1">
+                      <p className="text-xs text-steel-400 mt-1">
                         Tipo: <span className="font-semibold">{tipoPerfil(form.perfil)}</span>
                       </p>
                     </div>
@@ -285,7 +285,7 @@ const Usuarios = () => {
                 )}
                 {(modalAberto === 'novo' || modalAberto === 'senha') && (
                   <div>
-                    <label className="text-xs font-semibold text-navy-600">
+                    <label className="text-xs font-semibold text-steel-600">
                       {modalAberto === 'senha' ? 'Nova senha' : 'Senha'}
                     </label>
                     <input
@@ -297,13 +297,13 @@ const Usuarios = () => {
                       maxLength={SENHA_MAX}
                       pattern="^\S+$"
                     />
-                    <p className="text-xs text-navy-400 mt-1">Mínimo {SENHA_MIN} caracteres, sem espaços.</p>
+                    <p className="text-xs text-steel-400 mt-1">Mínimo {SENHA_MIN} caracteres, sem espaços.</p>
                   </div>
                 )}
               </div>
 
               <div className="flex justify-end gap-2 mt-6">
-                <button onClick={fechar} className="px-4 py-2 text-navy-600 hover:bg-surface-100 rounded-lg font-semibold">
+                <button onClick={fechar} className="px-4 py-2 text-steel-600 hover:bg-surface-100 rounded-lg font-semibold">
                   Cancelar
                 </button>
                 <button

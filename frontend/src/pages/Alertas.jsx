@@ -37,14 +37,14 @@ const Alertas = () => {
     <div className="space-y-6 pb-12 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-steel-800 tracking-tight flex items-center gap-2">
             <Bell className="w-6 h-6" />
             Alertas
             {total > 0 && (
               <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-sm font-bold rounded-full">{total}</span>
             )}
           </h1>
-          <p className="text-navy-400 text-sm mt-1">Notificações de risco de ruptura, mudanças de faixa e eventos do sistema</p>
+          <p className="text-steel-400 text-sm mt-1">Notificações de risco de ruptura, mudanças de faixa e eventos do sistema</p>
         </div>
         {alertas.length > 0 && (
           <button
@@ -57,15 +57,15 @@ const Alertas = () => {
         )}
       </div>
 
-      {isLoading && <div className="text-center text-navy-400 py-12">Carregando…</div>}
+      {isLoading && <div className="text-center text-steel-400 py-12">Carregando…</div>}
 
       {!isLoading && alertas.length === 0 && (
         <div className="card p-12 text-center">
           <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold text-navy-800 mb-2">Tudo em ordem</h3>
-          <p className="text-navy-500">Nenhum alerta pendente. Bom trabalho.</p>
+          <h3 className="text-lg font-semibold text-steel-800 mb-2">Tudo em ordem</h3>
+          <p className="text-steel-500">Nenhum alerta pendente. Bom trabalho.</p>
         </div>
       )}
 
@@ -87,16 +87,16 @@ const Alertas = () => {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${conf.bg} ${conf.text}`}>
                       {conf.label}
                     </span>
-                    <span className="text-xs text-navy-400">{a.tipo}</span>
-                    <span className="text-xs text-navy-400">·</span>
-                    <span className="text-xs text-navy-500">{formatDateTime(a.criado_em)}</span>
+                    <span className="text-xs text-steel-400">{a.tipo}</span>
+                    <span className="text-xs text-steel-400">·</span>
+                    <span className="text-xs text-steel-500">{formatDateTime(a.criado_em)}</span>
                   </div>
-                  <h3 className="font-semibold text-navy-800 mb-1">{a.titulo}</h3>
-                  {a.mensagem && <p className="text-sm text-navy-600">{a.mensagem}</p>}
+                  <h3 className="font-semibold text-steel-800 mb-1">{a.titulo}</h3>
+                  {a.mensagem && <p className="text-sm text-steel-600">{a.mensagem}</p>}
                   {a.produto_id && (
                     <Link
                       to={`/produtos/${a.produto_id}`}
-                      className="inline-block mt-2 text-sm text-navy-600 hover:text-navy-800 font-medium"
+                      className="inline-block mt-2 text-sm text-steel-600 hover:text-steel-800 font-medium"
                     >
                       Ver produto: {a.produto_codigo} →
                     </Link>
@@ -105,7 +105,7 @@ const Alertas = () => {
                 <button
                   onClick={() => lerUm.mutate(a.id)}
                   disabled={lerUm.isPending}
-                  className="text-navy-400 hover:text-green-600 hover:bg-green-50 p-2 rounded-md transition-colors shrink-0"
+                  className="text-steel-400 hover:text-green-600 hover:bg-green-50 p-2 rounded-md transition-colors shrink-0"
                   title="Marcar como lido"
                 >
                   <Check className="w-5 h-5" />

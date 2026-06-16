@@ -10,7 +10,7 @@ const FaixaBadge = ({ faixa, className = '' }) => {
       case 'VERMELHO':
         return 'bg-kanban-vermelho-light text-kanban-vermelho border-kanban-vermelho/25';
       default:
-        return 'bg-surface-100 text-navy-500 border-surface-200';
+        return 'bg-surface-100 text-steel-500 border-surface-200';
     }
   };
 

@@ -104,8 +104,8 @@ const Raci = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800">Matriz RACI - Mapa de problemas</h1>
-          <p className="text-navy-400 text-sm">
+          <h1 className="text-2xl font-bold text-steel-800">Matriz RACI - Mapa de problemas</h1>
+          <p className="text-steel-400 text-sm">
             Clique em qualquer caixa para ver o fluxograma e a matriz RACI especifica daquele problema.
           </p>
         </div>
@@ -118,7 +118,7 @@ const Raci = () => {
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-300" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-steel-300" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
@@ -129,7 +129,7 @@ const Raci = () => {
         <div className="flex gap-2 overflow-x-auto">
           <button
             onClick={() => setCategoriaSel('todas')}
-            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === 'todas' ? 'bg-navy-700 text-white' : 'bg-white text-navy-600 hover:bg-surface-100'}`}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === 'todas' ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
           >
             Todas
           </button>
@@ -137,7 +137,7 @@ const Raci = () => {
             <button
               key={c.key}
               onClick={() => setCategoriaSel(c.key)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === c.key ? 'bg-navy-700 text-white' : 'bg-white text-navy-600 hover:bg-surface-100'}`}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === c.key ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
             >
               {c.label}
             </button>
@@ -158,22 +158,22 @@ const Raci = () => {
               className={`relative text-left rounded-lg border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
             >
               <motion.div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-3">
-                <Icone className="w-5 h-5 text-navy-700" />
+                <Icone className="w-5 h-5 text-steel-700" />
               </motion.div>
-              <motion.h3 className="font-bold text-navy-800 leading-tight mb-1">
+              <motion.h3 className="font-bold text-steel-800 leading-tight mb-1">
                 {p.titulo}
               </motion.h3>
-              <motion.p className="text-xs text-navy-500 line-clamp-2">
+              <motion.p className="text-xs text-steel-500 line-clamp-2">
                 {p.descricao}
               </motion.p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-navy-600">
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-steel-600">
                 Ver fluxograma e RACI <ChevronRight className="w-3 h-3" />
               </div>
             </motion.button>
           );
         })}
         {filtrados.length === 0 && (
-          <div className="col-span-full text-center py-12 text-navy-400">
+          <div className="col-span-full text-center py-12 text-steel-400">
             Nenhum problema corresponde a busca.
           </div>
         )}
@@ -200,7 +200,7 @@ const Raci = () => {
                   <X className="w-4 h-4" />
                 </button>
                 <motion.div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-white shadow-md flex items-center justify-center mb-3">
-                  {Icone && <Icone className="w-7 h-7 text-navy-700" />}
+                  {Icone && <Icone className="w-7 h-7 text-steel-700" />}
                 </motion.div>
                 {isAdmin ? (
                   <div className="grid gap-3 pr-10 sm:pr-12 sm:grid-cols-[minmax(0,1fr)_220px_auto]">
@@ -215,7 +215,7 @@ const Raci = () => {
                       className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white"
                     >
                       {CATEGORIAS.map((categoria) => (
-                        <option key={categoria.key} value={categoria.key} className="text-navy-800">
+                        <option key={categoria.key} value={categoria.key} className="text-steel-800">
                           {categoria.label}
                         </option>
                       ))}
@@ -242,12 +242,12 @@ const Raci = () => {
                     rows={2}
                   />
                 ) : (
-                  <motion.p className="text-sm text-navy-200 mt-1">
+                  <motion.p className="text-sm text-steel-200 mt-1">
                     {problemaAberto.descricao}
                   </motion.p>
                 )}
                 {isAdmin && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-navy-100">
+                  <div className="mt-2 flex items-center gap-2 text-xs text-steel-100">
                     <Save className="w-3.5 h-3.5" />
                     Alterações salvas neste navegador
                   </div>
@@ -306,7 +306,7 @@ const Raci = () => {
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-kanban-verde text-navy-800' : 'border-transparent text-navy-400 hover:text-navy-700'}`}
+    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-kanban-verde text-steel-800' : 'border-transparent text-steel-400 hover:text-steel-700'}`}
   >
     <Icon className="w-4 h-4" /> {children}
   </button>
@@ -364,14 +364,14 @@ const Fluxograma = ({ problema, canEdit, onChangeStep, onAddStep, onRemoveStep }
                 ) : (
                   <>
                     <div className="flex items-start gap-2 flex-wrap">
-                      <h4 className="font-semibold text-navy-800">{step.titulo}</h4>
+                      <h4 className="font-semibold text-steel-800">{step.titulo}</h4>
                       {papel && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${papel.cor}`}>
                           {papel.label}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-navy-500 mt-1">{step.descricao}</p>
+                    <p className="text-sm text-steel-500 mt-1">{step.descricao}</p>
                   </>
                 )}
               </div>
@@ -383,7 +383,7 @@ const Fluxograma = ({ problema, canEdit, onChangeStep, onAddStep, onRemoveStep }
                 transition={{ delay: i * 0.06 + 0.03 }}
                 className="flex justify-start pl-4"
               >
-                <ArrowDown className="w-4 h-4 text-navy-300" />
+                <ArrowDown className="w-4 h-4 text-steel-300" />
               </motion.div>
             )}
           </React.Fragment>
@@ -405,8 +405,8 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
         <table className="min-w-[760px] w-full">
           <thead>
             <tr>
-              <th className="text-left text-xs uppercase tracking-wide text-navy-400 pb-2">Papel</th>
-              <th className="text-center text-xs uppercase tracking-wide text-navy-400 pb-2 w-20">Funcao</th>
+              <th className="text-left text-xs uppercase tracking-wide text-steel-400 pb-2">Papel</th>
+              <th className="text-center text-xs uppercase tracking-wide text-steel-400 pb-2 w-20">Funcao</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-surface-100">
@@ -420,7 +420,7 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
                       <span className={`text-[10px] font-bold w-9 text-center px-2 py-0.5 rounded-full ${papel.cor}`}>
                         {papel.sigla}
                       </span>
-                      <span className="text-sm font-medium text-navy-700">{papel.label}</span>
+                      <span className="text-sm font-medium text-steel-700">{papel.label}</span>
                     </div>
                   </td>
                   <td className="py-2.5 text-center">
@@ -441,7 +441,7 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
                         <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${info.cor}`}>
                           {letra}
                         </span>
-                        <span className="text-xs text-navy-500 hidden sm:inline">{info.label}</span>
+                        <span className="text-xs text-steel-500 hidden sm:inline">{info.label}</span>
                       </div>
                     )}
                   </td>
@@ -453,7 +453,7 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
       </div>
 
       <div className="bg-surface-50 rounded-lg p-4">
-        <h5 className="text-xs font-bold text-navy-500 uppercase tracking-wide mb-2">Legenda</h5>
+        <h5 className="text-xs font-bold text-steel-500 uppercase tracking-wide mb-2">Legenda</h5>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Object.entries(LETRA_INFO).map(([letra, info]) => (
             <div key={letra} className="flex items-center gap-2">
@@ -461,8 +461,8 @@ const TabelaRaci = ({ problema, canEdit, onChangeLetra }) => {
                 {letra}
               </span>
               <div>
-                <div className="text-xs font-bold text-navy-700">{info.label}</div>
-                <div className="text-[10px] text-navy-400">{info.desc}</div>
+                <div className="text-xs font-bold text-steel-700">{info.label}</div>
+                <div className="text-[10px] text-steel-400">{info.desc}</div>
               </div>
             </div>
           ))}

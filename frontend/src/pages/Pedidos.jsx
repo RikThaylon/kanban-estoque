@@ -131,8 +131,8 @@ const Pedidos = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Pedidos de Compra</h1>
-          <p className="text-navy-400 text-sm">Solicitação, aprovação, OC externa, chegada e NF</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-steel-800">Pedidos de Compra</h1>
+          <p className="text-steel-400 text-sm">Solicitação, aprovação, OC externa, chegada e NF</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Link to="/pedidos/acompanhar" className="btn-secondary w-full sm:w-auto justify-center">
@@ -146,16 +146,16 @@ const Pedidos = () => {
         </div>
       </div>
 
-      <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-navy-600 flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-navy-800">Fluxo:</span>
+      <div className="rounded-md border border-surface-200 bg-white px-4 py-3 text-sm text-steel-600 flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-steel-800">Fluxo:</span>
         <span>Solicitação</span>
-        <span className="text-navy-300">-&gt;</span>
+        <span className="text-steel-300">-&gt;</span>
         <span>Aprovação supervisor/gerente</span>
-        <span className="text-navy-300">-&gt;</span>
+        <span className="text-steel-300">-&gt;</span>
         <span>Comprador registra OC</span>
-        <span className="text-navy-300">-&gt;</span>
+        <span className="text-steel-300">-&gt;</span>
         <span>Aguardando chegada</span>
-        <span className="text-navy-300">-&gt;</span>
+        <span className="text-steel-300">-&gt;</span>
         <span>NF e conclusão</span>
       </div>
 
@@ -173,12 +173,12 @@ const Pedidos = () => {
                   <div className={`absolute top-0 left-0 w-1 h-full ${sug.faixa_atual === 'VERMELHO' ? 'bg-red-500' : 'bg-amber-400'}`}></div>
                   <div>
                     <div className="flex justify-between items-start mb-2 pl-2 gap-2">
-                      <span className="font-bold text-navy-800 truncate flex-1">{sug.codigo}</span>
+                      <span className="font-bold text-steel-800 truncate flex-1">{sug.codigo}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded shrink-0 ${sug.faixa_atual === 'VERMELHO' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         {sug.faixa_atual}
                       </span>
                     </div>
-                    <p className="text-xs text-navy-500 mb-3 pl-2 line-clamp-2">{sug.nome}</p>
+                    <p className="text-xs text-steel-500 mb-3 pl-2 line-clamp-2">{sug.nome}</p>
                     <div className="pl-2 space-y-1 mb-4 text-sm">
                       <Row label="Sugerido (EOQ):" value={sug.eoq || 0} />
                       <Row label="Cobertura:" value={sug.dias_cobertura !== null ? `${sug.dias_cobertura} dias` : '—'} />
@@ -188,7 +188,7 @@ const Pedidos = () => {
                   <button
                     onClick={() => handleGerarSugestao(sug)}
                     disabled={!podeSolicitarCompra || !sug.fornecedor_id || !sug.eoq}
-                    className="w-full py-2 bg-navy-50 hover:bg-navy-100 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed text-navy-700 font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-navy-50 hover:bg-navy-100 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed text-steel-700 font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2"
                     title={!sug.fornecedor_id ? 'Sem fornecedor padrão cadastrado' : !sug.eoq ? 'Sem EOQ calculado' : ''}
                   >
                     <Plus className="w-4 h-4" /> Gerar Pedido
@@ -233,7 +233,7 @@ const Pedidos = () => {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-white border-b border-surface-200">
-              <tr className="text-xs font-bold text-navy-400 uppercase tracking-wider">
+              <tr className="text-xs font-bold text-steel-400 uppercase tracking-wider">
                 <th className="p-4">Número</th>
                 <th className="p-4">Data</th>
                 <th className="p-4">Produto</th>
@@ -247,29 +247,29 @@ const Pedidos = () => {
             </thead>
             <tbody className="divide-y divide-surface-100 bg-white">
               {isLoading && <tr><td colSpan="9" className="p-8 text-center">Carregando...</td></tr>}
-              {!isLoading && data?.data?.length === 0 && <tr><td colSpan="9" className="p-8 text-center text-navy-400">Nenhum pedido encontrado.</td></tr>}
+              {!isLoading && data?.data?.length === 0 && <tr><td colSpan="9" className="p-8 text-center text-steel-400">Nenhum pedido encontrado.</td></tr>}
               {!isLoading && data?.data?.map(pedido => (
                 <tr key={pedido.id} className="hover:bg-surface-50">
-                  <td className="p-4 font-mono text-sm font-bold text-navy-700">{pedido.numero}</td>
-                  <td className="p-4 text-sm text-navy-600">{formatDate(pedido.data_emissao || pedido.criado_em)}</td>
+                  <td className="p-4 font-mono text-sm font-bold text-steel-700">{pedido.numero}</td>
+                  <td className="p-4 text-sm text-steel-600">{formatDate(pedido.data_emissao || pedido.criado_em)}</td>
                   <td className="p-4">
-                    <div className="font-bold text-navy-800 text-sm">{pedido.produto_codigo}</div>
-                    <div className="text-xs text-navy-400 truncate max-w-[200px]">{pedido.produto_nome}</div>
+                    <div className="font-bold text-steel-800 text-sm">{pedido.produto_codigo}</div>
+                    <div className="text-xs text-steel-400 truncate max-w-[200px]">{pedido.produto_nome}</div>
                   </td>
-                  <td className="p-4 text-sm text-navy-600">
+                  <td className="p-4 text-sm text-steel-600">
                     {pedido.maquina_codigo ? (
                       <div className="max-w-[160px]">
-                        <div className="font-mono font-medium text-navy-700">{pedido.maquina_codigo}</div>
-                        <div className="text-xs text-navy-400 truncate">{pedido.departamento_nome || pedido.maquina_nome}</div>
+                        <div className="font-mono font-medium text-steel-700">{pedido.maquina_codigo}</div>
+                        <div className="text-xs text-steel-400 truncate">{pedido.departamento_nome || pedido.maquina_nome}</div>
                       </div>
                     ) : '—'}
                   </td>
-                  <td className="p-4 text-sm text-navy-600 truncate max-w-[150px]">{pedido.fornecedor_nome}</td>
-                  <td className="p-4 text-right font-medium text-navy-700 whitespace-nowrap">
+                  <td className="p-4 text-sm text-steel-600 truncate max-w-[150px]">{pedido.fornecedor_nome}</td>
+                  <td className="p-4 text-right font-medium text-steel-700 whitespace-nowrap">
                     {pedido.quantidade_pedida}
                     {parseFloat(pedido.quantidade_recebida) > 0 && <span className="text-xs text-green-600 block">Rec: {pedido.quantidade_recebida}</span>}
                   </td>
-                  <td className="p-4 text-right font-medium text-navy-700">{formatMoney(pedido.custo_total)}</td>
+                  <td className="p-4 text-right font-medium text-steel-700">{formatMoney(pedido.custo_total)}</td>
                   <td className="p-4 text-center">
                     <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${STATUS_STYLES[pedido.status] || 'bg-surface-100'}`}>
                       {statusLabel(pedido.status)}
@@ -297,30 +297,30 @@ const Pedidos = () => {
         {/* Mobile: cards */}
         <div className="md:hidden divide-y divide-surface-100">
           {isLoading && <div className="p-8 text-center">Carregando...</div>}
-          {!isLoading && data?.data?.length === 0 && <div className="p-8 text-center text-navy-400">Nenhum pedido encontrado.</div>}
+          {!isLoading && data?.data?.length === 0 && <div className="p-8 text-center text-steel-400">Nenhum pedido encontrado.</div>}
           {!isLoading && data?.data?.map(pedido => (
             <div key={pedido.id} className="p-4 space-y-2">
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
-                  <div className="font-mono font-bold text-navy-700 text-sm">{pedido.numero}</div>
-                  <div className="text-xs text-navy-500">{formatDate(pedido.data_emissao || pedido.criado_em)}</div>
+                  <div className="font-mono font-bold text-steel-700 text-sm">{pedido.numero}</div>
+                  <div className="text-xs text-steel-500">{formatDate(pedido.data_emissao || pedido.criado_em)}</div>
                 </div>
                 <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${STATUS_STYLES[pedido.status] || 'bg-surface-100'} shrink-0`}>
                   {statusLabel(pedido.status)}
                 </span>
               </div>
               <div>
-                <div className="text-sm font-semibold text-navy-800">{pedido.produto_codigo} — {pedido.produto_nome}</div>
-                <div className="text-xs text-navy-500">{pedido.fornecedor_nome}</div>
+                <div className="text-sm font-semibold text-steel-800">{pedido.produto_codigo} — {pedido.produto_nome}</div>
+                <div className="text-xs text-steel-500">{pedido.fornecedor_nome}</div>
                 {pedido.maquina_codigo && (
-                  <div className="text-xs text-navy-500">
+                  <div className="text-xs text-steel-500">
                     {pedido.maquina_codigo} - {pedido.departamento_nome || pedido.maquina_nome}
                   </div>
                 )}
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-navy-600">Qtd: <strong>{pedido.quantidade_pedida}</strong></span>
-                <span className="font-semibold text-navy-800">{formatMoney(pedido.custo_total)}</span>
+                <span className="text-steel-600">Qtd: <strong>{pedido.quantidade_pedida}</strong></span>
+                <span className="font-semibold text-steel-800">{formatMoney(pedido.custo_total)}</span>
               </div>
               <PedidoActions
                 pedido={pedido}
@@ -340,7 +340,7 @@ const Pedidos = () => {
         {/* Paginação */}
         {data && data.totalPages > 1 && (
           <div className="p-4 border-t border-surface-200 flex items-center justify-between text-sm">
-            <span className="text-navy-500">Página {data.page} de {data.totalPages}</span>
+            <span className="text-steel-500">Página {data.page} de {data.totalPages}</span>
             <div className="flex gap-2">
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn-secondary disabled:opacity-40">Anterior</button>
               <button disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)} className="btn-secondary disabled:opacity-40">Próxima</button>
@@ -360,8 +360,8 @@ const Pedidos = () => {
 
 const Row = ({ label, value, clamp }) => (
   <div className="flex justify-between gap-2">
-    <span className="text-navy-400 shrink-0">{label}</span>
-    <span className={`font-medium text-navy-700 ${clamp ? 'truncate' : ''}`}>{value}</span>
+    <span className="text-steel-400 shrink-0">{label}</span>
+    <span className={`font-medium text-steel-700 ${clamp ? 'truncate' : ''}`}>{value}</span>
   </div>
 );
 
@@ -392,7 +392,7 @@ const PedidoActions = ({ pedido, user, fluxo, onAprovar, onRejeitar, onEmitir, o
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 justify-center">
-      <button onClick={onDetalhe} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded transition-colors" title="Ver detalhes">
+      <button onClick={onDetalhe} className="p-1.5 text-steel-500 hover:bg-navy-50 rounded transition-colors" title="Ver detalhes">
         <Eye className="w-4 h-4" />
       </button>
       {podeAprovar && (
@@ -432,10 +432,10 @@ const RejeitarPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-rose-700">Rejeitar pedido</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
+          <button onClick={onClose}><X className="w-5 h-5 text-steel-400" /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (motivo.trim().length < 5) return; onConfirm(motivo.trim()); }} className="p-5 space-y-3">
-          <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
+          <div className="text-sm text-steel-600 bg-surface-50 rounded-md p-3">
             <div><strong>{pedido.numero}</strong> · {pedido.produto_codigo} — {pedido.produto_nome}</div>
             <div className="text-xs">Status: {pedido.status} · Total: {formatMoney(pedido.custo_total)}</div>
           </div>
@@ -567,13 +567,13 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
-          <h2 className="text-lg font-bold text-navy-800">{template ? 'Gerar pedido a partir da sugestão' : 'Novo pedido de compra'}</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-lg font-bold text-steel-800">{template ? 'Gerar pedido a partir da sugestão' : 'Novo pedido de compra'}</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Produto */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Produto</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Produto</label>
             <input
               type="text"
               value={busca}
@@ -599,9 +599,9 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-surface-50 text-sm border-b border-surface-100 last:border-0"
                   >
-                    <span className="font-medium text-navy-800">{p.codigo}</span>
-                    <span className="text-navy-500 ml-2">{p.nome}</span>
-                    {p.custo_unitario && <span className="text-navy-400 ml-2 text-xs">R$ {parseFloat(p.custo_unitario).toFixed(2)}</span>}
+                    <span className="font-medium text-steel-800">{p.codigo}</span>
+                    <span className="text-steel-500 ml-2">{p.nome}</span>
+                    {p.custo_unitario && <span className="text-steel-400 ml-2 text-xs">R$ {parseFloat(p.custo_unitario).toFixed(2)}</span>}
                   </button>
                 ))}
               </div>
@@ -610,9 +610,9 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
 
           {produtoId && (
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Máquina solicitante</label>
+              <label className="block text-sm font-medium text-steel-700 mb-1">Máquina solicitante</label>
               {carregandoMaquinas ? (
-                <div className="input w-full text-navy-400">Carregando máquinas...</div>
+                <div className="input w-full text-steel-400">Carregando máquinas...</div>
               ) : (maquinasProduto || []).length > 0 ? (
                 <select value={maquinaId} onChange={e => setMaquinaId(e.target.value)} className="input w-full" required>
                   <option value="">Selecione...</option>
@@ -628,7 +628,7 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
                 </div>
               )}
               {(maquinasProduto || []).length > 1 && (
-                <p className="text-xs text-navy-500 mt-1">Este item é usado em N máquinas; escolha a máquina correta para rotear o aprovador.</p>
+                <p className="text-xs text-steel-500 mt-1">Este item é usado em N máquinas; escolha a máquina correta para rotear o aprovador.</p>
               )}
             </div>
           )}
@@ -636,7 +636,7 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
           {/* Fornecedor */}
           {podeEscolherFornecedor && (
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Fornecedor</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Fornecedor</label>
             {fornecedoresLista.length > 0 ? (
               <select value={fornecedorId} onChange={e => setFornecedorId(e.target.value)} className="input w-full" required>
                 <option value="">Selecione...</option>
@@ -653,19 +653,19 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
               />
             )}
             {template?.fornecedor_nome && (
-              <p className="text-xs text-navy-500 mt-1">Sugerido: {template.fornecedor_nome} por menor LT</p>
+              <p className="text-xs text-steel-500 mt-1">Sugerido: {template.fornecedor_nome} por menor LT</p>
             )}
           </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Quantidade</label>
+              <label className="block text-sm font-medium text-steel-700 mb-1">Quantidade</label>
               <input type="number" step="0.0001" min="0" value={quantidade}
                 onChange={e => setQuantidade(e.target.value)} className="input w-full font-mono" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-navy-700 mb-1">Preço unitário (R$)</label>
+              <label className="block text-sm font-medium text-steel-700 mb-1">Preço unitário (R$)</label>
               <input type="number" step="0.01" min="0" value={precoUnit}
                 onChange={e => setPrecoUnit(e.target.value)} className="input w-full font-mono" />
             </div>
@@ -673,13 +673,13 @@ const NovoPedidoModal = ({ template, fluxo, onClose }) => {
 
           {total > 0 && (
             <div className="bg-surface-50 border border-surface-200 rounded-md px-3 py-2 text-sm flex justify-between">
-              <span className="text-navy-500">Total:</span>
-              <strong className="text-navy-800">{formatMoney(total)}</strong>
+              <span className="text-steel-500">Total:</span>
+              <strong className="text-steel-800">{formatMoney(total)}</strong>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Data prevista (opcional)</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Data prevista (opcional)</label>
             <input type="date" value={dataPrevista} onChange={e => setDataPrevista(e.target.value)} className="input w-full" />
           </div>
 
@@ -726,25 +726,25 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-navy-800">Registrar OC externa</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-lg font-bold text-steel-800">Registrar OC externa</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-md p-3">
             Pedido já aprovado internamente. O comprador deve escolher o fornecedor e informar o número da OC criada no sistema externo.
           </div>
-          <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3">
+          <div className="text-sm text-steel-600 bg-surface-50 rounded-md p-3">
             <strong>{pedido.numero}</strong> - {pedido.produto_codigo} - {pedido.produto_nome}
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Fornecedor escolhido</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Fornecedor escolhido</label>
             <select value={fornecedorId} onChange={e => setFornecedorId(e.target.value)} className="input w-full" required>
               <option value="">Selecione...</option>
               {fornecedoresLista.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Número da OC externa</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Número da OC externa</label>
             <input value={numeroOc} onChange={e => setNumeroOc(e.target.value)} className="input w-full font-mono" required autoFocus />
           </div>
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -797,22 +797,22 @@ const ReceberPedidoModal = ({ pedido, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-navy-800">Registrar NF e concluir</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-lg font-bold text-steel-800">Registrar NF e concluir</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="text-sm text-navy-600 bg-surface-50 rounded-md p-3 space-y-1">
+          <div className="text-sm text-steel-600 bg-surface-50 rounded-md p-3 space-y-1">
             <div><strong>{pedido.numero}</strong> · {pedido.produto_codigo} — {pedido.produto_nome}</div>
             <div className="text-xs">Qtd pedida: {pedido.quantidade_pedida} · Já recebido: {pedido.quantidade_recebida || 0} · Restante: <strong>{restante}</strong></div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Quantidade recebida agora</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Quantidade recebida agora</label>
             <input type="number" step="0.0001" min="0" max={restante}
               value={quantidade} onChange={e => setQuantidade(e.target.value)}
               className="input w-full font-mono" required autoFocus />
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Número da NF</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Número da NF</label>
             <input type="text" value={numeroNF} onChange={e => setNumeroNF(e.target.value)} className="input w-full" required />
           </div>
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -840,11 +840,11 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
-          <h2 className="text-lg font-bold text-navy-800">Detalhe do pedido</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-lg font-bold text-steel-800">Detalhe do pedido</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5 space-y-3 text-sm">
-          {isLoading ? <div className="text-navy-400">Carregando…</div> : (
+          {isLoading ? <div className="text-steel-400">Carregando…</div> : (
             <>
               <DetailRow label="Número" value={<span className="font-mono">{p.numero}</span>} />
               <DetailRow label="Status" value={<span className={`px-2 py-0.5 rounded text-xs font-bold ${STATUS_STYLES[p.status]}`}>{statusLabel(p.status)}</span>} />
@@ -880,8 +880,8 @@ const DetalhePedidoModal = ({ pedido, onClose }) => {
 
 const DetailRow = ({ label, value }) => (
   <div className="flex justify-between gap-4 py-1.5 border-b border-surface-100 last:border-0">
-    <span className="text-navy-500 shrink-0">{label}</span>
-    <span className="text-navy-800 text-right break-words">{value}</span>
+    <span className="text-steel-500 shrink-0">{label}</span>
+    <span className="text-steel-800 text-right break-words">{value}</span>
   </div>
 );
 

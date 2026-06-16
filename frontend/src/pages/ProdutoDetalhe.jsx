@@ -22,8 +22,8 @@ class TabErrorBoundary extends React.Component {
       return (
         <div className="flex flex-col items-center justify-center p-10 text-center gap-3">
           <AlertTriangle className="w-10 h-10 text-amber-400" />
-          <p className="font-bold text-navy-700">Erro ao carregar esta seção</p>
-          <p className="text-sm text-navy-400 max-w-md">
+          <p className="font-bold text-steel-700">Erro ao carregar esta seção</p>
+          <p className="text-sm text-steel-400 max-w-md">
             {this.state.error?.message || 'Ocorreu um erro inesperado. Recarregue a página ou entre em contato com o suporte.'}
           </p>
           <button onClick={() => this.setState({ hasError: false, error: null })}
@@ -154,7 +154,7 @@ const ProdutoDetalhe = () => {
   const diasAteReposicao = cmd > 0 && pr > 0 ? Math.max(0, Math.round(((estoqueAtual - pr) / cmd) * 10) / 10) : null;
   const emaxDias = cmd > 0 && emax > 0 ? Math.round((emax / cmd) * 10) / 10 : null;
   const tempoTone = diasEstoqueRestante === null
-    ? 'border-surface-200 bg-surface-50 text-navy-700'
+    ? 'border-surface-200 bg-surface-50 text-steel-700'
     : estoqueAtual <= es
       ? 'border-red-200 bg-red-50 text-red-800'
       : estoqueAtual <= pr
@@ -177,15 +177,15 @@ const ProdutoDetalhe = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 mb-2">
-        <Link to="/produtos" className="p-2 rounded-lg hover:bg-surface-200 text-navy-500 transition-colors self-start">
+        <Link to="/produtos" className="p-2 rounded-lg hover:bg-surface-200 text-steel-500 transition-colors self-start">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-navy-800 break-words">{produto.nome}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-steel-800 break-words">{produto.nome}</h1>
             <FaixaBadge faixa={produto.faixa_atual} />
           </div>
-          <p className="text-navy-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
+          <p className="text-steel-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
           <button className="btn-secondary justify-center" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lançar movimentação</button>
@@ -197,8 +197,8 @@ const ProdutoDetalhe = () => {
       <div className="card p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
           <div className="bg-surface-50 p-4 rounded-lg border border-surface-200">
-            <p className="text-sm text-navy-500 font-medium mb-1">Estoque Atual</p>
-            <div className="text-3xl font-bold text-navy-800">{formatNumber(produto.estoque_atual)} <span className="text-base font-normal text-navy-400">{produto.unidade}</span></div>
+            <p className="text-sm text-steel-500 font-medium mb-1">Estoque Atual</p>
+            <div className="text-3xl font-bold text-steel-800">{formatNumber(produto.estoque_atual)} <span className="text-base font-normal text-steel-400">{produto.unidade}</span></div>
           </div>
           <div className={`p-4 rounded-lg border ${tempoTone}`}>
             <div className="flex items-center justify-between gap-3 mb-2">
@@ -216,11 +216,11 @@ const ProdutoDetalhe = () => {
             </p>
           </div>
           <div>
-            <p className="text-sm text-navy-500 font-medium mb-1">Preço de Compra</p>
-            <div className="text-xl font-bold text-navy-700">{formatMoney(produto.custo_unitario)}</div>
+            <p className="text-sm text-steel-500 font-medium mb-1">Preço de Compra</p>
+            <div className="text-xl font-bold text-steel-700">{formatMoney(produto.custo_unitario)}</div>
           </div>
           <div>
-            <p className="text-sm text-navy-500 font-medium mb-1">Classificação ABC</p>
+            <p className="text-sm text-steel-500 font-medium mb-1">Classificação ABC</p>
             {podeEditarAbc ? (
               <div className="flex items-center gap-2">
                 <select
@@ -244,17 +244,17 @@ const ProdutoDetalhe = () => {
                 </button>
               </div>
             ) : (
-              <div className="text-xl font-bold text-navy-700">Curva {produto.classificacao_abc || '-'}</div>
+              <div className="text-xl font-bold text-steel-700">Curva {produto.classificacao_abc || '-'}</div>
             )}
           </div>
           <div>
-            <p className="text-sm text-navy-500 font-medium mb-1">Localização</p>
-            <div className="text-xl font-bold text-navy-700">{produto.localizacao || 'Não definida'}</div>
+            <p className="text-sm text-steel-500 font-medium mb-1">Localização</p>
+            <div className="text-xl font-bold text-steel-700">{produto.localizacao || 'Não definida'}</div>
           </div>
         </div>
 
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-navy-800 mb-4 uppercase tracking-wider">Régua Kanban</h3>
+          <h3 className="text-sm font-bold text-steel-800 mb-4 uppercase tracking-wider">Régua Kanban</h3>
           <KanbanBar
             estoqueAtual={parseFloat(produto.estoque_atual)}
             es={es} pr={pr} emax={emax}
@@ -271,8 +271,8 @@ const ProdutoDetalhe = () => {
               onClick={() => setActiveTab(tab.key)}
               className={`py-3 px-3 text-sm font-bold whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === tab.key
-                  ? 'border-navy-700 text-navy-800'
-                  : 'border-transparent text-navy-400 hover:text-navy-600 hover:border-surface-300'
+                  ? 'border-navy-700 text-steel-800'
+                  : 'border-transparent text-steel-400 hover:text-steel-600 hover:border-surface-300'
               }`}
             >
               {tab.label}
@@ -324,14 +324,14 @@ const ProdutoDetalhe = () => {
                 <>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-bold text-navy-800">Ciclo de reposição Kanban</h3>
-                      <p className="text-sm text-navy-400 mt-0.5">
+                      <h3 className="font-bold text-steel-800">Ciclo de reposição Kanban</h3>
+                      <p className="text-sm text-steel-400 mt-0.5">
                         {historicoSerrote.length > 0
                           ? 'Historico real por data e hora + ciclos estimados com tooltip por ponto'
                           : 'Ciclos estimados com base nos parametros calculados'}
                       </p>
                     </div>
-                    <div className="text-left sm:text-right text-xs text-navy-400">
+                    <div className="text-left sm:text-right text-xs text-steel-400">
                       <div>CMD: <strong>{safe(produto.demanda_diaria_media, 2)}/dia</strong></div>
                       <div>LT: <strong>{safe(produto.lead_time_previsto_dias, 0)} dias</strong></div>
                     </div>
@@ -349,7 +349,7 @@ const ProdutoDetalhe = () => {
                         className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors ${
                           chartZoom === value
                             ? 'bg-red-600 border-red-600 text-white'
-                            : 'bg-white border-surface-200 text-navy-600 hover:bg-surface-50'
+                            : 'bg-white border-surface-200 text-steel-600 hover:bg-surface-50'
                         }`}
                       >
                         {label}
@@ -366,8 +366,8 @@ const ProdutoDetalhe = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 text-center gap-3">
                   <div className="text-4xl">📊</div>
-                  <p className="font-bold text-navy-700">Parâmetros Kanban ainda não calculados</p>
-                  <p className="text-sm text-navy-400 max-w-md">
+                  <p className="font-bold text-steel-700">Parâmetros Kanban ainda não calculados</p>
+                  <p className="text-sm text-steel-400 max-w-md">
                     O gráfico de ciclos será exibido após o sistema calcular ES, PR e EOQ a partir das movimentações e pedidos deste produto.
                     Registre pelo menos algumas semanas de movimentação para o modelo estatístico entrar em ação.
                   </p>
@@ -380,13 +380,13 @@ const ProdutoDetalhe = () => {
           {activeTab === 'rastreamento' && (
             <div className="space-y-6">
               {loadingRastreamento && (
-                <div className="p-8 text-center text-navy-400 animate-pulse">Carregando dados de rastreamento...</div>
+                <div className="p-8 text-center text-steel-400 animate-pulse">Carregando dados de rastreamento...</div>
               )}
               {!loadingRastreamento && !rastreamento && (
                 <div className="flex flex-col items-center justify-center p-10 text-center gap-3">
                   <AlertCircle className="w-10 h-10 text-amber-400" />
-                  <p className="font-bold text-navy-700">Dados insuficientes para rastreamento</p>
-                  <p className="text-sm text-navy-400 max-w-md">
+                  <p className="font-bold text-steel-700">Dados insuficientes para rastreamento</p>
+                  <p className="text-sm text-steel-400 max-w-md">
                     O rastreamento matemático requer pelo menos 4 semanas de movimentações e 2 pedidos recebidos.
                     Registre movimentações de saída regularmente para o modelo Holt-Winters e a Regressão Linear entrarem em ação.
                   </p>
@@ -394,35 +394,35 @@ const ProdutoDetalhe = () => {
               )}
               {!loadingRastreamento && rastreamento && (
                 <div className="card p-5 bg-surface-50 border-dashed">
-                  <h3 className="font-bold text-navy-800 mb-4 flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-navy-400" />
+                  <h3 className="font-bold text-steel-800 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-steel-400" />
                     Auditoria de Cálculos Preditivos
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">
+                      <h4 className="text-sm font-bold text-steel-600 mb-2 border-b border-surface-200 pb-2">
                         Suavização Exponencial Dupla de Holt (Demanda)
                       </h4>
-                      <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
+                      <ul className="text-sm text-steel-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
                         <li>α (Nível) = {safe(rastreamento?.holt_outputs?.alpha)}</li>
                         <li>β (Tendência) = {safe(rastreamento?.holt_outputs?.beta)}</li>
                         <li>Previsão Semana (F_t+1) = {safe(rastreamento?.holt_outputs?.forecast)}</li>
                         <li>Desvio Padrão (σ_res) = {safe(rastreamento?.holt_outputs?.sigma)}</li>
-                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
+                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-steel-800">
                           Demanda Diária Média = {safe(rastreamento?.holt_outputs?.forecast ? rastreamento.holt_outputs.forecast / 7 : null)}
                         </li>
                       </ul>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-navy-600 mb-2 border-b border-surface-200 pb-2">
+                      <h4 className="text-sm font-bold text-steel-600 mb-2 border-b border-surface-200 pb-2">
                         Regressão Linear (Lead Time)
                       </h4>
-                      <ul className="text-sm text-navy-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
+                      <ul className="text-sm text-steel-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
                         <li>Intercepto (a) = {safe(rastreamento?.regressao_outputs?.intercepto)}</li>
                         <li>Inclinação (b) = {safe(rastreamento?.regressao_outputs?.inclinacao)}</li>
                         <li>R² = {safe(rastreamento?.regressao_outputs?.r2)}</li>
                         <li>Desvio Padrão (σ_LT) = {safe(rastreamento?.regressao_outputs?.sigma)}</li>
-                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-navy-800">
+                        <li className="pt-2 mt-2 border-t border-surface-100 font-bold text-steel-800">
                           LT Previsto = {safe(rastreamento?.regressao_outputs?.previsao)} dias
                         </li>
                       </ul>
@@ -439,7 +439,7 @@ const ProdutoDetalhe = () => {
               <div className="overflow-x-auto">
               <table className="min-w-[560px] w-full text-left">
                 <thead className="bg-surface-50 border-b border-surface-200">
-                  <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
+                  <tr className="text-xs font-bold text-steel-500 uppercase tracking-wider">
                     <th className="p-4">Data</th>
                     <th className="p-4">Tipo</th>
                     <th className="p-4 text-right">Qtd</th>
@@ -450,9 +450,9 @@ const ProdutoDetalhe = () => {
                   {produto.ultimas_movimentacoes?.length > 0 ? (
                     produto.ultimas_movimentacoes.map(m => (
                       <tr key={m.id} className="hover:bg-surface-50">
-                        <td className="p-4 text-sm text-navy-600">
+                        <td className="p-4 text-sm text-steel-600">
                           {new Date(m.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                          {m.turno && <div className="text-xs text-navy-400">{m.turno.replace('TURNO_', 'Turno ')}</div>}
+                          {m.turno && <div className="text-xs text-steel-400">{m.turno.replace('TURNO_', 'Turno ')}</div>}
                         </td>
                         <td className="p-4">
                           <span className={`text-xs font-bold px-2 py-1 rounded ${
@@ -463,12 +463,12 @@ const ProdutoDetalhe = () => {
                             {m.tipo}
                           </span>
                         </td>
-                        <td className="p-4 text-sm font-bold text-navy-700 text-right">{formatNumber(m.quantidade)}</td>
-                        <td className="p-4 text-sm text-navy-600 text-right">{formatNumber(m.estoque_depois)}</td>
+                        <td className="p-4 text-sm font-bold text-steel-700 text-right">{formatNumber(m.quantidade)}</td>
+                        <td className="p-4 text-sm text-steel-600 text-right">{formatNumber(m.estoque_depois)}</td>
                       </tr>
                     ))
                   ) : (
-                    <tr><td colSpan="4" className="p-8 text-center text-navy-400">Nenhuma movimentação registrada.</td></tr>
+                    <tr><td colSpan="4" className="p-8 text-center text-steel-400">Nenhuma movimentação registrada.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -480,7 +480,7 @@ const ProdutoDetalhe = () => {
           {activeTab === 'fornecedores' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-navy-800">Fornecedores vinculados</h3>
+                <h3 className="font-bold text-steel-800">Fornecedores vinculados</h3>
               </div>
               <form
                 onSubmit={(event) => { event.preventDefault(); if (fornecedorForm.fornecedor_id) adicionarFornecedor.mutate(); }}
@@ -542,15 +542,15 @@ const ProdutoDetalhe = () => {
                     onChange={(e) => setFornecedorForm((f) => ({ ...f, lead_time_nominal_dias: e.target.value }))}
                   />
                 </div>
-                <p className="sm:col-span-3 text-xs text-navy-500">
+                <p className="sm:col-span-3 text-xs text-steel-500">
                   Prioridade 1 é o fornecedor principal; 2, 3, 4... são secundários usados como alternativas de compra.
                 </p>
               </form>
               {!fornecedoresVinculados || fornecedoresVinculados.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-10 text-center gap-3 card">
                   <div className="text-4xl">🏭</div>
-                  <p className="font-bold text-navy-700">Nenhum fornecedor vinculado</p>
-                  <p className="text-sm text-navy-400 max-w-sm">
+                  <p className="font-bold text-steel-700">Nenhum fornecedor vinculado</p>
+                  <p className="text-sm text-steel-400 max-w-sm">
                     Vincule um fornecedor para que o sistema possa gerar pedidos automaticamente quando o estoque atingir o Ponto de Reposição.
                   </p>
                 </div>
@@ -559,7 +559,7 @@ const ProdutoDetalhe = () => {
                   <div className="overflow-x-auto">
                   <table className="min-w-[720px] w-full text-left">
                     <thead className="bg-surface-50 border-b border-surface-200">
-                      <tr className="text-xs font-bold text-navy-500 uppercase tracking-wider">
+                      <tr className="text-xs font-bold text-steel-500 uppercase tracking-wider">
                         <th className="p-4">Fornecedor</th>
                         <th className="p-4">Prioridade</th>
                         <th className="p-4 text-right">Preço acordado</th>
@@ -571,18 +571,18 @@ const ProdutoDetalhe = () => {
                       {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => (
                         <tr key={i} className="hover:bg-surface-50">
                           <td className="p-4">
-                            <div className="font-bold text-navy-800">{fv.fornecedor_nome || fv.nome}</div>
-                            {fv.cnpj && <div className="text-xs text-navy-400">{fv.cnpj}</div>}
+                            <div className="font-bold text-steel-800">{fv.fornecedor_nome || fv.nome}</div>
+                            {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
                           </td>
                           <td className="p-4">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-navy-500'}`}>
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-steel-500'}`}>
                               {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
                             </span>
                           </td>
-                          <td className="p-4 text-right font-medium text-navy-700">
+                          <td className="p-4 text-right font-medium text-steel-700">
                             {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
                           </td>
-                          <td className="p-4 text-right text-navy-600">
+                          <td className="p-4 text-right text-steel-600">
                             {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
                           </td>
                           <td className="p-4 text-center">

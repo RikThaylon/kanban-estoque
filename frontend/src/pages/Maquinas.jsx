@@ -57,18 +57,18 @@ const Maquinas = () => {
     <div className="space-y-6 pb-12 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-navy-800 tracking-tight">Máquinas e Departamentos</h1>
-          <p className="text-navy-400 text-sm">Estrutura organizacional e vínculos com produtos</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-steel-800 tracking-tight">Máquinas e Departamentos</h1>
+          <p className="text-steel-400 text-sm">Estrutura organizacional e vínculos com produtos</p>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-surface-200 overflow-x-auto">
-        <button onClick={() => setTab('maquinas')} className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${tab === 'maquinas' ? 'border-navy-600 text-navy-700' : 'border-transparent text-navy-400 hover:text-navy-600'}`}>
-          <Cog className="w-4 h-4" /> Máquinas {maquinas && <span className="text-xs bg-navy-100 text-navy-700 px-1.5 rounded">{maquinas.length}</span>}
+        <button onClick={() => setTab('maquinas')} className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${tab === 'maquinas' ? 'border-navy-600 text-steel-700' : 'border-transparent text-steel-400 hover:text-steel-600'}`}>
+          <Cog className="w-4 h-4" /> Máquinas {maquinas && <span className="text-xs bg-navy-100 text-steel-700 px-1.5 rounded">{maquinas.length}</span>}
         </button>
-        <button onClick={() => setTab('departamentos')} className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${tab === 'departamentos' ? 'border-navy-600 text-navy-700' : 'border-transparent text-navy-400 hover:text-navy-600'}`}>
-          <Building2 className="w-4 h-4" /> Departamentos {departamentos && <span className="text-xs bg-navy-100 text-navy-700 px-1.5 rounded">{departamentos.length}</span>}
+        <button onClick={() => setTab('departamentos')} className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${tab === 'departamentos' ? 'border-navy-600 text-steel-700' : 'border-transparent text-steel-400 hover:text-steel-600'}`}>
+          <Building2 className="w-4 h-4" /> Departamentos {departamentos && <span className="text-xs bg-navy-100 text-steel-700 px-1.5 rounded">{departamentos.length}</span>}
         </button>
       </div>
 
@@ -76,7 +76,7 @@ const Maquinas = () => {
       {tab === 'maquinas' && (
         <div className="space-y-3">
           <div className="flex justify-between">
-            <p className="text-sm text-navy-500">Máquinas cadastradas. Clique em uma para ver/editar produtos vinculados.</p>
+            <p className="text-sm text-steel-500">Máquinas cadastradas. Clique em uma para ver/editar produtos vinculados.</p>
             {isAdmin && (
               <button onClick={() => setOpenMaqModal('novo')} className="btn-primary"><Plus className="w-4 h-4" /> Nova máquina</button>
             )}
@@ -85,14 +85,14 @@ const Maquinas = () => {
             {(maquinas || []).map(m => (
               <div key={m.id}>
                 <div className="p-4 flex items-center gap-3 hover:bg-surface-50 cursor-pointer" onClick={() => setExpanded(e => ({ ...e, [m.id]: !e[m.id] }))}>
-                  {expanded[m.id] ? <ChevronDown className="w-4 h-4 text-navy-400" /> : <ChevronRight className="w-4 h-4 text-navy-400" />}
+                  {expanded[m.id] ? <ChevronDown className="w-4 h-4 text-steel-400" /> : <ChevronRight className="w-4 h-4 text-steel-400" />}
                   <div className="flex-1 min-w-0">
-                    <div className="font-mono font-bold text-navy-800 text-sm">{m.codigo}</div>
-                    <div className="text-sm text-navy-700">{m.nome}</div>
-                    <div className="text-xs text-navy-500 mt-0.5">
+                    <div className="font-mono font-bold text-steel-800 text-sm">{m.codigo}</div>
+                    <div className="text-sm text-steel-700">{m.nome}</div>
+                    <div className="text-xs text-steel-500 mt-0.5">
                       {m.departamento_nome ? `${m.departamento_nome}` : '— sem departamento —'}
                       {m.localizacao && ` · ${m.localizacao}`}
-                      <span className="ml-2 text-navy-400">{m.total_produtos} produto(s) vinculado(s)</span>
+                      <span className="ml-2 text-steel-400">{m.total_produtos} produto(s) vinculado(s)</span>
                     </div>
                   </div>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
@@ -101,7 +101,7 @@ const Maquinas = () => {
                     )}
                     {isAdmin && (
                       <>
-                        <button onClick={() => setOpenMaqModal(m)} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                        <button onClick={() => setOpenMaqModal(m)} className="p-1.5 text-steel-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
                         <button onClick={() => { if (confirm('Desativar máquina?')) desativarMaq.mutate(m.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Desativar"><Trash2 className="w-4 h-4" /></button>
                       </>
                     )}
@@ -110,7 +110,7 @@ const Maquinas = () => {
                 {expanded[m.id] && <ProdutosVinculados maquinaId={m.id} podeVincular={podeVincular} />}
               </div>
             ))}
-            {(!maquinas || maquinas.length === 0) && <div className="p-8 text-center text-navy-400">Nenhuma máquina cadastrada.</div>}
+            {(!maquinas || maquinas.length === 0) && <div className="p-8 text-center text-steel-400">Nenhuma máquina cadastrada.</div>}
           </div>
         </div>
       )}
@@ -119,7 +119,7 @@ const Maquinas = () => {
       {tab === 'departamentos' && (
         <div className="space-y-3">
           <div className="flex justify-between">
-            <p className="text-sm text-navy-500">Departamentos e seus supervisores de turno responsáveis.</p>
+            <p className="text-sm text-steel-500">Departamentos e seus supervisores de turno responsáveis.</p>
             {isAdmin && (
               <button onClick={() => setOpenDeptModal('novo')} className="btn-primary"><Plus className="w-4 h-4" /> Novo departamento</button>
             )}
@@ -127,24 +127,24 @@ const Maquinas = () => {
           <div className="card divide-y divide-surface-200">
             {(departamentos || []).map(d => (
               <div key={d.id} className="p-4 flex items-center gap-3 hover:bg-surface-50">
-                <div className="w-10 h-10 rounded-full bg-navy-100 flex items-center justify-center"><Building2 className="w-5 h-5 text-navy-600" /></div>
+                <div className="w-10 h-10 rounded-full bg-navy-100 flex items-center justify-center"><Building2 className="w-5 h-5 text-steel-600" /></div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-mono font-bold text-navy-800 text-sm">{d.codigo}</div>
-                  <div className="text-sm text-navy-700">{d.nome}</div>
-                  <div className="text-xs text-navy-500 mt-0.5">
+                  <div className="font-mono font-bold text-steel-800 text-sm">{d.codigo}</div>
+                  <div className="text-sm text-steel-700">{d.nome}</div>
+                  <div className="text-xs text-steel-500 mt-0.5">
                     Supervisor: <strong>{d.supervisor_nome || '— não atribuído —'}</strong>
-                    <span className="ml-2 text-navy-400">{d.total_maquinas} máquina(s)</span>
+                    <span className="ml-2 text-steel-400">{d.total_maquinas} máquina(s)</span>
                   </div>
                 </div>
                 {isAdmin && (
                   <div className="flex gap-1">
-                    <button onClick={() => setOpenDeptModal(d)} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                    <button onClick={() => setOpenDeptModal(d)} className="p-1.5 text-steel-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
                     <button onClick={() => { if (confirm('Desativar departamento?')) desativarDept.mutate(d.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Desativar"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 )}
               </div>
             ))}
-            {(!departamentos || departamentos.length === 0) && <div className="p-8 text-center text-navy-400">Nenhum departamento cadastrado.</div>}
+            {(!departamentos || departamentos.length === 0) && <div className="p-8 text-center text-steel-400">Nenhum departamento cadastrado.</div>}
           </div>
         </div>
       )}
@@ -173,21 +173,21 @@ const ProdutosVinculados = ({ maquinaId, podeVincular }) => {
     },
   });
 
-  if (isLoading) return <div className="px-12 py-3 text-sm text-navy-400">Carregando...</div>;
+  if (isLoading) return <div className="px-12 py-3 text-sm text-steel-400">Carregando...</div>;
 
   return (
     <div className="bg-surface-50 px-12 py-3">
       {data?.produtos?.length === 0 ? (
-        <div className="text-sm text-navy-400">Nenhum produto vinculado.</div>
+        <div className="text-sm text-steel-400">Nenhum produto vinculado.</div>
       ) : (
         <div className="space-y-1">
           {data?.produtos?.map(p => (
             <div key={p.id} className="flex items-center gap-3 p-2 bg-white rounded border border-surface-200 text-sm">
-              <span className="font-mono font-medium text-navy-700">{p.codigo}</span>
-              <span className="text-navy-600 flex-1 truncate">{p.nome}</span>
-              <span className="text-xs text-navy-500">Estoque: {formatNumber(p.estoque_atual)} {p.unidade}</span>
+              <span className="font-mono font-medium text-steel-700">{p.codigo}</span>
+              <span className="text-steel-600 flex-1 truncate">{p.nome}</span>
+              <span className="text-xs text-steel-500">Estoque: {formatNumber(p.estoque_atual)} {p.unidade}</span>
               {p.consumo_estimado_diario > 0 && (
-                <span className="text-xs text-navy-400">~{formatNumber(p.consumo_estimado_diario)}/dia</span>
+                <span className="text-xs text-steel-400">~{formatNumber(p.consumo_estimado_diario)}/dia</span>
               )}
               {podeVincular && (
                 <button onClick={() => { if (confirm(`Desvincular ${p.codigo}?`)) desvincular.mutate(p.id); }} className="text-red-500 hover:bg-red-50 p-1 rounded"><X className="w-3 h-3" /></button>
@@ -225,8 +225,8 @@ const MaquinaModal = ({ maquina, departamentos, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
-          <h2 className="text-lg font-bold text-navy-800">{isEdit ? 'Editar máquina' : 'Nova máquina'}</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
+          <h2 className="text-lg font-bold text-steel-800">{isEdit ? 'Editar máquina' : 'Nova máquina'}</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-steel-400" /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); setErro(''); salvar.mutate(); }} className="p-5 space-y-3">
           <div><label className="label">Código</label><input className="input" value={form.codigo} disabled={isEdit} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} required /></div>
@@ -276,8 +276,8 @@ const DepartamentoModal = ({ departamento, usuarios, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white">
-          <h2 className="text-lg font-bold text-navy-800">{isEdit ? 'Editar departamento' : 'Novo departamento'}</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
+          <h2 className="text-lg font-bold text-steel-800">{isEdit ? 'Editar departamento' : 'Novo departamento'}</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-steel-400" /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); setErro(''); salvar.mutate(); }} className="p-5 space-y-3">
           <div><label className="label">Código</label><input className="input" value={form.codigo} disabled={isEdit} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} required /></div>
@@ -333,8 +333,8 @@ const VincularProdutoModal = ({ maquina, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-md">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-navy-800">Vincular produto a {maquina.codigo}</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
+          <h2 className="text-lg font-bold text-steel-800">Vincular produto a {maquina.codigo}</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-steel-400" /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); setErro(''); if (!produtoId) return setErro('Selecione um produto'); vincular.mutate(); }} className="p-5 space-y-3">
           <div>
@@ -345,8 +345,8 @@ const VincularProdutoModal = ({ maquina, onClose }) => {
                 {produtos.data.map(p => (
                   <button key={p.id} type="button" onClick={() => { setProdutoId(p.id); setBusca(`${p.codigo} — ${p.nome}`); }}
                     className="w-full text-left px-3 py-2 hover:bg-surface-50 text-sm border-b border-surface-100 last:border-0">
-                    <span className="font-mono font-medium text-navy-800">{p.codigo}</span>
-                    <span className="text-navy-500 ml-2">{p.nome}</span>
+                    <span className="font-mono font-medium text-steel-800">{p.codigo}</span>
+                    <span className="text-steel-500 ml-2">{p.nome}</span>
                   </button>
                 ))}
               </div>

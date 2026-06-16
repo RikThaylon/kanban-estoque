@@ -45,8 +45,8 @@ const Fornecedores = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Fornecedores</h1>
-          <p className="text-navy-400 text-sm">Gestão de parceiros comerciais e prestadores</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-steel-800">Fornecedores</h1>
+          <p className="text-steel-400 text-sm">Gestão de parceiros comerciais e prestadores</p>
         </div>
         {isAdmin && (
           <button onClick={handleNew} className="btn-primary w-full sm:w-auto justify-center">
@@ -57,9 +57,9 @@ const Fornecedores = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
-          <div className="col-span-full text-center p-8 text-navy-400">Carregando fornecedores...</div>
+          <div className="col-span-full text-center p-8 text-steel-400">Carregando fornecedores...</div>
         ) : fornecedores?.length === 0 ? (
-          <div className="col-span-full text-center p-8 text-navy-400 bg-white rounded-lg border border-surface-200">
+          <div className="col-span-full text-center p-8 text-steel-400 bg-white rounded-lg border border-surface-200">
             Nenhum fornecedor cadastrado.
           </div>
         ) : (
@@ -67,10 +67,10 @@ const Fornecedores = () => {
             <div key={forn.id} className="bg-white rounded-lg border border-surface-200 p-5 shadow-sm hover:shadow-md transition-shadow relative group">
               {isAdmin && (
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleEdit(forn)} className="p-1.5 text-navy-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar">
+                  <button onClick={() => handleEdit(forn)} className="p-1.5 text-steel-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(forn.id, forn.nome)} className="p-1.5 text-navy-400 hover:text-red-600 hover:bg-red-50 rounded" title="Desativar">
+                  <button onClick={() => handleDelete(forn.id, forn.nome)} className="p-1.5 text-steel-400 hover:text-red-600 hover:bg-red-50 rounded" title="Desativar">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -81,27 +81,27 @@ const Fornecedores = () => {
                   <Building2 className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-navy-800 leading-tight pr-12">{forn.nome}</h3>
-                  <p className="text-xs text-navy-500 font-mono mt-0.5">{forn.cnpj || 'Sem CNPJ'}</p>
+                  <h3 className="font-bold text-steel-800 leading-tight pr-12">{forn.nome}</h3>
+                  <p className="text-xs text-steel-500 font-mono mt-0.5">{forn.cnpj || 'Sem CNPJ'}</p>
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-navy-600">
+              <div className="space-y-2 text-sm text-steel-600">
                 {(forn.cidade || forn.estado) && (
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-navy-400 shrink-0" />
+                    <MapPin className="w-4 h-4 text-steel-400 shrink-0" />
                     <span className="truncate">{forn.cidade}{forn.cidade && forn.estado ? ' - ' : ''}{forn.estado}</span>
                   </div>
                 )}
                 {forn.contato_email && (
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-navy-400 shrink-0" />
+                    <Mail className="w-4 h-4 text-steel-400 shrink-0" />
                     <span className="truncate">{forn.contato_email}</span>
                   </div>
                 )}
                 {forn.contato_telefone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-navy-400 shrink-0" />
+                    <Phone className="w-4 h-4 text-steel-400 shrink-0" />
                     <span>{forn.contato_telefone}</span>
                   </div>
                 )}
@@ -109,8 +109,8 @@ const Fornecedores = () => {
 
               {forn.modal_padrao && (
                 <div className="mt-4 pt-4 border-t border-surface-100 flex justify-between items-center">
-                  <span className="text-xs font-medium text-navy-400 uppercase tracking-wider">Modal Padrão</span>
-                  <span className="text-xs font-bold bg-surface-100 text-navy-700 px-2 py-0.5 rounded">{forn.modal_padrao}</span>
+                  <span className="text-xs font-medium text-steel-400 uppercase tracking-wider">Modal Padrão</span>
+                  <span className="text-xs font-bold bg-surface-100 text-steel-700 px-2 py-0.5 rounded">{forn.modal_padrao}</span>
                 </div>
               )}
             </div>
@@ -180,8 +180,8 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-5 border-b border-surface-200 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-navy-800">{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-xl font-bold text-steel-800">{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-5 overflow-y-auto flex-1">

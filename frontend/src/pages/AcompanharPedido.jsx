@@ -48,19 +48,19 @@ const AcompanharPedido = () => {
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link to="/pedidos" className="inline-flex items-center gap-2 text-sm font-bold text-navy-500 hover:text-accent">
+          <Link to="/pedidos" className="inline-flex items-center gap-2 text-sm font-bold text-steel-500 hover:text-accent">
             <ArrowLeft className="w-4 h-4" /> Voltar para pedidos
           </Link>
-          <h1 className="mt-3 text-xl sm:text-2xl font-bold text-navy-800">Acompanhar Pedido</h1>
-          <p className="text-sm text-navy-400">Consulte o andamento pelo código do pedido de compra.</p>
+          <h1 className="mt-3 text-xl sm:text-2xl font-bold text-steel-800">Acompanhar Pedido</h1>
+          <p className="text-sm text-steel-400">Consulte o andamento pelo código do pedido de compra.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
-        <label className="block text-sm font-bold text-navy-700 mb-2">Código do pedido</label>
+        <label className="block text-sm font-bold text-steel-700 mb-2">Código do pedido</label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-300" />
             <input
               value={codigo}
               onChange={(e) => setCodigo(e.target.value.toUpperCase())}
@@ -86,7 +86,7 @@ const AcompanharPedido = () => {
       )}
 
       {!pedido && !buscarPedido.isError && (
-        <div className="rounded-md border border-dashed border-surface-300 bg-white/70 p-8 text-center text-navy-400">
+        <div className="rounded-md border border-dashed border-surface-300 bg-white/70 p-8 text-center text-steel-400">
           Digite o código do pedido para consultar o status.
         </div>
       )}
@@ -96,10 +96,10 @@ const AcompanharPedido = () => {
           <section className="card p-0 overflow-hidden">
             <div className="border-b border-surface-200 bg-surface-50 p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs uppercase font-bold text-navy-400">Pedido localizado</p>
-                <h2 className="font-mono text-xl font-bold text-navy-800">{pedido.numero}</h2>
+                <p className="text-xs uppercase font-bold text-steel-400">Pedido localizado</p>
+                <h2 className="font-mono text-xl font-bold text-steel-800">{pedido.numero}</h2>
               </div>
-              <span className={`inline-flex w-fit rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider ${STATUS_STYLES[statusAtual] || 'bg-surface-100 text-navy-600'}`}>
+              <span className={`inline-flex w-fit rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider ${STATUS_STYLES[statusAtual] || 'bg-surface-100 text-steel-600'}`}>
                 {statusLabel(statusAtual)}
               </span>
             </div>
@@ -130,7 +130,7 @@ const AcompanharPedido = () => {
           </section>
 
           <aside className="card p-5 h-fit">
-            <h3 className="text-base font-bold text-navy-800 mb-4">Resumo do pedido</h3>
+            <h3 className="text-base font-bold text-steel-800 mb-4">Resumo do pedido</h3>
             <div className="space-y-2 text-sm">
               <ResumoLinha label="Produto" value={`${pedido.produto_codigo || '-'} - ${pedido.produto_nome || '-'}`} />
               <ResumoLinha label="Quantidade" value={pedido.quantidade_pedida} />
@@ -164,7 +164,7 @@ const FluxoEtapa = ({ etapa, index, status, interrompido }) => {
           'h-9 w-9 rounded-md flex items-center justify-center border text-sm font-bold',
           concluido ? 'bg-green-600 border-green-600 text-white' : '',
           ativo ? 'bg-accent border-accent text-white' : '',
-          futuro ? 'bg-white border-surface-300 text-navy-400' : '',
+          futuro ? 'bg-white border-surface-300 text-steel-400' : '',
         ].filter(Boolean).join(' ')}>
           {concluido ? <CheckCircle className="w-5 h-5" /> : ativo ? <Icon className="w-5 h-5" /> : index + 1}
         </div>
@@ -172,11 +172,11 @@ const FluxoEtapa = ({ etapa, index, status, interrompido }) => {
       </div>
       <div className="min-w-0 pb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className={`font-bold ${futuro ? 'text-navy-400' : 'text-navy-800'}`}>{etapa.title}</h3>
+          <h3 className={`font-bold ${futuro ? 'text-steel-400' : 'text-steel-800'}`}>{etapa.title}</h3>
           {ativo && <span className="rounded bg-accent/10 px-2 py-0.5 text-[10px] font-bold uppercase text-accent">Atual</span>}
           {concluido && <span className="rounded bg-green-50 px-2 py-0.5 text-[10px] font-bold uppercase text-green-700">Ok</span>}
         </div>
-        <p className={`text-sm ${futuro ? 'text-navy-300' : 'text-navy-500'}`}>{etapa.description}</p>
+        <p className={`text-sm ${futuro ? 'text-steel-300' : 'text-steel-500'}`}>{etapa.description}</p>
       </div>
     </div>
   );
@@ -184,8 +184,8 @@ const FluxoEtapa = ({ etapa, index, status, interrompido }) => {
 
 const ResumoLinha = ({ label, value, mono }) => (
   <div className="flex justify-between gap-4 border-b border-surface-100 py-2 last:border-0">
-    <span className="text-navy-400">{label}</span>
-    <span className={`text-right text-navy-700 break-words ${mono ? 'font-mono' : 'font-medium'}`}>{value}</span>
+    <span className="text-steel-400">{label}</span>
+    <span className={`text-right text-steel-700 break-words ${mono ? 'font-mono' : 'font-medium'}`}>{value}</span>
   </div>
 );
 

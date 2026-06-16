@@ -33,12 +33,23 @@ const Login = () => {
         </div>
         
         <div className="max-w-xl">
-          <h1 className="text-4xl lg:text-5xl font-black mb-6 leading-tight">
-            Controle industrial de comando em tempo real.
+          <div className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-2 py-1 mb-6 text-[10px] font-bold tracking-widest text-white uppercase backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+            Linha de estoque viva
+          </div>
+          <h1 className="text-4xl lg:text-5xl font-black mb-6 leading-[1.1] tracking-tight">
+            Controle industrial com visão de comando em tempo real.
           </h1>
-          <p className="text-blue-100 text-lg leading-relaxed">
-            Kanban, compras, máquinas e aprovações em uma superfície operacional focada em decisão rápida no chão de fábrica.
+          <p className="text-blue-100 text-lg leading-relaxed font-medium mb-12">
+            Kanban, compras, máquinas e aprovações em uma superfície operacional para decisão rápida no chão de fábrica.
           </p>
+          <div className="relative w-full max-w-md mx-auto aspect-video">
+            <img 
+              src="/supply-chain-flow.png" 
+              alt="Fluxo logístico" 
+              className="absolute inset-0 w-full h-full object-contain drop-shadow-2xl mix-blend-screen opacity-90"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-6 text-sm text-blue-200">

@@ -98,8 +98,8 @@ const Movimentacoes = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-navy-800 tracking-tight">Movimentações de Estoque</h1>
-          <p className="text-navy-400 text-sm mt-1">Entradas, saídas e ajustes de estoque</p>
+          <h1 className="text-2xl font-bold text-steel-800 tracking-tight">Movimentações de Estoque</h1>
+          <p className="text-steel-400 text-sm mt-1">Entradas, saídas e ajustes de estoque</p>
         </div>
         {!readOnly && (
           <button onClick={() => setOpenNova(true)} className="btn-primary flex items-center gap-2">
@@ -108,8 +108,8 @@ const Movimentacoes = () => {
         )}
       </div>
 
-      <div className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-navy-600">
-        <strong className="text-navy-800">Fluxo:</strong> entradas e saídas executadas atualizam o estoque na hora.
+      <div className="rounded-lg border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-steel-600">
+        <strong className="text-steel-800">Fluxo:</strong> entradas e saídas executadas atualizam o estoque na hora.
         Ajustes, devoluções e transferências ficam pendentes quando exigem aprovação; só alteram o saldo depois da aprovação.
         Recebimento de compra também entra como movimentação de entrada.
       </div>
@@ -118,13 +118,13 @@ const Movimentacoes = () => {
       <div className="flex items-center gap-2 border-b border-surface-200">
         <button
           onClick={() => setTab('todas')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${tab === 'todas' ? 'border-navy-600 text-navy-700' : 'border-transparent text-navy-400 hover:text-navy-600'}`}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${tab === 'todas' ? 'border-navy-600 text-steel-700' : 'border-transparent text-steel-400 hover:text-steel-600'}`}
         >
           Todas
         </button>
         <button
           onClick={() => setTab('pendentes')}
-          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${tab === 'pendentes' ? 'border-amber-500 text-amber-700' : 'border-transparent text-navy-400 hover:text-navy-600'}`}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${tab === 'pendentes' ? 'border-amber-500 text-amber-700' : 'border-transparent text-steel-400 hover:text-steel-600'}`}
         >
           <Clock className="w-4 h-4" />
           Aguardando aprovação
@@ -154,7 +154,7 @@ const Movimentacoes = () => {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-[760px] w-full text-sm">
-            <thead className="bg-surface-50 text-navy-600 text-xs uppercase tracking-wider">
+            <thead className="bg-surface-50 text-steel-600 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left">Data</th>
                 <th className="px-4 py-3 text-left">Produto</th>
@@ -169,10 +169,10 @@ const Movimentacoes = () => {
             </thead>
             <tbody className="divide-y divide-surface-200">
               {isLoading && tab === 'todas' && (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-navy-400">Carregando…</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-steel-400">Carregando…</td></tr>
               )}
               {!isLoading && lista.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-navy-400">
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-steel-400">
                   {tab === 'pendentes' ? 'Nada aguardando aprovação. 🎉' : 'Nenhuma movimentação encontrada.'}
                 </td></tr>
               )}
@@ -181,26 +181,26 @@ const Movimentacoes = () => {
                 const Icon = tipoConf?.icon || FileText;
                 return (
                   <tr key={m.id} className="hover:bg-surface-50/60 transition-colors">
-                    <td className="px-4 py-3 text-navy-600 whitespace-nowrap">{formatDateTime(m.criado_em)}</td>
+                    <td className="px-4 py-3 text-steel-600 whitespace-nowrap">{formatDateTime(m.criado_em)}</td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-navy-800">{m.produto_codigo}</div>
-                      <div className="text-xs text-navy-500 truncate max-w-xs">{m.produto_nome}</div>
+                      <div className="font-medium text-steel-800">{m.produto_codigo}</div>
+                      <div className="text-xs text-steel-500 truncate max-w-xs">{m.produto_nome}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${tipoConf?.bg} ${tipoConf?.color}`}>
                         <Icon className="w-3 h-3" /> {tipoConf?.label || m.tipo}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs font-bold text-navy-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-xs font-bold text-steel-500 whitespace-nowrap">
                       {formatTurno(m.turno, turnos)}
                     </td>
                     <td className="px-4 py-3 text-right font-mono">{formatNumber(m.quantidade)} {m.unidade}</td>
-                    <td className="px-4 py-3 text-right font-mono text-xs text-navy-500">
-                      {formatNumber(m.estoque_antes)} → <span className="text-navy-800 font-medium">{formatNumber(m.estoque_depois)}</span>
+                    <td className="px-4 py-3 text-right font-mono text-xs text-steel-500">
+                      {formatNumber(m.estoque_antes)} → <span className="text-steel-800 font-medium">{formatNumber(m.estoque_depois)}</span>
                     </td>
-                    <td className="px-4 py-3 text-navy-600">
+                    <td className="px-4 py-3 text-steel-600">
                       <div>{m.criado_por_nome || '—'}</div>
-                      {m.criado_por_username && <div className="text-xs text-navy-400">@{m.criado_por_username}</div>}
+                      {m.criado_por_username && <div className="text-xs text-steel-400">@{m.criado_por_username}</div>}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[m.status] || 'bg-gray-100 text-gray-800'}`}>
@@ -324,13 +324,13 @@ const NovaMovimentacaoModal = ({ onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-center justify-center z-50 p-4 animate-fade-in">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-navy-800">Nova movimentação</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <h2 className="text-lg font-bold text-steel-800">Nova movimentação</h2>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Produto */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Produto</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Produto</label>
             <input
               type="text"
               value={busca}
@@ -348,9 +348,9 @@ const NovaMovimentacaoModal = ({ onClose }) => {
                     onClick={() => { setProdutoId(p.id); setBusca(`${p.codigo} — ${p.nome}`); }}
                     className="w-full text-left px-3 py-2 hover:bg-surface-50 text-sm border-b border-surface-100 last:border-0"
                   >
-                    <span className="font-medium text-navy-800">{p.codigo}</span>
-                    <span className="text-navy-500 ml-2">{p.nome}</span>
-                    <span className="text-xs text-navy-400 ml-2">(estoque: {p.estoque_atual})</span>
+                    <span className="font-medium text-steel-800">{p.codigo}</span>
+                    <span className="text-steel-500 ml-2">{p.nome}</span>
+                    <span className="text-xs text-steel-400 ml-2">(estoque: {p.estoque_atual})</span>
                   </button>
                 ))}
               </div>
@@ -359,7 +359,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
           {/* Tipo */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Tipo</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Tipo</label>
             <select value={tipo} onChange={e => setTipo(e.target.value)} className="input w-full">
               {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
@@ -372,7 +372,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
           {/* Quantidade */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Quantidade</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Quantidade</label>
             <input
               type="number"
               step="0.0001"
@@ -385,7 +385,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Turno</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Turno</label>
             <select value={turno} onChange={e => setTurno(e.target.value)} className="input w-full" required disabled={carregandoTurnos}>
               <option value="">Selecionar turno</option>
               {turnos.map(t => <option key={t.id} value={t.id}>{t.nome} ({t.inicio}-{t.fim})</option>)}
@@ -394,7 +394,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
           {/* Referência */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Referência (opcional)</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Referência (opcional)</label>
             <input
               type="text"
               value={referencia}
@@ -406,7 +406,7 @@ const NovaMovimentacaoModal = ({ onClose }) => {
 
           {/* Observação */}
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Observação (opcional)</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Observação (opcional)</label>
             <textarea
               value={observacao}
               onChange={e => setObservacao(e.target.value)}
@@ -443,15 +443,15 @@ const RejeitarModal = ({ movimentacao, onClose, onConfirm, loading }) => {
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-red-700">Rejeitar movimentação</h2>
-          <button onClick={onClose} className="text-navy-400 hover:text-navy-600"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="text-sm text-navy-600">
+          <div className="text-sm text-steel-600">
             <p>Produto: <strong>{movimentacao.produto_codigo}</strong> — {movimentacao.produto_nome}</p>
             <p>Tipo: {movimentacao.tipo} · Quantidade: {formatNumber(movimentacao.quantidade)} {movimentacao.unidade}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-700 mb-1">Motivo da rejeição</label>
+            <label className="block text-sm font-medium text-steel-700 mb-1">Motivo da rejeição</label>
             <textarea
               value={motivo}
               onChange={e => setMotivo(e.target.value)}

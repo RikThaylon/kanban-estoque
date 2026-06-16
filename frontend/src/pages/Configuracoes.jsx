@@ -237,19 +237,19 @@ const Configuracoes = () => {
     <div className="space-y-6 pb-12 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-navy-800">Configurações</h1>
-          <p className="text-navy-400 text-sm">Regras administráveis do fluxo de compras</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-steel-800">Configurações</h1>
+          <p className="text-steel-400 text-sm">Regras administráveis do fluxo de compras</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="card p-0 overflow-hidden">
         <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
           <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
-            <Settings className="w-5 h-5 text-navy-700" />
+            <Settings className="w-5 h-5 text-steel-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Fluxo de aprovação de compra</h2>
-            <p className="text-xs text-navy-500">Somente admin altera cargos; demais perfis seguem as etapas configuradas.</p>
+            <h2 className="font-bold text-steel-800">Fluxo de aprovação de compra</h2>
+            <p className="text-xs text-steel-500">Somente admin altera cargos; demais perfis seguem as etapas configuradas.</p>
           </div>
         </div>
 
@@ -257,7 +257,7 @@ const Configuracoes = () => {
           <FluxoCompraPreview form={form} tetoSupervisor={supervisor} />
 
           {!isAdmin && (
-            <div className="bg-surface-50 border border-surface-200 rounded-md p-3 flex gap-2 text-sm text-navy-600">
+            <div className="bg-surface-50 border border-surface-200 rounded-md p-3 flex gap-2 text-sm text-steel-600">
               <Lock className="w-4 h-4 shrink-0 mt-0.5" />
               <p>Você pode consultar o fluxo, mas apenas administradores salvam alterações nos cargos.</p>
             </div>
@@ -276,7 +276,7 @@ const Configuracoes = () => {
                 disabled={isLoading || !isAdmin}
                 required
               />
-              <p className="text-xs text-navy-500 mt-1">
+              <p className="text-xs text-steel-500 mt-1">
                 Até {formatMoney(supervisor)}, supervisor aprova. Acima disso, ele escala para gerente de operações.
               </p>
             </div>
@@ -293,7 +293,7 @@ const Configuracoes = () => {
                 disabled={isLoading || !isAdmin}
                 required
               />
-              <p className="text-xs text-navy-500 mt-1">
+              <p className="text-xs text-steel-500 mt-1">
                 Mantido por compatibilidade. No fluxo redesenhado, o gerente conclui a aprovação.
               </p>
             </div>
@@ -308,8 +308,8 @@ const Configuracoes = () => {
 
           <div className="rounded-md border border-surface-200 bg-white p-4 space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-navy-800">Cargos do fluxo</h3>
-              <p className="text-xs text-navy-500 mt-1">
+              <h3 className="text-sm font-bold text-steel-800">Cargos do fluxo</h3>
+              <p className="text-xs text-steel-500 mt-1">
                 Configure quem solicita, aprova, registra a OC externa e confirma a chegada com NF.
               </p>
             </div>
@@ -357,7 +357,7 @@ const Configuracoes = () => {
               />
             </div>
 
-            <p className="text-xs text-navy-500">Admin sempre executa qualquer etapa por regra do sistema, mesmo sem aparecer nas listas.</p>
+            <p className="text-xs text-steel-500">Admin sempre executa qualquer etapa por regra do sistema, mesmo sem aparecer nas listas.</p>
           </div>
 
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
@@ -378,11 +378,11 @@ const Configuracoes = () => {
       >
         <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
           <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
-            <Settings className="w-5 h-5 text-navy-700" />
+            <Settings className="w-5 h-5 text-steel-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Kanban padrão</h2>
-            <p className="text-xs text-navy-500">Valores usados no cadastro de novos produtos.</p>
+            <h2 className="font-bold text-steel-800">Kanban padrão</h2>
+            <p className="text-xs text-steel-500">Valores usados no cadastro de novos produtos.</p>
           </div>
         </div>
 
@@ -398,7 +398,7 @@ const Configuracoes = () => {
               >
                 {[90, 95, 98, 99].map((v) => <option key={v} value={v}>{v}%</option>)}
               </select>
-              <p className="text-xs text-navy-500 mt-1">Novo item nasce com este percentual. Padrão: 95%.</p>
+              <p className="text-xs text-steel-500 mt-1">Novo item nasce com este percentual. Padrão: 95%.</p>
             </div>
             <div>
               <label className="label">Custo para manter estoque</label>
@@ -412,7 +412,7 @@ const Configuracoes = () => {
                 className="input font-mono"
                 disabled={carregandoKanban}
               />
-              <p className="text-xs text-navy-500 mt-1">{taxaCarregamentoPercentual}% ao ano. Use 0.20 para 20%.</p>
+              <p className="text-xs text-steel-500 mt-1">{taxaCarregamentoPercentual}% ao ano. Use 0.20 para 20%.</p>
             </div>
             <div>
               <label className="label">Ciclos para estimativa inicial</label>
@@ -426,7 +426,7 @@ const Configuracoes = () => {
                 className="input font-mono"
                 disabled={carregandoKanban}
               />
-              <p className="text-xs text-navy-500 mt-1">Use 10 para dar base suficiente a Holt e regressão sem inventar histórico longo.</p>
+              <p className="text-xs text-steel-500 mt-1">Use 10 para dar base suficiente a Holt e regressão sem inventar histórico longo.</p>
             </div>
           </div>
 
@@ -445,11 +445,11 @@ const Configuracoes = () => {
       >
         <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
           <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 text-navy-700" />
+            <Clock className="w-5 h-5 text-steel-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Turnos operacionais</h2>
-            <p className="text-xs text-navy-500">Usados nas entradas e saídas de estoque.</p>
+            <h2 className="font-bold text-steel-800">Turnos operacionais</h2>
+            <p className="text-xs text-steel-500">Usados nas entradas e saídas de estoque.</p>
           </div>
         </div>
 
@@ -508,11 +508,11 @@ const Configuracoes = () => {
       >
         <div className="p-4 border-b border-surface-200 flex items-center gap-3 bg-surface-50">
           <div className="w-10 h-10 rounded bg-navy-100 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 text-navy-700" />
+            <ShieldCheck className="w-5 h-5 text-steel-700" />
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-navy-800">Permissões por cargo</h2>
-            <p className="text-xs text-navy-500">Admin sempre tem acesso total; marque os demais cargos autorizados.</p>
+            <h2 className="font-bold text-steel-800">Permissões por cargo</h2>
+            <p className="text-xs text-steel-500">Admin sempre tem acesso total; marque os demais cargos autorizados.</p>
           </div>
         </div>
 
@@ -526,10 +526,10 @@ const Configuracoes = () => {
           />
 
           <div>
-            <h3 className="text-sm font-bold text-navy-800 mb-3">Acesso por página</h3>
+            <h3 className="text-sm font-bold text-steel-800 mb-3">Acesso por página</h3>
             <div className="overflow-x-auto rounded-md border border-surface-200">
               <table className="min-w-[920px] w-full text-sm">
-                <thead className="bg-surface-50 text-xs uppercase text-navy-400">
+                <thead className="bg-surface-50 text-xs uppercase text-steel-400">
                   <tr>
                     <th className="p-3 text-left">Página</th>
                     {(permissoesData?.perfis || []).filter((perfil) => perfil !== 'admin').map((perfil) => (
@@ -540,7 +540,7 @@ const Configuracoes = () => {
                 <tbody className="divide-y divide-surface-100 bg-white">
                   {PAGINAS_SISTEMA.map((pagina) => (
                     <tr key={pagina}>
-                      <td className="p-3 font-semibold text-navy-700">{PAGINA_LABELS[pagina] || pagina}</td>
+                      <td className="p-3 font-semibold text-steel-700">{PAGINA_LABELS[pagina] || pagina}</td>
                       {(permissoesData?.perfis || []).filter((perfil) => perfil !== 'admin').map((perfil) => (
                         <td key={`${pagina}-${perfil}`} className="p-3 text-center">
                           <input
@@ -548,7 +548,7 @@ const Configuracoes = () => {
                             checked={(permissoes.paginas?.[pagina] || []).includes(perfil)}
                             disabled={carregandoPermissoes}
                             onChange={() => togglePaginaPerfil(pagina, perfil)}
-                            className="h-4 w-4 rounded border-surface-300 text-navy-700 focus:ring-navy-500"
+                            className="h-4 w-4 rounded border-surface-300 text-steel-700 focus:ring-navy-500"
                             aria-label={`${PAGINA_LABELS[pagina] || pagina} para ${PERFIL_LABELS[perfil] || perfil}`}
                           />
                         </td>
@@ -558,7 +558,7 @@ const Configuracoes = () => {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-navy-500 mt-2">Admin sempre acessa todas as páginas, mesmo quando não aparece na matriz.</p>
+            <p className="text-xs text-steel-500 mt-2">Admin sempre acessa todas as páginas, mesmo quando não aparece na matriz.</p>
           </div>
           <PermissionGroup
             title="Editar curva ABC"
@@ -638,16 +638,16 @@ const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
           <div key={step.title} className="relative rounded-md border border-surface-200 bg-surface-50 p-3 min-h-[150px]">
             <div className="flex items-center justify-between gap-2">
               <div className="w-9 h-9 rounded bg-white border border-surface-200 flex items-center justify-center">
-                <step.icon className="w-4 h-4 text-navy-700" />
+                <step.icon className="w-4 h-4 text-steel-700" />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-navy-400">{step.status}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-steel-400">{step.status}</span>
             </div>
-            <h3 className="mt-3 text-sm font-black text-navy-800">{step.title}</h3>
-            <p className="mt-1 text-xs text-navy-500">{step.note}</p>
-            <p className="mt-3 text-xs font-semibold text-navy-700 line-clamp-2">{step.owner}</p>
+            <h3 className="mt-3 text-sm font-black text-steel-800">{step.title}</h3>
+            <p className="mt-1 text-xs text-steel-500">{step.note}</p>
+            <p className="mt-3 text-xs font-semibold text-steel-700 line-clamp-2">{step.owner}</p>
             {index < steps.length - 1 && (
               <div className="hidden xl:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-white border border-surface-200 items-center justify-center">
-                <ArrowRight className="w-4 h-4 text-navy-300" />
+                <ArrowRight className="w-4 h-4 text-steel-300" />
               </div>
             )}
           </div>
@@ -659,17 +659,17 @@ const FluxoCompraPreview = ({ form, tetoSupervisor }) => {
 
 const PermissionGroup = ({ title, description, value, perfis, disabled, onToggle }) => (
   <div>
-    <h3 className="text-sm font-bold text-navy-800 mb-3">{title}</h3>
-    {description && <p className="text-xs text-navy-500 -mt-2 mb-3">{description}</p>}
+    <h3 className="text-sm font-bold text-steel-800 mb-3">{title}</h3>
+    {description && <p className="text-xs text-steel-500 -mt-2 mb-3">{description}</p>}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
       {perfis.filter((perfil) => perfil !== 'admin').map((perfil) => (
-        <label key={perfil} className="flex items-center gap-2 rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-navy-700">
+        <label key={perfil} className="flex items-center gap-2 rounded-md border border-surface-200 bg-white px-3 py-2 text-sm text-steel-700">
           <input
             type="checkbox"
             checked={value.includes(perfil)}
             disabled={disabled}
             onChange={() => onToggle(perfil)}
-            className="h-4 w-4 rounded border-surface-300 text-navy-700 focus:ring-navy-500"
+            className="h-4 w-4 rounded border-surface-300 text-steel-700 focus:ring-navy-500"
           />
           <span>{PERFIL_LABELS[perfil] || perfil}</span>
         </label>

@@ -60,7 +60,7 @@ const Dashboard = () => {
   }
 
   const kpis = [
-    { title: 'Total de Produtos', value: formatNumber(resumo?.total_produtos), icon: Package, color: 'text-navy-600', bg: 'bg-navy-100', link: '/produtos' },
+    { title: 'Total de Produtos', value: formatNumber(resumo?.total_produtos), icon: Package, color: 'text-steel-600', bg: 'bg-navy-100', link: '/produtos' },
     { title: 'Estoque Crítico', value: formatNumber(resumo?.por_faixa?.vermelho), icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-100', link: '/produtos?faixa=VERMELHO' },
     { title: 'Atenção (Reposição)', value: formatNumber(resumo?.por_faixa?.amarelo), icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-100', link: '/produtos?faixa=AMARELO' },
     { title: 'Estoque Normal', value: formatNumber(resumo?.por_faixa?.verde), icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', link: '/produtos?faixa=VERDE' },
@@ -100,7 +100,7 @@ const Dashboard = () => {
         {/* Gráfico Consumo */}
         <div className="card p-5 lg:col-span-2 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-navy-800">Consumo Agregado (Últimas Semanas)</h2>
+            <h2 className="text-lg font-bold text-steel-800">Consumo Agregado (Últimas Semanas)</h2>
           </div>
           <div className="flex-1 min-h-[250px]">
             {loadConsumo ? (
@@ -127,15 +127,15 @@ const Dashboard = () => {
                   {resumo.ruptura_iminente_7d.slice(0, 5).map(item => (
                     <Link key={item.id} to={`/produtos/${item.id}`} className="block p-3 bg-white border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors">
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-bold text-navy-800 truncate">{item.codigo}</span>
+                        <span className="text-sm font-bold text-steel-800 truncate">{item.codigo}</span>
                         <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">{item.dias_cobertura}d</span>
                       </div>
-                      <p className="text-xs text-navy-500 truncate">{item.nome}</p>
+                      <p className="text-xs text-steel-500 truncate">{item.nome}</p>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-navy-400 p-4 text-center">
+                <div className="h-full flex flex-col items-center justify-center text-steel-400 p-4 text-center">
                   <CheckCircle className="w-8 h-8 text-green-400 mb-2" />
                   <p className="text-sm">Nenhum risco de ruptura iminente detectado.</p>
                 </div>
@@ -157,17 +157,17 @@ const Dashboard = () => {
                   {pedidosRes.map(pedido => (
                     <Link key={pedido.id} to={`/pedidos/${pedido.id}`} className="block p-4 hover:bg-surface-50 transition-colors">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-bold text-navy-700">{pedido.numero}</span>
+                        <span className="text-sm font-bold text-steel-700">{pedido.numero}</span>
                         <span className="text-xs font-medium text-red-600">
                           {formatDate(pedido.data_prevista)}
                         </span>
                       </div>
-                      <p className="text-xs text-navy-500 truncate">{pedido.produto_nome}</p>
+                      <p className="text-xs text-steel-500 truncate">{pedido.produto_nome}</p>
                     </Link>
                   ))}
                 </div>
               ) : (
-                <div className="p-6 text-center text-navy-400">
+                <div className="p-6 text-center text-steel-400">
                   <p className="text-sm">Nenhum pedido atrasado.</p>
                 </div>
               )}

@@ -90,7 +90,7 @@ const PageRoute = ({ pagina, children }) => {
   if (isLoading) return <FullPageLoader />;
   if (!perfilTemPagina(permissoes, user?.perfil, pagina)) {
     return (
-      <div className="p-8 text-center text-navy-500">
+      <div className="p-8 text-center text-steel-500">
         Você não tem acesso a esta página.
       </div>
     );
