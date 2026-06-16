@@ -347,16 +347,22 @@ const GrafoRelacionamentos = () => {
     }
   };
 
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => {
+    return Object.entries(filtros).filter(([, v]) => v !== '' && v !== null && v !== undefined).length;
+  }, [filtros]);
+
   const options = data?.opcoes || {};
 
   return (
-    <div className="space-y-5 pb-10 animate-fade-in">
+    <div className="space-y-4 pb-10 animate-fade-in">
       <div className="page-intro">
         <div>
           <p className="page-kicker">Mapa operacional</p>
           <h1 className="text-xl sm:text-2xl font-black text-steel-900">Informações</h1>
           <p className="mt-1 text-sm text-steel-500">
-            Peça, estoque, máquina, departamento, supervisor, fornecedor e pedido em uma única leitura.
+            Visualize peças, estoque, máquinas e pedidos em uma única leitura.
           </p>
         </div>
         <button type="button" onClick={() => refetch()} className="btn-secondary w-full sm:w-auto">
@@ -365,26 +371,24 @@ const GrafoRelacionamentos = () => {
         </button>
       </div>
 
-      <form onSubmit={aplicarFiltros} className="card p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-steel-700" />
-          <h2 className="font-bold text-steel-900">Filtros</h2>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block">
-            <span className="label">Busca</span>
+      {/* --- Compact Filter Bar --- */}
+      <form onSubmit={aplicarFiltros} className="card overflow-hidden">
+        {/* Always-visible: search + toggle */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 p-4">
+          <label className="flex-1 min-w-0 block">
+            <span className="label">Busca rápida</span>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
               <input
                 className="input pl-9"
                 value={draft.busca}
                 onChange={(event) => updateDraft('busca', event.target.value)}
-                placeholder="Código ou nome da peça"
+                placeholder="Código ou nome da peça..."
               />
             </div>
           </label>
 
-          <label className="block">
+          <label className="sm:w-44 block">
             <span className="label">Faixa Kanban</span>
             <select className="input" value={draft.faixa} onChange={(event) => updateDraft('faixa', event.target.value)}>
               <option value="">Todas</option>
@@ -395,102 +399,127 @@ const GrafoRelacionamentos = () => {
             </select>
           </label>
 
-          <label className="block">
-            <span className="label">Estoque</span>
-            <select className="input" value={draft.estoque} onChange={(event) => updateDraft('estoque', event.target.value)}>
-              <option value="">Qualquer saldo</option>
-              <option value="critico">Abaixo do estoque de segurança</option>
-              <option value="reposicao">Abaixo do ponto de reposição</option>
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Status do pedido</span>
-            <select className="input" value={draft.status_pedido} onChange={(event) => updateDraft('status_pedido', event.target.value)}>
-              <option value="">Todos</option>
-              {STATUS_PEDIDO.map((status) => (
-                <option key={status} value={status}>{labelStatus(status)}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Máquina</span>
-            <select className="input" value={draft.maquina_id} onChange={(event) => updateDraft('maquina_id', event.target.value)}>
-              <option value="">Todas</option>
-              {(options.maquinas || []).map((item) => (
-                <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Departamento</span>
-            <select className="input" value={draft.departamento_id} onChange={(event) => updateDraft('departamento_id', event.target.value)}>
-              <option value="">Todos</option>
-              {(options.departamentos || []).map((item) => (
-                <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Supervisor</span>
-            <select className="input" value={draft.supervisor_id} onChange={(event) => updateDraft('supervisor_id', event.target.value)}>
-              <option value="">Todos</option>
-              {(options.supervisores || []).map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Fornecedor</span>
-            <select className="input" value={draft.fornecedor_id} onChange={(event) => updateDraft('fornecedor_id', event.target.value)}>
-              <option value="">Todos</option>
-              {(options.fornecedores || []).map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="label">Pedido criado de</span>
-            <div className="relative">
-              <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
-              <input
-                type="date"
-                className="input pl-9"
-                value={draft.data_inicio}
-                onChange={(event) => updateDraft('data_inicio', event.target.value)}
-              />
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="label">Pedido criado até</span>
-            <div className="relative">
-              <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
-              <input
-                type="date"
-                className="input pl-9"
-                value={draft.data_fim}
-                onChange={(event) => updateDraft('data_fim', event.target.value)}
-              />
-            </div>
-          </label>
+          <div className="flex gap-2 sm:pb-0.5">
+            <button type="submit" className="btn-primary flex-1 sm:flex-initial">
+              <Search className="h-4 w-4" />
+              Filtrar
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`btn-secondary relative flex-1 sm:flex-initial ${showFilters ? 'ring-2 ring-accent/30' : ''}`}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{showFilters ? 'Menos' : 'Mais'} filtros</span>
+              <span className="sm:hidden">{showFilters ? 'Menos' : 'Mais'}</span>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-black text-white shadow-sm">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={limparFiltros} className="btn-secondary">
-            <RotateCcw className="h-4 w-4" />
-            Limpar
-          </button>
-          <button type="submit" className="btn-primary">
-            <Search className="h-4 w-4" />
-            Aplicar filtros
-          </button>
-        </div>
+        {/* Collapsible advanced filters */}
+        {showFilters && (
+          <div className="border-t border-steel-700/10 bg-steel-50/50 p-4 animate-fade-in">
+            <p className="text-xs font-bold uppercase text-steel-500 mb-3">Filtros avançados</p>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <label className="block">
+                <span className="label">Estoque</span>
+                <select className="input" value={draft.estoque} onChange={(event) => updateDraft('estoque', event.target.value)}>
+                  <option value="">Qualquer saldo</option>
+                  <option value="critico">Abaixo do estoque de segurança</option>
+                  <option value="reposicao">Abaixo do ponto de reposição</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Status do pedido</span>
+                <select className="input" value={draft.status_pedido} onChange={(event) => updateDraft('status_pedido', event.target.value)}>
+                  <option value="">Todos</option>
+                  {STATUS_PEDIDO.map((status) => (
+                    <option key={status} value={status}>{labelStatus(status)}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Máquina</span>
+                <select className="input" value={draft.maquina_id} onChange={(event) => updateDraft('maquina_id', event.target.value)}>
+                  <option value="">Todas</option>
+                  {(options.maquinas || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Departamento</span>
+                <select className="input" value={draft.departamento_id} onChange={(event) => updateDraft('departamento_id', event.target.value)}>
+                  <option value="">Todos</option>
+                  {(options.departamentos || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Supervisor</span>
+                <select className="input" value={draft.supervisor_id} onChange={(event) => updateDraft('supervisor_id', event.target.value)}>
+                  <option value="">Todos</option>
+                  {(options.supervisores || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Fornecedor</span>
+                <select className="input" value={draft.fornecedor_id} onChange={(event) => updateDraft('fornecedor_id', event.target.value)}>
+                  <option value="">Todos</option>
+                  {(options.fornecedores || []).map((item) => (
+                    <option key={item.id} value={item.id}>{item.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="label">Pedido criado de</span>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
+                  <input
+                    type="date"
+                    className="input pl-9"
+                    value={draft.data_inicio}
+                    onChange={(event) => updateDraft('data_inicio', event.target.value)}
+                  />
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="label">Pedido criado até</span>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
+                  <input
+                    type="date"
+                    className="input pl-9"
+                    value={draft.data_fim}
+                    onChange={(event) => updateDraft('data_fim', event.target.value)}
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button type="button" onClick={limparFiltros} className="btn-secondary text-xs">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Limpar todos
+              </button>
+            </div>
+          </div>
+        )}
       </form>
 
       {error && (
@@ -499,63 +528,80 @@ const GrafoRelacionamentos = () => {
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
-        <StatCard label="Peças" value={data?.stats?.produtos} />
-        <StatCard label="Máquinas" value={data?.stats?.maquinas} />
-        <StatCard label="Departamentos" value={data?.stats?.departamentos} />
-        <StatCard label="Supervisores" value={data?.stats?.supervisores} />
-        <StatCard label="Fornecedores" value={data?.stats?.fornecedores} />
-        <StatCard label="Pedidos" value={data?.stats?.pedidos} />
-        <StatCard label="Relações" value={data?.stats?.relacionamentos} />
+      {/* --- Compact Stats Strip --- */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: 'Peças', value: data?.stats?.produtos },
+          { label: 'Máquinas', value: data?.stats?.maquinas },
+          { label: 'Deptos', value: data?.stats?.departamentos },
+          { label: 'Supervisores', value: data?.stats?.supervisores },
+          { label: 'Fornecedores', value: data?.stats?.fornecedores },
+          { label: 'Pedidos', value: data?.stats?.pedidos },
+          { label: 'Relações', value: data?.stats?.relacionamentos },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-center gap-2 rounded-lg border border-steel-700/10 bg-white px-3 py-2 text-sm shadow-sm"
+          >
+            <span className="text-steel-500 text-xs font-bold uppercase">{stat.label}</span>
+            <span className="font-black text-steel-900">{stat.value ?? 0}</span>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-steel-700/10 p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2">
-              <Network className="h-5 w-5 text-steel-800" />
-              <div>
-                <h2 className="font-bold text-steel-900">Mapa de vínculos</h2>
-                <p className="hidden sm:block text-xs text-steel-500">Arraste o mapa e use a roda do mouse para aproximar.</p>
-                <p className="sm:hidden text-xs text-steel-500">Arraste para mover · Pinça para zoom.</p>
+          {/* Integrated Toolbar */}
+          <div className="flex flex-col border-b border-steel-700/10 bg-white">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-steel-50 border border-steel-700/10 shadow-inner">
+                  <Network className="h-5 w-5 text-steel-700" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-steel-900 leading-tight">Mapa de vínculos</h2>
+                  <p className="hidden sm:block text-xs text-steel-500">Arraste para mover · Scroll/Pinça para zoom</p>
+                  <p className="sm:hidden text-xs text-steel-500">Arraste para mover · Pinça para zoom</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg bg-steel-50/80 p-1 border border-steel-700/10 shadow-inner self-start sm:self-auto">
+                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.max(0.3, Number((value - 0.1).toFixed(2))))}>
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+                <span className="w-12 text-center font-mono text-xs font-bold text-steel-700 select-none">{Math.round(zoom * 100)}%</span>
+                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.min(2.0, Number((value + 0.1).toFixed(2))))}>
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+                <div className="w-px h-4 bg-steel-700/15 mx-1"></div>
+                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all flex items-center gap-1.5 px-2" onClick={resetView}>
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span className="text-xs font-bold">Recentrar</span>
+                </button>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.max(0.4, Number((value - 0.1).toFixed(2))))}>
-                <ZoomOut className="h-4 w-4" />
-              </button>
-              <span className="min-w-14 text-center font-mono text-sm font-bold text-steel-700">{Math.round(zoom * 100)}%</span>
-              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.min(2.0, Number((value + 0.1).toFixed(2))))}>
-                <ZoomIn className="h-4 w-4" />
-              </button>
-              <button type="button" className="btn-secondary min-h-9 px-3" onClick={resetView}>
-                <RotateCcw className="h-4 w-4" />
-                Recentrar
-              </button>
+            
+            <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
+              <span className="text-[10px] font-black uppercase tracking-wider text-steel-400 mr-1 shrink-0">Mostrar:</span>
+              {TYPE_ORDER.map((type) => {
+                const meta = TYPE_META[type];
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => toggleTipo(type)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all ${
+                      tiposVisiveis[type]
+                        ? 'border-steel-700/20 bg-white text-steel-800 shadow-sm'
+                        : 'border-transparent bg-steel-50/50 text-steel-400 hover:bg-steel-50'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" style={{ color: tiposVisiveis[type] ? meta.color : 'currentColor' }} />
+                    {meta.label}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 border-b border-steel-700/10 p-3">
-            {TYPE_ORDER.map((type) => {
-              const meta = TYPE_META[type];
-              const Icon = meta.icon;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleTipo(type)}
-                  className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
-                    tiposVisiveis[type]
-                      ? 'border-steel-700/20 bg-white text-steel-900'
-                      : 'border-steel-700/10 bg-steel-50 text-steel-400'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" style={{ color: tiposVisiveis[type] ? meta.color : '#91A0B7' }} />
-                  {meta.label}
-                </button>
-              );
-            })}
           </div>
 
           <div className="relative h-[420px] sm:h-[520px] lg:h-[620px] bg-white touch-none">
