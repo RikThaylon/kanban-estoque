@@ -41,11 +41,27 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]">
+        {/* Isometric illustration - well positioned with blue fade */}
+        <div className="absolute inset-0 pointer-events-none">
           <img 
-            src="/supply-chain-flow.png" 
-            alt="Fluxo logístico" 
-            className="w-full max-w-2xl scale-125 lg:scale-150 mix-blend-lighten opacity-40 translate-y-12 lg:translate-y-24"
+            src="/supply-chain-flow.jpg" 
+            alt="Fluxo logístico industrial" 
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[110%] max-w-none object-cover object-center opacity-60"
+            style={{ height: '65%' }}
+          />
+          {/* Blue fade overlay - top */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(to bottom, #0f172a 25%, rgba(15, 23, 42, 0.3) 55%, rgba(15, 23, 42, 0.7) 80%, #0f172a 100%)'
+            }}
+          />
+          {/* Blue fade overlay - sides */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(to right, #0f172a 0%, transparent 20%, transparent 80%, #0f172a 100%)'
+            }}
           />
         </div>
 
