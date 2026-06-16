@@ -39,8 +39,8 @@ const EMPTY_FILTERS = {
 };
 
 const TYPE_ORDER = ['pedido', 'produto', 'estoque', 'maquina', 'departamento', 'supervisor', 'fornecedor'];
-const NODE_W = 150;
-const NODE_H = 58;
+const NODE_W = 164;
+const NODE_H = 64;
 
 const TYPE_META = {
   produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
@@ -129,23 +129,24 @@ function buildLayout(nodes) {
     });
   });
 
+  const GAP_Y = 96;
   const maxColumn = Math.max(1, ...columns.map((column) => column.length));
-  const canvasHeight = Math.max(720, 150 + maxColumn * 88);
+  const canvasHeight = Math.max(720, 150 + maxColumn * GAP_Y);
   const positions = new Map();
-  const columnX = [48, 238, 428, 618, 808, 998];
+  const columnX = [48, 252, 456, 660, 864, 1068];
 
   columns.forEach((column, columnIndex) => {
-    const blockHeight = Math.max(0, (column.length - 1) * 88);
+    const blockHeight = Math.max(0, (column.length - 1) * GAP_Y);
     const startY = Math.max(54, (canvasHeight - blockHeight - NODE_H) / 2);
     column.forEach((node, index) => {
       positions.set(node.id, {
         x: columnX[columnIndex],
-        y: startY + index * 88,
+        y: startY + index * GAP_Y,
       });
     });
   });
 
-  return { positions, canvasHeight, canvasWidth: 1196 };
+  return { positions, canvasHeight, canvasWidth: 1280 };
 }
 
 function buildPath(source, target) {
@@ -277,7 +278,7 @@ const GrafoRelacionamentos = () => {
 
   const handleWheel = (event) => {
     event.preventDefault();
-    const next = Math.min(2.0, Math.max(0.4, zoom + (event.deltaY > 0 ? -0.1 : 0.1)));
+    const next = Math.min(2.0, Math.max(0.3, zoom + (event.deltaY > 0 ? -0.1 : 0.1)));
     setZoom(Number(next.toFixed(2)));
   };
 
@@ -295,6 +296,56 @@ const GrafoRelacionamentos = () => {
   };
 
   const handleMouseUp = () => setDrag(null);
+
+  // --- Touch support for mobile (drag + pinch-to-zoom) ---
+  const touchRef = useRef({ lastDist: null, lastCenter: null });
+
+  const getTouchDist = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (event) => {
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      touchRef.current.lastDist = getTouchDist(event.touches);
+      touchRef.current.lastCenter = {
+        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+      };
+    } else if (event.touches.length === 1) {
+      setDrag({ x: event.touches[0].clientX, y: event.touches[0].clientY, pan });
+    }
+  };
+
+  const handleTouchMove = (event) => {
+    if (event.touches.length === 2) {
+      event.preventDefault();
+      const dist = getTouchDist(event.touches);
+      if (touchRef.current.lastDist) {
+        const scale = dist / touchRef.current.lastDist;
+        const next = Math.min(2.0, Math.max(0.3, zoom * scale));
+        setZoom(Number(next.toFixed(2)));
+      }
+      touchRef.current.lastDist = dist;
+    } else if (event.touches.length === 1 && drag) {
+      setPan({
+        x: drag.pan.x + event.touches[0].clientX - drag.x,
+        y: drag.pan.y + event.touches[0].clientY - drag.y,
+      });
+    }
+  };
+
+  const handleTouchEnd = (event) => {
+    if (event.touches.length < 2) {
+      touchRef.current.lastDist = null;
+      touchRef.current.lastCenter = null;
+    }
+    if (event.touches.length === 0) {
+      setDrag(null);
+    }
+  };
 
   const options = data?.opcoes || {};
 
@@ -465,7 +516,8 @@ const GrafoRelacionamentos = () => {
               <Network className="h-5 w-5 text-steel-800" />
               <div>
                 <h2 className="font-bold text-steel-900">Mapa de vínculos</h2>
-                <p className="text-xs text-steel-500">Arraste o mapa e use a roda do mouse para aproximar.</p>
+                <p className="hidden sm:block text-xs text-steel-500">Arraste o mapa e use a roda do mouse para aproximar.</p>
+                <p className="sm:hidden text-xs text-steel-500">Arraste para mover · Pinça para zoom.</p>
               </div>
             </div>
 
@@ -506,7 +558,7 @@ const GrafoRelacionamentos = () => {
             })}
           </div>
 
-          <div className="relative h-[620px] min-h-[520px] bg-white">
+          <div className="relative h-[420px] sm:h-[520px] lg:h-[620px] bg-white touch-none">
             {isLoading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
                 <div className="flex items-center gap-3 rounded-md border border-steel-700/10 bg-white px-4 py-3 text-sm font-bold text-steel-700 shadow-control">
@@ -529,6 +581,9 @@ const GrafoRelacionamentos = () => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <defs>
                 <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -606,15 +661,15 @@ const GrafoRelacionamentos = () => {
                       <foreignObject x="13" y="14" width="12" height="12">
                         <Icon size={12} color={meta.color} />
                       </foreignObject>
-                      <text x="35" y="18" fontSize="12" fontWeight="900" fill="#000000">
-                        {compactText(node.label, 16)}
+                      <text x="36" y="20" fontSize="11" fontWeight="900" fill="#000000">
+                        {compactText(node.label, 14)}
                       </text>
-                      <text x="35" y="35" fontSize="10" fontWeight="600" fill="#667085">
-                        {compactText(node.subtitle, 18)}
+                      <text x="36" y="34" fontSize="9.5" fontWeight="600" fill="#667085">
+                        {compactText(node.subtitle, 16)}
                       </text>
-                      <circle cx="134" cy="15" r="5" fill={statusColor(node.status)} />
-                      <text x="10" y="51" fontSize="9" fontWeight="800" fill={statusColor(node.status)}>
-                        {compactText(labelStatus(node.status), 22)}
+                      <circle cx="148" cy="15" r="5" fill={statusColor(node.status)} />
+                      <text x="10" y="56" fontSize="8.5" fontWeight="800" fill={statusColor(node.status)}>
+                        {compactText(labelStatus(node.status), 20)}
                       </text>
                     </g>
                   );
