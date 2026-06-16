@@ -22,7 +22,7 @@ const Login = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       {/* Left side - Welcome/Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-900 flex-col justify-between p-12 text-white relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 flex-col justify-between p-12 text-white relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm text-xl font-bold shadow-lg">
@@ -36,7 +36,7 @@ const Login = () => {
           <h1 className="text-4xl lg:text-5xl font-black mb-6 leading-[1.1] tracking-tight">
             Controle industrial com visão de comando em tempo real.
           </h1>
-          <p className="text-blue-100 text-lg leading-relaxed font-medium">
+          <p className="text-slate-300 text-lg leading-relaxed font-medium">
             Kanban, compras, máquinas e aprovações em uma superfície operacional para decisão rápida no chão de fábrica.
           </p>
         </div>
@@ -55,15 +55,16 @@ const Login = () => {
             <span>Sessão 100% segura</span>
           </div>
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-400" />
+            <Activity className="w-5 h-5 text-slate-300" />
             <span>Monitoramento em tempo real</span>
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse ml-1"></span>
           </div>
         </div>
       </div>
 
       {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-24 bg-white relative">
-        <div className="w-full max-w-md space-y-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-slate-50 relative">
+        <div className="w-full max-w-md space-y-8 bg-white shadow-xl rounded-2xl p-8 sm:p-10 border border-slate-100">
           
           <div className="text-center lg:text-left">
             <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
@@ -137,13 +138,36 @@ const Login = () => {
               </div>
             </div>
 
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Manter conectado
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a href="#" className="font-semibold text-blue-600 hover:text-blue-500">
+                  Esqueci a senha?
+                </a>
+              </div>
+            </div>
+
             <button 
               type="submit" 
               disabled={loading || !username || !senha} 
-              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-blue-800 px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processando...
+                </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5" aria-hidden="true" />
