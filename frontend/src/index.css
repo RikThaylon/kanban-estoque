@@ -20,8 +20,8 @@
   --warning: #b86700;
   --danger: #cc2030;
   --focus: rgba(0, 136, 255, 0.28);
-  --panel-shadow: 0 18px 46px rgba(0, 36, 96, 0.12);
-  --control-shadow: 0 8px 18px rgba(0, 93, 255, 0.12);
+  --panel-shadow: 0 10px 30px rgba(0, 36, 96, 0.08);
+  --control-shadow: 0 4px 12px rgba(0, 93, 255, 0.08);
 }
 
 @layer base {
@@ -116,8 +116,8 @@
 
   .btn-primary {
     color: var(--accent-ink);
-    background: linear-gradient(135deg, #0088ff 0%, #005dff 56%, #0044cc 100%);
-    border: 1px solid rgba(0, 68, 204, 0.36);
+    background: linear-gradient(180deg, #1a8cff, #005dff);
+    border: 1px solid rgba(0, 68, 204, 0.25);
   }
 
   .btn-primary:hover {
@@ -138,14 +138,14 @@
 
   .btn-success {
     @apply text-white;
-    background: linear-gradient(135deg, #0b7a4b, #075033);
-    border: 1px solid rgba(11, 122, 75, 0.38);
+    background: linear-gradient(180deg, #109b61, #0b7a4b);
+    border: 1px solid rgba(11, 122, 75, 0.25);
   }
 
   .btn-danger {
     @apply text-white;
-    background: linear-gradient(135deg, #e03248, #9d1824);
-    border: 1px solid rgba(204, 32, 48, 0.32);
+    background: linear-gradient(180deg, #f24158, #cc2030);
+    border: 1px solid rgba(204, 32, 48, 0.25);
   }
 
   .card {
