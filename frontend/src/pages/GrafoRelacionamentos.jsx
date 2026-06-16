@@ -303,7 +303,7 @@ const GrafoRelacionamentos = () => {
       <div className="page-intro">
         <div>
           <p className="page-kicker">Mapa operacional</p>
-          <h1 className="text-xl sm:text-2xl font-black text-steel-900">Grafo de Relacionamentos</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-steel-900">Informações</h1>
           <p className="mt-1 text-sm text-steel-500">
             Peça, estoque, máquina, departamento, supervisor, fornecedor e pedido em uma única leitura.
           </p>
@@ -317,7 +317,7 @@ const GrafoRelacionamentos = () => {
       <form onSubmit={aplicarFiltros} className="card p-4">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="h-5 w-5 text-steel-700" />
-          <h2 className="font-bold text-steel-900">Filtros do grafo</h2>
+          <h2 className="font-bold text-steel-900">Filtros</h2>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="block">
@@ -444,7 +444,7 @@ const GrafoRelacionamentos = () => {
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          Não foi possível carregar o grafo: {error.message}
+          Não foi possível carregar as informações: {error.message}
         </div>
       )}
 
@@ -511,7 +511,7 @@ const GrafoRelacionamentos = () => {
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
                 <div className="flex items-center gap-3 rounded-md border border-steel-700/10 bg-white px-4 py-3 text-sm font-bold text-steel-700 shadow-control">
                   <RefreshCw className="h-4 w-4 animate-spin text-accent" />
-                  Carregando grafo...
+                  Carregando informações...
                 </div>
               </div>
             )}
@@ -521,7 +521,7 @@ const GrafoRelacionamentos = () => {
             <svg
               ref={svgRef}
               role="img"
-              aria-label="Grafo de relacionamentos operacionais"
+              aria-label="Mapa de informações operacionais"
               className={`h-full w-full ${drag ? 'cursor-grabbing' : 'cursor-grab'}`}
               viewBox={`0 0 ${layout.canvasWidth} ${layout.canvasHeight}`}
               onWheel={handleWheel}

@@ -34,7 +34,7 @@ const Sidebar = () => {
     { key: 'produtos', path: '/produtos', icon: Package, label: 'Produtos' },
     { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentações' },
     { key: 'pedidos', path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra' },
-    { key: 'grafo', path: '/grafo', icon: Network, label: 'Grafo' },
+    { key: 'grafo', path: '/grafo', icon: Network, label: 'Informações' },
     { key: 'fornecedores', path: '/fornecedores', icon: Truck, label: 'Fornecedores' },
     { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configurações' },
     { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Máquinas' },

@@ -18,7 +18,7 @@ export const PAGINA_LABELS = {
   produtos: 'Produtos',
   movimentacoes: 'Movimentações',
   pedidos: 'Pedidos de compra',
-  grafo: 'Grafo de relacionamentos',
+  grafo: 'Informações',
   fornecedores: 'Fornecedores',
   configuracoes: 'Configurações',
   maquinas: 'Máquinas',
