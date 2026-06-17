@@ -32,6 +32,7 @@ const api = axios.create({
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
 });
 
@@ -55,7 +56,10 @@ export const globalRefreshToken = () => {
   refreshPromise = new Promise((resolve, reject) => {
     const doRefresh = async () => {
       try {
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { 
+          withCredentials: true,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
         useAuthStore.getState().setTokens(data.accessToken);
         api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
         resolve(data);

@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const { loginLimiter } = require('../middleware/rateLimiter');
+const { antiCsrf } = require('../middleware/csrf');
 const authService = require('../services/auth.service');
 const { env } = require('../config/env');
 
@@ -53,6 +54,7 @@ router.post('/login',
 );
 
 router.post('/refresh',
+  antiCsrf,
   [body('refreshToken').optional().isString().notEmpty().withMessage('Refresh token obrigatorio')],
   validate,
   async (req, res, next) => {
@@ -66,7 +68,7 @@ router.post('/refresh',
   }
 );
 
-router.post('/logout', optionalAuth, async (req, res, next) => {
+router.post('/logout', optionalAuth, antiCsrf, async (req, res, next) => {
   try {
     const refreshToken = readCookie(req, REFRESH_COOKIE);
     if (req.token && req.user?.id) {
