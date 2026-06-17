@@ -105,7 +105,7 @@ class AuthService {
     const tokenHash = hashToken(refreshToken);
     const legacyTokenHash = legacyHashToken(refreshToken);
     const result = await query(
-      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.revogado = false AND rt.expira_em > NOW()',
+      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.expira_em > NOW()',
       [[tokenHash, legacyTokenHash]]
     );
 
@@ -113,8 +113,35 @@ class AuthService {
     const row = result.rows[0];
     if (!row.ativo) throw new AuthError('Usuário desativado');
 
-    // Revogar token anterior (rotation)
-    await query('UPDATE refresh_tokens SET revogado = true WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
+    if (row.revogado) {
+      if (row.rotacionado_em) {
+        const rotatedAt = new Date(row.rotacionado_em);
+        const now = new Date();
+        const diffMs = now.getTime() - rotatedAt.getTime();
+        
+        // 15 seconds Grace Period
+        if (diffMs <= 15000) {
+          logger.warn('Token Refresh Grace Period ativado (concorrência de rede/abas)', { userId: row.usuario_id, ip });
+          const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
+          const tokens = this.generateTokens(user);
+
+          const newHash = hashToken(tokens.refreshToken);
+          await query(
+            'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
+            [user.id, newHash, ip, userAgent]
+          );
+          return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, usuario: user };
+        }
+      }
+      
+      // Strict Token Theft Detection:
+      logger.error('Possível roubo de token detectado (Reuso fora do grace period)', { userId: row.usuario_id, ip });
+      await query('UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1', [row.usuario_id]);
+      throw new AuthError('Sessão comprometida por segurança. Faça login novamente.');
+    }
+
+    // Revogar token anterior (rotation) e salvar a data da rotação
+    await query('UPDATE refresh_tokens SET revogado = true, rotacionado_em = NOW() WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
 
     const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
     const tokens = this.generateTokens(user);

@@ -47,19 +47,34 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Flag para evitar múltiplos refreshes simultâneos
-let isRefreshing = false;
-let failedQueue = [];
+let refreshPromise = null;
 
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
+export const globalRefreshToken = () => {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = new Promise((resolve, reject) => {
+    const doRefresh = async () => {
+      try {
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        useAuthStore.getState().setTokens(data.accessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
+        resolve(data);
+      } catch (err) {
+        useAuthStore.getState().logout();
+        reject(err);
+      } finally {
+        refreshPromise = null;
+      }
+    };
+
+    if (navigator.locks) {
+      navigator.locks.request('kanban_auth_refresh_lock', { mode: 'exclusive' }, doRefresh);
     } else {
-      prom.resolve(token);
+      doRefresh();
     }
   });
-  failedQueue = [];
+
+  return refreshPromise;
 };
 
 // Interceptor de Response: Trata 401 e faz refresh
@@ -68,39 +83,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Se o erro for 401 e não for um retry (evita loop infinito) e não for rota de login
+    // Se o erro for 401 e não for um retry (evita loop infinito) e não for rota de login/refresh
     const isAuthEndpoint = originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/refresh');
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
-      
-      if (isRefreshing) {
-        return new Promise(function(resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        const { data } = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
-        useAuthStore.getState().setTokens(data.accessToken);
-        
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
+        const data = await globalRefreshToken();
         originalRequest.headers['Authorization'] = `Bearer ${data.accessToken}`;
-        
-        processQueue(null, data.accessToken);
         return api(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
-        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import api from '../services/api';
+import api, { globalRefreshToken } from '../services/api';
 import { connectSocket, disconnectSocket } from '../services/socket';
 
 export const useAuth = () => {
@@ -43,8 +43,8 @@ export const useAuth = () => {
   const checkAuth = async () => {
     try {
       if (!useAuthStore.getState().accessToken) {
-        const refreshed = await api.post('/auth/refresh');
-        const { accessToken, usuario } = refreshed.data;
+        const refreshed = await globalRefreshToken();
+        const { accessToken, usuario } = refreshed;
         useAuthStore.getState().setAuth(usuario, accessToken);
       } else {
         const response = await api.get('/auth/me');
