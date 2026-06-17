@@ -40,32 +40,47 @@ const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos
 const ProtectedRoute = () => {
   const { isAuthenticated, authChecked } = useAuthStore();
   const { checkAuth, logout } = useAuth();
+  const authCheckRun = React.useRef(false);
   
   useEffect(() => {
-    checkAuth();
+    if (!authCheckRun.current) {
+      authCheckRun.current = true;
+      checkAuth();
+    }
   }, []);
 
-  // Monitoramento de Inatividade (10 min)
+  // Monitoramento de Inatividade (10 min) com Throttle
   useEffect(() => {
     if (!isAuthenticated) return;
 
     let timeoutId;
+    let lastExecution = 0;
 
-    const resetTimer = () => {
+    const startTimer = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         logout();
       }, TIMEOUT_MS);
     };
 
-    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, resetTimer));
+    const resetTimerThrottled = () => {
+      const now = Date.now();
+      // Apenas reseta o timer se passou pelo menos 5 segundos desde o último reset
+      // Isso evita travar o navegador executando clearTimeout milhares de vezes por segundo no mousemove
+      if (now - lastExecution >= 5000) {
+        startTimer();
+        lastExecution = now;
+      }
+    };
 
-    resetTimer(); // Inicia o timer
+    const events = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, resetTimerThrottled));
+
+    startTimer(); // Inicia o timer
 
     return () => {
       clearTimeout(timeoutId);
-      events.forEach(event => window.removeEventListener(event, resetTimer));
+      events.forEach(event => window.removeEventListener(event, resetTimerThrottled));
     };
   }, [isAuthenticated, logout]);
 
