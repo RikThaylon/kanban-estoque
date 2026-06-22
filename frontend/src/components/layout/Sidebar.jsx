@@ -29,35 +29,22 @@ const Sidebar = () => {
     queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
   });
 
-  const menuGroups = [
-    {
-      title: 'Operação',
-      items: [
-        { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { key: 'produtos', path: '/produtos', icon: Package, label: 'Produtos' },
-        { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentações' },
-        { key: 'pedidos', path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra' },
-        { key: 'grafo', path: '/grafo', icon: Network, label: 'Grafo' },
-      ],
-    },
-    {
-      title: 'Análise',
-      items: [
-        { key: 'alertas', path: '/alertas', icon: AlertTriangle, label: 'Alertas' },
-        { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatórios' },
-        { key: 'raci', path: '/raci', icon: GitBranch, label: 'Matriz RACI' },
-      ],
-    },
-    {
-      title: 'Gerencial',
-      items: [
-        { key: 'fornecedores', path: '/fornecedores', icon: Truck, label: 'Fornecedores' },
-        { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Máquinas' },
-        { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuários' },
-        { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configurações' },
-      ],
-    },
+  const menuItems = [
+    { key: 'dashboard', path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { key: 'produtos', path: '/produtos', icon: Package, label: 'Produtos' },
+    { key: 'movimentacoes', path: '/movimentacoes', icon: ArrowLeftRight, label: 'Movimentações' },
+    { key: 'pedidos', path: '/pedidos', icon: ShoppingCart, label: 'Pedidos de Compra' },
+    { key: 'grafo', path: '/grafo', icon: Network, label: 'Informações' },
+    { key: 'fornecedores', path: '/fornecedores', icon: Truck, label: 'Fornecedores' },
+    { key: 'configuracoes', path: '/configuracoes', icon: Settings, label: 'Configurações' },
+    { key: 'maquinas', path: '/maquinas', icon: Cog, label: 'Máquinas' },
+    { key: 'alertas', path: '/alertas', icon: AlertTriangle, label: 'Alertas' },
+    { key: 'raci', path: '/raci', icon: GitBranch, label: 'Matriz RACI' },
+    { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatórios' },
+    { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuários' },
   ];
+
+  const filteredItems = menuItems.filter(item => perfilTemPagina(permissoes, user?.perfil, item.key));
 
   const widthClass = sidebarOpen ? 'w-64' : 'w-20';
   const mobileTranslate = sidebarOpen ? 'translate-x-0' : '-translate-x-full';
@@ -65,8 +52,8 @@ const Sidebar = () => {
   return (
     <aside
       className={`fixed top-0 left-0 h-screen text-white transition-all duration-300 z-20 flex flex-col
-        bg-[linear-gradient(180deg,#000000_0%,#00123D_58%,#000000_100%)]
-        border-r border-white/10 shadow-[18px_0_48px_rgba(0,18,61,0.30)]
+        bg-[linear-gradient(180deg,#0a1628_0%,#0f2140_50%,#0a1628_100%)]
+        border-r border-white/8 shadow-[4px_0_24px_rgba(0,18,61,0.20)]
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
@@ -93,46 +80,36 @@ const Sidebar = () => {
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 lg:py-6 flex flex-col gap-4 px-3">
-        {menuGroups.map((group, gIndex) => {
-          const filteredItems = group.items.filter(item => perfilTemPagina(permissoes, user?.perfil, item.key));
-          if (filteredItems.length === 0) return null;
-          
-          return (
-            <div key={gIndex} className="flex flex-col gap-1.5">
-              {sidebarOpen && (
-                <div className="px-3 text-[10px] font-black uppercase text-white/40 tracking-wider mb-1">
-                  {group.title}
-                </div>
-              )}
-              {filteredItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
-                  className={({ isActive }) => `
-                    relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all overflow-hidden whitespace-nowrap
-                    ${isActive
-                      ? 'bg-accent/25 text-white font-bold shadow-[inset_3px_0_0_#0088ff]'
-                      : 'text-white/[0.68] hover:bg-white/[0.09] hover:text-white'}
-                  `}
-                  title={!sidebarOpen ? item.label : ''}
-                >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  {sidebarOpen && <span>{item.label}</span>}
-                </NavLink>
-              ))}
-            </div>
-          );
-        })}
+      <nav className="flex-1 overflow-y-auto py-4 lg:py-6 flex flex-col gap-1.5 px-3">
+        {filteredItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
+            className={({ isActive }) => `
+              relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all overflow-hidden whitespace-nowrap
+              ${isActive
+                ? 'bg-accent/25 text-white font-bold shadow-[inset_3px_0_0_#0088ff]'
+                : 'text-white/[0.68] hover:bg-white/[0.09] hover:text-white'}
+            `}
+            title={!sidebarOpen ? item.label : ''}
+          >
+            <item.icon className="w-5 h-5 shrink-0" />
+            {sidebarOpen && <span>{item.label}</span>}
+          </NavLink>
+        ))}
       </nav>
 
       {sidebarOpen && (
-        <div className="m-3 rounded-md border border-white/10 bg-white/[0.06] p-3 text-xs text-white/[0.54]">
-          <div className="font-bold text-white/85">Turno conectado</div>
-          <div className="mt-1 truncate">{user?.nome || 'Operador'}</div>
-          <div className="mt-2 h-1 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full w-2/3 bg-accent" />
+        <div className="m-3 rounded-lg border border-white/8 bg-white/[0.05] p-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {(user?.nome || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="font-semibold text-white/90 truncate">{user?.nome || 'Operador'}</div>
+              <div className="text-white/45 text-[10px] capitalize">{(user?.perfil || 'perfil').replace(/_/g, ' ')}</div>
+            </div>
           </div>
         </div>
       )}
