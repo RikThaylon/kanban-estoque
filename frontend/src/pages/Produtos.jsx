@@ -14,7 +14,7 @@ const PERFIS_GESTAO = ['admin', 'gerente_operacoes', 'supervisor_turno'];
 // ─── Tooltip helper ────────────────────────────────────────────────────────
 const Tooltip = ({ text }) => (
   <span className="relative group ml-1 cursor-help inline-flex">
-    <HelpCircle className="w-3.5 h-3.5 text-steel-300 hover:text-steel-500 transition-colors" />
+    <HelpCircle className="w-3.5 h-3.5 text-navy-300 hover:text-navy-500 transition-colors" />
     <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-56 bg-navy-800 text-white text-xs rounded-lg p-2 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 leading-relaxed">
       {text}
     </span>
@@ -78,8 +78,8 @@ const Produtos = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-steel-800 tracking-tight">Catálogo de Produtos</h1>
-          <p className="text-steel-400 text-sm mt-1">Gerencie os itens do estoque e acompanhe as faixas Kanban</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-navy-800 tracking-tight">Catálogo de Produtos</h1>
+          <p className="text-navy-400 text-sm mt-1">Gerencie os itens do estoque e acompanhe as faixas Kanban</p>
         </div>
         {podeCadastrar && (
           <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
@@ -96,7 +96,7 @@ const Produtos = () => {
       <div className="card p-4">
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-steel-300" />
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-navy-300" />
             <input
               type="text"
               placeholder="Buscar por código ou nome..."
@@ -107,7 +107,7 @@ const Produtos = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Filter className="w-5 h-5 text-steel-400" />
+            <Filter className="w-5 h-5 text-navy-400" />
             <select
               className="input-field w-full sm:w-44"
               value={faixaFiltro}
@@ -128,33 +128,33 @@ const Produtos = () => {
 
         <div className="grid gap-3 md:hidden">
           {isLoading ? (
-            <div className="p-6 text-center text-steel-400 bg-surface-50 rounded-lg">Carregando...</div>
+            <div className="p-6 text-center text-navy-400 bg-surface-50 rounded-lg">Carregando...</div>
           ) : data?.data?.length === 0 ? (
-            <div className="p-6 text-center text-steel-400 bg-surface-50 rounded-lg">Nenhum produto encontrado.</div>
+            <div className="p-6 text-center text-navy-400 bg-surface-50 rounded-lg">Nenhum produto encontrado.</div>
           ) : (
             data?.data.map((produto) => (
               <article key={produto.id} className="rounded-lg border border-surface-200 bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono text-xs text-steel-400">{produto.codigo}</p>
-                    <h2 className="font-bold text-steel-800 break-words">{produto.nome}</h2>
-                    <p className="text-xs text-steel-400 mt-0.5">{produto.categoria_nome}</p>
+                    <p className="font-mono text-xs text-navy-400">{produto.codigo}</p>
+                    <h2 className="font-bold text-navy-800 break-words">{produto.nome}</h2>
+                    <p className="text-xs text-navy-400 mt-0.5">{produto.categoria_nome}</p>
                   </div>
                   <FaixaBadge faixa={produto.faixa_atual} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
                   <div>
-                    <p className="text-xs text-steel-400">Estoque</p>
-                    <p className="font-bold text-steel-700">{formatNumber(produto.estoque_atual)} {produto.unidade}</p>
+                    <p className="text-xs text-navy-400">Estoque</p>
+                    <p className="font-bold text-navy-700">{formatNumber(produto.estoque_atual)} {produto.unidade}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-steel-400">PR</p>
-                    <p className="font-bold text-steel-700">{formatNumber(produto.ponto_reposicao) || '-'}</p>
+                    <p className="text-xs text-navy-400">PR</p>
+                    <p className="font-bold text-navy-700">{formatNumber(produto.ponto_reposicao) || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-steel-400">Custo un.</p>
-                    <p className="font-bold text-steel-700">{formatMoney(produto.custo_unitario)}</p>
+                    <p className="text-xs text-navy-400">Custo un.</p>
+                    <p className="font-bold text-navy-700">{formatMoney(produto.custo_unitario)}</p>
                   </div>
                 </div>
 
@@ -182,7 +182,7 @@ const Produtos = () => {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-surface-200 text-xs font-bold text-steel-400 uppercase tracking-wider">
+              <tr className="border-b border-surface-200 text-xs font-bold text-navy-400 uppercase tracking-wider">
                 <th className="p-4">Código</th>
                 <th className="p-4">Produto</th>
                 <th className="p-4 text-right">Estoque</th>
@@ -195,11 +195,11 @@ const Produtos = () => {
             <tbody className="divide-y divide-surface-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-steel-400">Carregando...</td>
+                  <td colSpan="7" className="p-8 text-center text-navy-400">Carregando...</td>
                 </tr>
               ) : data?.data?.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-steel-400">Nenhum produto encontrado.</td>
+                  <td colSpan="7" className="p-8 text-center text-navy-400">Nenhum produto encontrado.</td>
                 </tr>
               ) : (
                 data?.data.map((produto) => {
@@ -209,30 +209,30 @@ const Produtos = () => {
 
                   return (
                     <tr key={produto.id} className={`hover:bg-surface-50 transition-colors ${rowColor}`}>
-                      <td className="p-4 font-mono text-sm text-steel-700">{produto.codigo}</td>
+                      <td className="p-4 font-mono text-sm text-navy-700">{produto.codigo}</td>
                       <td className="p-4">
-                        <div className="font-bold text-steel-800">{produto.nome}</div>
-                        <div className="text-xs text-steel-400">{produto.categoria_nome}</div>
+                        <div className="font-bold text-navy-800">{produto.nome}</div>
+                        <div className="text-xs text-navy-400">{produto.categoria_nome}</div>
                       </td>
-                      <td className="p-4 text-right font-bold text-steel-700">
+                      <td className="p-4 text-right font-bold text-navy-700">
                         {formatNumber(produto.estoque_atual)} {produto.unidade}
                       </td>
                       <td className="p-4 text-center">
                         <FaixaBadge faixa={produto.faixa_atual} />
                       </td>
-                      <td className="p-4 text-right text-steel-600 font-medium">
+                      <td className="p-4 text-right text-navy-600 font-medium">
                         {formatNumber(produto.ponto_reposicao) || '-'}
                       </td>
-                      <td className="p-4 text-right text-steel-600">
+                      <td className="p-4 text-right text-navy-600">
                         {formatMoney(produto.custo_unitario)}
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link to={`/produtos/${produto.id}`} className="text-steel-500 hover:text-steel-800 font-medium text-sm px-2">
+                          <Link to={`/produtos/${produto.id}`} className="text-navy-500 hover:text-navy-800 font-medium text-sm px-2">
                             Detalhes
                           </Link>
                           {podeGerir && (
-                            <button onClick={() => setOpenModal({ tipo: 'editar', produto })} className="p-1.5 text-steel-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                            <button onClick={() => setOpenModal({ tipo: 'editar', produto })} className="p-1.5 text-navy-500 hover:bg-navy-50 rounded" title="Editar"><Edit3 className="w-4 h-4" /></button>
                           )}
                           {isAdmin && (
                             <button onClick={() => { if (confirm(`Desativar ${produto.codigo}?`)) desativar.mutate(produto.id); }} className="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Desativar"><Trash2 className="w-4 h-4" /></button>
@@ -250,7 +250,7 @@ const Produtos = () => {
         {/* Paginação */}
         {data && data.totalPages > 1 && (
           <div className="flex items-center justify-between mt-6 px-4">
-            <span className="text-sm text-steel-500">
+            <span className="text-sm text-navy-500">
               Página <span className="font-bold">{data.page}</span> de <span className="font-bold">{data.totalPages}</span>
             </span>
             <div className="flex gap-2">
@@ -277,6 +277,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     nome: produto?.nome || '',
     descricao: produto?.descricao || '',
     unidade: produto?.unidade || 'UN',
+    categoria_id: produto?.categoria_id || '',
     custo_unitario: produto?.custo_unitario || '',
     custo_pedido: produto?.custo_pedido || 100,
     taxa_carregamento: produto?.taxa_carregamento || 0.20,
@@ -300,6 +301,11 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
   const turnos = turnosData?.turnos || [];
 
   const [erro, setErro] = useState('');
+
+  const { data: categorias } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => (await api.get('/categorias')).data,
+  });
 
   const { data: kanbanDefaults } = useQuery({
     queryKey: ['configuracoes', 'kanban'],
@@ -356,6 +362,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     mutationFn: async () => {
       const payload = {
         nome: form.nome, descricao: form.descricao, unidade: form.unidade,
+        categoria_id: form.categoria_id || null,
         custo_unitario: parseFloat(form.custo_unitario),
         custo_pedido: parseFloat(form.custo_pedido),
         taxa_carregamento: parseFloat(form.taxa_carregamento),
@@ -408,10 +415,10 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     <div className="fixed inset-0 bg-navy-900/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-t-lg sm:rounded-lg shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         <div className="p-5 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold text-steel-800">
+          <h2 className="text-lg font-bold text-navy-800">
             {isEdit ? `Editar produto ${produto.codigo}` : (isInsercao ? 'Inserir item existente' : 'Cadastrar produto')}
           </h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-steel-400" /></button>
+          <button onClick={onClose}><X className="w-5 h-5 text-navy-400" /></button>
         </div>
 
         <form onSubmit={(e) => {
@@ -430,8 +437,8 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
 
           {/* ── Seção: Identificação ── */}
           <div>
-            <h3 className="text-xs font-bold text-steel-400 uppercase tracking-wider mb-3">Identificação</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-3">Identificação</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-1">
                 <Label>Código</Label>
                 <input className="input font-mono" value={form.codigo} disabled={isEdit}
@@ -440,6 +447,15 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
               <div className="sm:col-span-2">
                 <Label>Nome do produto</Label>
                 <input className="input" value={form.nome} onChange={e => f('nome', e.target.value)} required />
+              </div>
+              <div className="sm:col-span-1">
+                <Label>Categoria</Label>
+                <select className="input" value={form.categoria_id} onChange={e => f('categoria_id', e.target.value)} required>
+                  <option value="">Selecionar</option>
+                  {categorias?.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="mt-3">
@@ -450,7 +466,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
 
           {/* ── Seção: Dados de Custo ── */}
           <div>
-            <h3 className="text-xs font-bold text-steel-400 uppercase tracking-wider mb-3">Dados de Custo e Armazenagem</h3>
+            <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-3">Dados de Custo e Armazenagem</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label>Unidade</Label>
@@ -497,7 +513,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {!isEdit && isInsercao && (
             <div className="rounded-lg border border-red-200 bg-red-50/50 p-4">
               <h3 className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Entrada inicial do item existente</h3>
-              <p className="text-xs text-steel-500 mb-3">
+              <p className="text-xs text-navy-500 mb-3">
                 Use quando o material já existe fisicamente no estoque e está sendo trazido para o sistema.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -542,8 +558,8 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {/* ── Seção: Parâmetros Kanban Iniciais (só no cadastro) ── */}
           {!isEdit && (
             <div>
-              <h3 className="text-xs font-bold text-steel-400 uppercase tracking-wider mb-1">Parâmetros Kanban Iniciais</h3>
-              <p className="text-xs text-steel-400 mb-3">
+              <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-1">Parâmetros Kanban Iniciais</h3>
+              <p className="text-xs text-navy-400 mb-3">
                 Estes valores são o ponto de partida. O sistema ajustará automaticamente conforme o uso real for registrado.
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -583,7 +599,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
 
               {/* Grafico linear interativo */}
               <div className="mt-4">
-                <p className="text-xs font-bold text-steel-500 mb-2">Visualização do ciclo Kanban estimado ({kanbanDefaults?.ciclos_estimativa_inicial || 10} ciclos)</p>
+                <p className="text-xs font-bold text-navy-500 mb-2">Visualização do ciclo Kanban estimado ({kanbanDefaults?.ciclos_estimativa_inicial || 10} ciclos)</p>
                 <KanbanSawtoothChart
                   cmd={kanbanPreview?.cmd || 0}
                   leadTime={kanbanPreview?.lt || 0}
@@ -600,8 +616,8 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {/* ── Seção: Fornecedor Principal (só no cadastro) ── */}
           {!isEdit && (
             <div>
-              <h3 className="text-xs font-bold text-steel-400 uppercase tracking-wider mb-1">Fornecedor Principal <span className="normal-case font-normal text-steel-300">(opcional)</span></h3>
-              <p className="text-xs text-steel-400 mb-3">
+              <h3 className="text-xs font-bold text-navy-400 uppercase tracking-wider mb-1">Fornecedor Principal <span className="normal-case font-normal text-navy-300">(opcional)</span></h3>
+              <p className="text-xs text-navy-400 mb-3">
                 Vincular um fornecedor aqui permite que o sistema gere pedidos automaticamente. Você pode adicionar mais fornecedores depois em "Detalhes do produto".
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -617,7 +633,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                       </select>
                     </>
                   ) : (
-                    <div className="text-xs text-steel-400 italic p-3 bg-surface-50 rounded-lg border border-dashed border-surface-300">
+                    <div className="text-xs text-navy-400 italic p-3 bg-surface-50 rounded-lg border border-dashed border-surface-300">
                       Nenhum fornecedor cadastrado ainda. Cadastre em <strong>Fornecedores</strong> e volte aqui.
                     </div>
                   )}

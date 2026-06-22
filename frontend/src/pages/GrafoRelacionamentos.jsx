@@ -39,8 +39,8 @@ const EMPTY_FILTERS = {
 };
 
 const TYPE_ORDER = ['pedido', 'produto', 'estoque', 'maquina', 'departamento', 'supervisor', 'fornecedor'];
-const NODE_W = 164;
-const NODE_H = 64;
+const NODE_W = 150;
+const NODE_H = 58;
 
 const TYPE_META = {
   produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
@@ -129,24 +129,23 @@ function buildLayout(nodes) {
     });
   });
 
-  const GAP_Y = 96;
   const maxColumn = Math.max(1, ...columns.map((column) => column.length));
-  const canvasHeight = Math.max(720, 150 + maxColumn * GAP_Y);
+  const canvasHeight = Math.max(720, 150 + maxColumn * 88);
   const positions = new Map();
-  const columnX = [48, 252, 456, 660, 864, 1068];
+  const columnX = [48, 238, 428, 618, 808, 998];
 
   columns.forEach((column, columnIndex) => {
-    const blockHeight = Math.max(0, (column.length - 1) * GAP_Y);
+    const blockHeight = Math.max(0, (column.length - 1) * 88);
     const startY = Math.max(54, (canvasHeight - blockHeight - NODE_H) / 2);
     column.forEach((node, index) => {
       positions.set(node.id, {
         x: columnX[columnIndex],
-        y: startY + index * GAP_Y,
+        y: startY + index * 88,
       });
     });
   });
 
-  return { positions, canvasHeight, canvasWidth: 1280 };
+  return { positions, canvasHeight, canvasWidth: 1196 };
 }
 
 function buildPath(source, target) {
@@ -192,7 +191,9 @@ const GrafoRelacionamentos = () => {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [drag, setDrag] = useState(null);
+  const pointersRef = useRef(new Map());
+  const initialPinchDistRef = useRef(null);
+  const initialZoomRef = useRef(1);
   const [tiposVisiveis, setTiposVisiveis] = useState(
     Object.fromEntries(TYPE_ORDER.map((type) => [type, true]))
   );
@@ -278,91 +279,57 @@ const GrafoRelacionamentos = () => {
 
   const handleWheel = (event) => {
     event.preventDefault();
-    const next = Math.min(2.0, Math.max(0.3, zoom + (event.deltaY > 0 ? -0.1 : 0.1)));
+    const next = Math.min(1.55, Math.max(0.62, zoom + (event.deltaY > 0 ? -0.08 : 0.08)));
     setZoom(Number(next.toFixed(2)));
   };
 
-  const handleMouseDown = (event) => {
-    if (event.button !== 0) return;
-    setDrag({ x: event.clientX, y: event.clientY, pan });
+  const handlePointerDown = (event) => {
+    event.target.setPointerCapture(event.pointerId);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
   };
 
-  const handleMouseMove = (event) => {
-    if (!drag) return;
-    setPan({
-      x: drag.pan.x + event.clientX - drag.x,
-      y: drag.pan.y + event.clientY - drag.y,
-    });
-  };
+  const handlePointerMove = (event) => {
+    if (!pointersRef.current.has(event.pointerId)) return;
+    
+    const prevPos = pointersRef.current.get(event.pointerId);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    
+    const pointers = Array.from(pointersRef.current.values());
 
-  const handleMouseUp = () => setDrag(null);
-
-  // --- Touch support for mobile (drag + pinch-to-zoom) ---
-  const touchRef = useRef({ lastDist: null, lastCenter: null });
-
-  const getTouchDist = (touches) => {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const handleTouchStart = (event) => {
-    if (event.touches.length === 2) {
-      event.preventDefault();
-      touchRef.current.lastDist = getTouchDist(event.touches);
-      touchRef.current.lastCenter = {
-        x: (event.touches[0].clientX + event.touches[1].clientX) / 2,
-        y: (event.touches[0].clientY + event.touches[1].clientY) / 2,
-      };
-    } else if (event.touches.length === 1) {
-      setDrag({ x: event.touches[0].clientX, y: event.touches[0].clientY, pan });
-    }
-  };
-
-  const handleTouchMove = (event) => {
-    if (event.touches.length === 2) {
-      event.preventDefault();
-      const dist = getTouchDist(event.touches);
-      if (touchRef.current.lastDist) {
-        const scale = dist / touchRef.current.lastDist;
-        const next = Math.min(2.0, Math.max(0.3, zoom * scale));
-        setZoom(Number(next.toFixed(2)));
+    if (pointers.length === 1) {
+      const dx = event.clientX - prevPos.x;
+      const dy = event.clientY - prevPos.y;
+      setPan((p) => ({ x: p.x + dx, y: p.y + dy }));
+    } else if (pointers.length === 2) {
+      const dist = Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+      if (initialPinchDistRef.current === null) {
+        initialPinchDistRef.current = dist;
+        initialZoomRef.current = zoom;
+      } else {
+        const scale = dist / initialPinchDistRef.current;
+        const nextZoom = Math.min(1.55, Math.max(0.62, initialZoomRef.current * scale));
+        setZoom(nextZoom);
       }
-      touchRef.current.lastDist = dist;
-    } else if (event.touches.length === 1 && drag) {
-      setPan({
-        x: drag.pan.x + event.touches[0].clientX - drag.x,
-        y: drag.pan.y + event.touches[0].clientY - drag.y,
-      });
     }
   };
 
-  const handleTouchEnd = (event) => {
-    if (event.touches.length < 2) {
-      touchRef.current.lastDist = null;
-      touchRef.current.lastCenter = null;
-    }
-    if (event.touches.length === 0) {
-      setDrag(null);
+  const handlePointerUp = (event) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) {
+      initialPinchDistRef.current = null;
     }
   };
-
-  const [showFilters, setShowFilters] = useState(false);
-
-  const activeFilterCount = useMemo(() => {
-    return Object.entries(filtros).filter(([, v]) => v !== '' && v !== null && v !== undefined).length;
-  }, [filtros]);
 
   const options = data?.opcoes || {};
 
   return (
-    <div className="space-y-4 pb-10 animate-fade-in">
+    <div className="space-y-5 pb-10 animate-fade-in">
       <div className="page-intro">
         <div>
           <p className="page-kicker">Mapa operacional</p>
-          <h1 className="text-xl sm:text-2xl font-black text-steel-900">Informações</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-steel-900">Grafo de Relacionamentos</h1>
           <p className="mt-1 text-sm text-steel-500">
-            Visualize peças, estoque, máquinas e pedidos em uma única leitura.
+            Peça, estoque, máquina, departamento, supervisor, fornecedor e pedido em uma única leitura.
           </p>
         </div>
         <button type="button" onClick={() => refetch()} className="btn-secondary w-full sm:w-auto">
@@ -371,24 +338,26 @@ const GrafoRelacionamentos = () => {
         </button>
       </div>
 
-      {/* --- Compact Filter Bar --- */}
-      <form onSubmit={aplicarFiltros} className="card overflow-hidden">
-        {/* Always-visible: search + toggle */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 p-4">
-          <label className="flex-1 min-w-0 block">
-            <span className="label">Busca rápida</span>
+      <form onSubmit={aplicarFiltros} className="card p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="h-5 w-5 text-steel-700" />
+          <h2 className="font-bold text-steel-900">Filtros do grafo</h2>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label className="block">
+            <span className="label">Busca</span>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
               <input
                 className="input pl-9"
                 value={draft.busca}
                 onChange={(event) => updateDraft('busca', event.target.value)}
-                placeholder="Código ou nome da peça..."
+                placeholder="Código ou nome da peça"
               />
             </div>
           </label>
 
-          <label className="sm:w-44 block">
+          <label className="block">
             <span className="label">Faixa Kanban</span>
             <select className="input" value={draft.faixa} onChange={(event) => updateDraft('faixa', event.target.value)}>
               <option value="">Todas</option>
@@ -399,217 +368,174 @@ const GrafoRelacionamentos = () => {
             </select>
           </label>
 
-          <div className="flex gap-2 sm:pb-0.5">
-            <button type="submit" className="btn-primary flex-1 sm:flex-initial">
-              <Search className="h-4 w-4" />
-              Filtrar
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`btn-secondary relative flex-1 sm:flex-initial ${showFilters ? 'ring-2 ring-accent/30' : ''}`}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? 'Menos' : 'Mais'} filtros</span>
-              <span className="sm:hidden">{showFilters ? 'Menos' : 'Mais'}</span>
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-black text-white shadow-sm">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <label className="block">
+            <span className="label">Estoque</span>
+            <select className="input" value={draft.estoque} onChange={(event) => updateDraft('estoque', event.target.value)}>
+              <option value="">Qualquer saldo</option>
+              <option value="critico">Abaixo do estoque de segurança</option>
+              <option value="reposicao">Abaixo do ponto de reposição</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Status do pedido</span>
+            <select className="input" value={draft.status_pedido} onChange={(event) => updateDraft('status_pedido', event.target.value)}>
+              <option value="">Todos</option>
+              {STATUS_PEDIDO.map((status) => (
+                <option key={status} value={status}>{labelStatus(status)}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Máquina</span>
+            <select className="input" value={draft.maquina_id} onChange={(event) => updateDraft('maquina_id', event.target.value)}>
+              <option value="">Todas</option>
+              {(options.maquinas || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Departamento</span>
+            <select className="input" value={draft.departamento_id} onChange={(event) => updateDraft('departamento_id', event.target.value)}>
+              <option value="">Todos</option>
+              {(options.departamentos || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Supervisor</span>
+            <select className="input" value={draft.supervisor_id} onChange={(event) => updateDraft('supervisor_id', event.target.value)}>
+              <option value="">Todos</option>
+              {(options.supervisores || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Fornecedor</span>
+            <select className="input" value={draft.fornecedor_id} onChange={(event) => updateDraft('fornecedor_id', event.target.value)}>
+              <option value="">Todos</option>
+              {(options.fornecedores || []).map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="label">Pedido criado de</span>
+            <div className="relative">
+              <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
+              <input
+                type="date"
+                className="input pl-9"
+                value={draft.data_inicio}
+                onChange={(event) => updateDraft('data_inicio', event.target.value)}
+              />
+            </div>
+          </label>
+
+          <label className="block">
+            <span className="label">Pedido criado até</span>
+            <div className="relative">
+              <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
+              <input
+                type="date"
+                className="input pl-9"
+                value={draft.data_fim}
+                onChange={(event) => updateDraft('data_fim', event.target.value)}
+              />
+            </div>
+          </label>
         </div>
 
-        {/* Collapsible advanced filters */}
-        {showFilters && (
-          <div className="border-t border-steel-700/10 bg-steel-50/50 p-4 animate-fade-in">
-            <p className="text-xs font-bold uppercase text-steel-500 mb-3">Filtros avançados</p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <label className="block">
-                <span className="label">Estoque</span>
-                <select className="input" value={draft.estoque} onChange={(event) => updateDraft('estoque', event.target.value)}>
-                  <option value="">Qualquer saldo</option>
-                  <option value="critico">Abaixo do estoque de segurança</option>
-                  <option value="reposicao">Abaixo do ponto de reposição</option>
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Status do pedido</span>
-                <select className="input" value={draft.status_pedido} onChange={(event) => updateDraft('status_pedido', event.target.value)}>
-                  <option value="">Todos</option>
-                  {STATUS_PEDIDO.map((status) => (
-                    <option key={status} value={status}>{labelStatus(status)}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Máquina</span>
-                <select className="input" value={draft.maquina_id} onChange={(event) => updateDraft('maquina_id', event.target.value)}>
-                  <option value="">Todas</option>
-                  {(options.maquinas || []).map((item) => (
-                    <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Departamento</span>
-                <select className="input" value={draft.departamento_id} onChange={(event) => updateDraft('departamento_id', event.target.value)}>
-                  <option value="">Todos</option>
-                  {(options.departamentos || []).map((item) => (
-                    <option key={item.id} value={item.id}>{item.label} - {item.subtitle}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Supervisor</span>
-                <select className="input" value={draft.supervisor_id} onChange={(event) => updateDraft('supervisor_id', event.target.value)}>
-                  <option value="">Todos</option>
-                  {(options.supervisores || []).map((item) => (
-                    <option key={item.id} value={item.id}>{item.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Fornecedor</span>
-                <select className="input" value={draft.fornecedor_id} onChange={(event) => updateDraft('fornecedor_id', event.target.value)}>
-                  <option value="">Todos</option>
-                  {(options.fornecedores || []).map((item) => (
-                    <option key={item.id} value={item.id}>{item.label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="label">Pedido criado de</span>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
-                  <input
-                    type="date"
-                    className="input pl-9"
-                    value={draft.data_inicio}
-                    onChange={(event) => updateDraft('data_inicio', event.target.value)}
-                  />
-                </div>
-              </label>
-
-              <label className="block">
-                <span className="label">Pedido criado até</span>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-steel-400" />
-                  <input
-                    type="date"
-                    className="input pl-9"
-                    value={draft.data_fim}
-                    onChange={(event) => updateDraft('data_fim', event.target.value)}
-                  />
-                </div>
-              </label>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button type="button" onClick={limparFiltros} className="btn-secondary text-xs">
-                <RotateCcw className="h-3.5 w-3.5" />
-                Limpar todos
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={limparFiltros} className="btn-secondary">
+            <RotateCcw className="h-4 w-4" />
+            Limpar
+          </button>
+          <button type="submit" className="btn-primary">
+            <Search className="h-4 w-4" />
+            Aplicar filtros
+          </button>
+        </div>
       </form>
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          Não foi possível carregar as informações: {error.message}
+          Não foi possível carregar o grafo: {error.message}
         </div>
       )}
 
-      {/* --- Compact Stats Strip --- */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { label: 'Peças', value: data?.stats?.produtos },
-          { label: 'Máquinas', value: data?.stats?.maquinas },
-          { label: 'Deptos', value: data?.stats?.departamentos },
-          { label: 'Supervisores', value: data?.stats?.supervisores },
-          { label: 'Fornecedores', value: data?.stats?.fornecedores },
-          { label: 'Pedidos', value: data?.stats?.pedidos },
-          { label: 'Relações', value: data?.stats?.relacionamentos },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-center gap-2 rounded-lg border border-steel-700/10 bg-white px-3 py-2 text-sm shadow-sm"
-          >
-            <span className="text-steel-500 text-xs font-bold uppercase">{stat.label}</span>
-            <span className="font-black text-steel-900">{stat.value ?? 0}</span>
-          </div>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+        <StatCard label="Peças" value={data?.stats?.produtos} />
+        <StatCard label="Máquinas" value={data?.stats?.maquinas} />
+        <StatCard label="Departamentos" value={data?.stats?.departamentos} />
+        <StatCard label="Supervisores" value={data?.stats?.supervisores} />
+        <StatCard label="Fornecedores" value={data?.stats?.fornecedores} />
+        <StatCard label="Pedidos" value={data?.stats?.pedidos} />
+        <StatCard label="Relações" value={data?.stats?.relacionamentos} />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="card overflow-hidden">
-          {/* Integrated Toolbar */}
-          <div className="flex flex-col border-b border-steel-700/10 bg-white">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-steel-50 border border-steel-700/10 shadow-inner">
-                  <Network className="h-5 w-5 text-steel-700" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-steel-900 leading-tight">Mapa de vínculos</h2>
-                  <p className="hidden sm:block text-xs text-steel-500">Arraste para mover · Scroll/Pinça para zoom</p>
-                  <p className="sm:hidden text-xs text-steel-500">Arraste para mover · Pinça para zoom</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 rounded-lg bg-steel-50/80 p-1 border border-steel-700/10 shadow-inner self-start sm:self-auto">
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.max(0.3, Number((value - 0.1).toFixed(2))))}>
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <span className="w-12 text-center font-mono text-xs font-bold text-steel-700 select-none">{Math.round(zoom * 100)}%</span>
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.min(2.0, Number((value + 0.1).toFixed(2))))}>
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <div className="w-px h-4 bg-steel-700/15 mx-1"></div>
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all flex items-center gap-1.5 px-2" onClick={resetView}>
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span className="text-xs font-bold">Recentrar</span>
-                </button>
+          <div className="flex flex-col gap-3 border-b border-steel-700/10 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2">
+              <Network className="h-5 w-5 text-steel-800" />
+              <div>
+                <h2 className="font-bold text-steel-900">Mapa de vínculos</h2>
+                <p className="text-xs text-steel-500">Arraste o mapa e use a roda do mouse para aproximar.</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-              <span className="text-[10px] font-black uppercase tracking-wider text-steel-400 mr-1 shrink-0">Mostrar:</span>
-              {TYPE_ORDER.map((type) => {
-                const meta = TYPE_META[type];
-                const Icon = meta.icon;
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => toggleTipo(type)}
-                    className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all ${
-                      tiposVisiveis[type]
-                        ? 'border-steel-700/20 bg-white text-steel-800 shadow-sm'
-                        : 'border-transparent bg-steel-50/50 text-steel-400 hover:bg-steel-50'
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" style={{ color: tiposVisiveis[type] ? meta.color : 'currentColor' }} />
-                    {meta.label}
-                  </button>
-                );
-              })}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.max(0.62, Number((value - 0.1).toFixed(2))))}>
+                <ZoomOut className="h-4 w-4" />
+              </button>
+              <span className="min-w-14 text-center font-mono text-sm font-bold text-steel-700">{Math.round(zoom * 100)}%</span>
+              <button type="button" className="btn-secondary min-h-9 px-3" onClick={() => setZoom((value) => Math.min(1.55, Number((value + 0.1).toFixed(2))))}>
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <button type="button" className="btn-secondary min-h-9 px-3" onClick={resetView}>
+                <RotateCcw className="h-4 w-4" />
+                Recentrar
+              </button>
             </div>
           </div>
 
-          <div className="relative h-[420px] sm:h-[520px] lg:h-[620px] bg-white touch-none">
+          <div className="flex flex-wrap gap-2 border-b border-steel-700/10 p-3">
+            {TYPE_ORDER.map((type) => {
+              const meta = TYPE_META[type];
+              const Icon = meta.icon;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => toggleTipo(type)}
+                  className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
+                    tiposVisiveis[type]
+                      ? 'border-steel-700/20 bg-white text-steel-900'
+                      : 'border-steel-700/10 bg-steel-50 text-steel-400'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" style={{ color: tiposVisiveis[type] ? meta.color : '#91A0B7' }} />
+                  {meta.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative h-[620px] min-h-[520px] bg-white">
             {isLoading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
                 <div className="flex items-center gap-3 rounded-md border border-steel-700/10 bg-white px-4 py-3 text-sm font-bold text-steel-700 shadow-control">
                   <RefreshCw className="h-4 w-4 animate-spin text-accent" />
-                  Carregando informações...
+                  Carregando grafo...
                 </div>
               </div>
             )}
@@ -619,17 +545,15 @@ const GrafoRelacionamentos = () => {
             <svg
               ref={svgRef}
               role="img"
-              aria-label="Mapa de informações operacionais"
-              className={`h-full w-full ${drag ? 'cursor-grabbing' : 'cursor-grab'}`}
+              aria-label="Grafo de relacionamentos operacionais"
+              className={`h-full w-full cursor-grab active:cursor-grabbing touch-none`}
               viewBox={`0 0 ${layout.canvasWidth} ${layout.canvasHeight}`}
               onWheel={handleWheel}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onPointerOut={handlePointerUp}
             >
               <defs>
                 <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -638,6 +562,17 @@ const GrafoRelacionamentos = () => {
                 <pattern id="grid-grafo" width="32" height="32" patternUnits="userSpaceOnUse">
                   <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E8EEF7" strokeWidth="1" />
                 </pattern>
+                <style>
+                  {`
+                    @keyframes dashFlow {
+                      to { stroke-dashoffset: -20; }
+                    }
+                    .animated-edge {
+                      stroke-dasharray: 6 4;
+                      animation: dashFlow 1s linear infinite;
+                    }
+                  `}
+                </style>
               </defs>
               <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
 
@@ -654,6 +589,7 @@ const GrafoRelacionamentos = () => {
                         stroke={highlighted ? '#667085' : '#CDD7E6'}
                         strokeWidth={highlighted ? 2.2 : 1.4}
                         markerEnd="url(#arrow-grafo)"
+                        className={highlighted ? 'animated-edge' : ''}
                       />
                       {source && target && highlighted && (
                         <text
@@ -707,15 +643,15 @@ const GrafoRelacionamentos = () => {
                       <foreignObject x="13" y="14" width="12" height="12">
                         <Icon size={12} color={meta.color} />
                       </foreignObject>
-                      <text x="36" y="20" fontSize="11" fontWeight="900" fill="#000000">
-                        {compactText(node.label, 14)}
+                      <text x="35" y="18" fontSize="12" fontWeight="900" fill="#000000">
+                        {compactText(node.label, 16)}
                       </text>
-                      <text x="36" y="34" fontSize="9.5" fontWeight="600" fill="#667085">
-                        {compactText(node.subtitle, 16)}
+                      <text x="35" y="35" fontSize="10" fontWeight="600" fill="#667085">
+                        {compactText(node.subtitle, 18)}
                       </text>
-                      <circle cx="148" cy="15" r="5" fill={statusColor(node.status)} />
-                      <text x="10" y="56" fontSize="8.5" fontWeight="800" fill={statusColor(node.status)}>
-                        {compactText(labelStatus(node.status), 20)}
+                      <circle cx="134" cy="15" r="5" fill={statusColor(node.status)} />
+                      <text x="10" y="51" fontSize="9" fontWeight="800" fill={statusColor(node.status)}>
+                        {compactText(labelStatus(node.status), 22)}
                       </text>
                     </g>
                   );

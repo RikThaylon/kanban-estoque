@@ -96,6 +96,7 @@ app.get('/ready', async (req, res) => {
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/usuarios', require('./routes/usuarios'));
 app.use('/api/v1/produtos', require('./routes/produtos'));
+app.use('/api/v1/categorias', require('./routes/categorias'));
 app.use('/api/v1/fornecedores', require('./routes/fornecedores'));
 app.use('/api/v1/departamentos', require('./routes/departamentos'));
 app.use('/api/v1/maquinas', require('./routes/maquinas'));
