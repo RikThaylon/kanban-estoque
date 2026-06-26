@@ -44,11 +44,11 @@ const Login = () => {
         {/* Header Branding (with subtle glow/glass on text for contrast) */}
         <div className="flex flex-col items-center text-center mb-6 sm:mb-8 w-full">
           <div className="flex items-center gap-3 mb-4 p-2">
-            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
-              B
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-brand-primary to-brand-deep text-white text-xl sm:text-2xl font-bold shadow-lg shadow-brand-deep/50 border border-brand-primary/30">
+              C
             </div>
             <span className="text-2xl sm:text-3xl font-bold tracking-wide text-white drop-shadow-lg">
-              Brimajor Kanban
+              Controle de Estoque Kanban
             </span>
           </div>
           
@@ -157,7 +157,7 @@ const Login = () => {
             <button 
               type="submit" 
               disabled={loading || !username || !senha} 
-              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-[#003366] to-[#004080] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/30 hover:from-[#002244] hover:to-[#003366] hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#003366] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-brand-deep to-brand-primary px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-deep/30 hover:from-brand-primary hover:to-brand-deep hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-deep active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? (
                 <>

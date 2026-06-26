@@ -63,7 +63,7 @@ const Header = () => {
           </button>
 
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-primary hidden sm:block">Brimajor Kanban</p>
+            <p className="text-[10px] uppercase font-bold text-primary hidden sm:block">Controle de Estoque Kanban</p>
             <h1 className="font-display text-base sm:text-lg font-bold text-steel-900 leading-tight truncate">{title}</h1>
             <p className="text-xs text-steel-500 hidden md:block truncate">{subtitle}</p>
           </div>
@@ -77,7 +77,7 @@ const Header = () => {
 
           <Link
             to="/alertas"
-            className="relative p-2 text-steel-600 hover:text-primary hover:bg-blue-50 rounded-md transition-colors"
+            className="relative p-2 text-steel-600 hover:text-primary hover:bg-brand-primary/10 rounded-md transition-colors"
             aria-label="Alertas"
           >
             <Bell className="w-5 h-5" />
@@ -95,7 +95,7 @@ const Header = () => {
               <p className="text-sm font-bold text-steel-900 leading-tight truncate max-w-[150px]">{user?.nome || 'Usuário'}</p>
               <p className="text-xs text-steel-500 capitalize">{(user?.perfil || 'Perfil').replace(/_/g, ' ')}</p>
             </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shrink-0 shadow-sm">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-primary to-brand-deep flex items-center justify-center text-white shrink-0 shadow-sm">
               <User className="w-4 h-4" />
             </div>
             <button

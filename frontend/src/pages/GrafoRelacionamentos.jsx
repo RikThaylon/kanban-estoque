@@ -656,19 +656,19 @@ const GrafoRelacionamentos = () => {
                         markerEnd="url(#arrow-grafo)"
                       />
                       {source && target && highlighted && (
-                        <text
-                          x={(source.x + target.x + NODE_W) / 2}
-                          y={(source.y + target.y + NODE_H) / 2 - 8}
-                          textAnchor="middle"
-                          fontSize="10"
-                          fontWeight="700"
-                          fill="#3F4959"
-                          paintOrder="stroke"
-                          stroke="#ffffff"
-                          strokeWidth="4"
+                        <foreignObject
+                          x={(source.x + target.x + NODE_W) / 2 - 45}
+                          y={(source.y + target.y + NODE_H) / 2 - 14}
+                          width={90}
+                          height={28}
+                          className="overflow-visible"
                         >
-                          {compactText(edge.label, 20)}
-                        </text>
+                          <div className="flex items-center justify-center w-full h-full">
+                            <span className="bg-white/95 text-slate-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-slate-200 shadow-sm whitespace-nowrap">
+                              {compactText(edge.label, 20)}
+                            </span>
+                          </div>
+                        </foreignObject>
                       )}
                     </g>
                   );

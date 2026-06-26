@@ -61,13 +61,13 @@ const Sidebar = () => {
     >
       <div className="h-16 flex items-center justify-between border-b border-white/10 px-4">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-          <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center shrink-0 font-display font-black text-lg text-white shadow-[0_0_0_1px_rgba(255,255,255,0.20),0_10px_24px_rgba(0,93,255,0.32)]">
-            B
+          <div className="w-9 h-9 rounded-md bg-accent flex items-center justify-center shrink-0 font-display font-black text-lg text-white shadow-[0_0_0_1px_rgba(255,255,255,0.20),0_10px_24px_rgba(241,21,35,0.32)]">
+            C
           </div>
           {sidebarOpen && (
             <div className="min-w-0">
-              <span className="block font-display font-bold text-lg leading-tight">Brimajor</span>
-              <span className="block text-[10px] uppercase text-white/55">Kanban Estoque</span>
+              <span className="block font-display font-bold text-lg leading-tight">Controle de</span>
+              <span className="block text-[10px] uppercase text-white/55">Estoque Kanban</span>
             </div>
           )}
         </div>
@@ -89,7 +89,7 @@ const Sidebar = () => {
             className={({ isActive }) => `
               relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all overflow-hidden whitespace-nowrap
               ${isActive
-                ? 'bg-accent/25 text-white font-bold shadow-[inset_3px_0_0_#0088ff]'
+                ? 'bg-accent/25 text-white font-bold shadow-[inset_3px_0_0_#F11523]'
                 : 'text-white/[0.68] hover:bg-white/[0.09] hover:text-white'}
             `}
             title={!sidebarOpen ? item.label : ''}
@@ -103,7 +103,7 @@ const Sidebar = () => {
       {sidebarOpen && (
         <div className="m-3 rounded-lg border border-white/8 bg-white/[0.05] p-3 text-xs">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-primary to-brand-deep flex items-center justify-center text-white text-sm font-bold shrink-0">
               {(user?.nome || 'U').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
