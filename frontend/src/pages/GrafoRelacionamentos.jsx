@@ -655,7 +655,7 @@ const GrafoRelacionamentos = () => {
                         strokeWidth={highlighted ? 2.2 : 1.4}
                         markerEnd="url(#arrow-grafo)"
                       />
-                      {source && target && highlighted && (
+                      {source && target && (selectedNodeId ? highlighted : false) && (
                         <foreignObject
                           x={(source.x + target.x + NODE_W) / 2 - 45}
                           y={(source.y + target.y + NODE_H) / 2 - 14}
