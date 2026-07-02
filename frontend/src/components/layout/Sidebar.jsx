@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Activity,
   AlertTriangle,
   ArrowLeftRight,
   BarChart2,
@@ -41,6 +42,7 @@ const Sidebar = () => {
     { key: 'alertas', path: '/alertas', icon: AlertTriangle, label: 'Alertas' },
     { key: 'raci', path: '/raci', icon: GitBranch, label: 'Matriz RACI' },
     { key: 'relatorios', path: '/relatorios', icon: BarChart2, label: 'Relatórios' },
+    { key: 'relatorios', path: '/simulacao', icon: Activity, label: 'Monte Carlo' },
     { key: 'usuarios', path: '/usuarios', icon: Users, label: 'Usuários' },
   ];
 

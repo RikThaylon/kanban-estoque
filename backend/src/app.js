@@ -106,6 +106,7 @@ app.use('/api/v1/configuracoes', require('./routes/configuracoes'));
 app.use('/api/v1/dashboard', require('./routes/dashboard'));
 app.use('/api/v1/alertas', require('./routes/alertas'));
 app.use('/api/v1/relatorios', require('./routes/relatorios'));
+app.use('/api/v1/simulations', require('./routes/simulation'));
 
 // ── 404 Handler ───────────────────────────────────────────
 app.use((req, res) => {

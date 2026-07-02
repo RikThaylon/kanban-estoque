@@ -28,7 +28,7 @@ function calcularFaixaPorParametros(estoqueAtual, estoqueSeguranca, pontoReposic
 async function recalcularKanban(produtoId, io = null) {
   // Buscar dados do produto
   const prodRes = await query(
-    'SELECT id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, estoque_atual FROM produtos WHERE id = $1 AND ativo = true',
+    'SELECT id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, estoque_atual, classificacao_abc, categoria_id FROM produtos WHERE id = $1 AND ativo = true',
     [produtoId]
   );
   if (prodRes.rows.length === 0) return null;
@@ -58,6 +58,18 @@ async function recalcularKanban(produtoId, io = null) {
     }
   }
 
+  // Obter CV Dinâmico da categoria
+  let dynamicCv = null;
+  if (produto.categoria_id) {
+    const cvRes = await query(`
+      SELECT AVG(sigma_demanda_diaria / NULLIF(demanda_diaria_media, 0)) as avg_cv
+      FROM kanban_parametros kp
+      JOIN produtos p ON p.id = kp.produto_id
+      WHERE p.categoria_id = $1 AND kp.semanas_historico_usadas >= 12
+    `, [produto.categoria_id]);
+    dynamicCv = cvRes.rows[0]?.avg_cv ? parseFloat(cvRes.rows[0].avg_cv) : null;
+  }
+
   // Calcular parâmetros
   const result = calcularParametrosKanban({
     demandaSemanalSeries,
@@ -68,6 +80,9 @@ async function recalcularKanban(produtoId, io = null) {
     taxaCarregamento: parseFloat(produto.taxa_carregamento),
     nivelServico: produto.nivel_servico,
     estoqueAtual: parseFloat(produto.estoque_atual),
+    classificacaoAbc: produto.classificacao_abc,
+    expectedDemand: parametrosAtuais.demanda_diaria_media ? parseFloat(parametrosAtuais.demanda_diaria_media) : null,
+    dynamicCv,
   });
 
   const estoqueAtual = parseFloat(produto.estoque_atual);

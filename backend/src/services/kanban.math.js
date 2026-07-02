@@ -4,6 +4,7 @@
  * Implementa Suavização Exponencial Dupla de Holt, Regressão Linear,
  * cálculos determinísticos de ES/PR/EOQ e Classificação ABC.
  */
+const mathUtils = require('../utils/math');
 
 /** Tabela Z para nível de serviço */
 const Z_TABLE = { 90: 1.2816, 95: 1.6449, 98: 1.8808, 99: 2.3263 };
@@ -169,20 +170,11 @@ function calcularParametrosKanban({
   taxaCarregamento,
   nivelServico,
   estoqueAtual,
+  classificacaoAbc,
+  expectedDemand,
+  dynamicCv,
 }) {
   const alertas = [];
-
-  // Validações
-  if (!demandaSemanalSeries || demandaSemanalSeries.length < 3) {
-    return {
-      ES: 0, PR: 0, EOQ: 0, Emax: 0,
-      faixa: 'SEM_DADOS',
-      diasCobertura: null,
-      alertas: ['Dados insuficientes: mínimo 3 semanas de consumo'],
-      insuficiente_historico: true,
-      intermediarios: {},
-    };
-  }
 
   if ((!leadTimeSeries || leadTimeSeries.length < 2) && !leadTimeFornecedor) {
     return {
@@ -197,11 +189,46 @@ function calcularParametrosKanban({
 
   const Z = Z_TABLE[nivelServico] || Z_TABLE[95];
 
-  // 1. Holt → demanda semanal prevista; converte para diária
-  //    (assumindo independência diária: σ_d = σ_w / √7)
-  const holt = holtDoubleExponential(demandaSemanalSeries);
-  const demandaDiariaMedia = holt.forecast / 7;
-  const sigmaD = holt.sigma / Math.sqrt(7);
+  // 1. Tiers de Maturidade de Dados para Demanda (Cold-start)
+  let demandaDiariaMedia = 0;
+  let sigmaD = 0;
+  let tierDemanda = 'SEM_DADOS';
+  let holt = { forecast: 0, sigma: 0, nivel: 0, tendencia: 0 };
+  let cvConfidence = null;
+
+  if (demandaSemanalSeries && demandaSemanalSeries.length >= 12) {
+    // Tier 3 - Histórico maduro
+    tierDemanda = 'TIER_3_HOLT';
+    holt = holtDoubleExponential(demandaSemanalSeries);
+    demandaDiariaMedia = holt.forecast / 7;
+    sigmaD = holt.sigma / Math.sqrt(7);
+  } else if (demandaSemanalSeries && mathUtils.isIntermittent(demandaSemanalSeries)) {
+    // Tier 2 - Demanda Intermitente (SBA/Poisson)
+    tierDemanda = 'TIER_2_INTERMITENTE';
+    holt = holtDoubleExponential(demandaSemanalSeries);
+    demandaDiariaMedia = holt.forecast / 7;
+    sigmaD = mathUtils.poissonSigma(demandaDiariaMedia);
+  } else if (demandaSemanalSeries && demandaSemanalSeries.length >= 3) {
+    // Tier 1 - Bayesian Shrinkage (Histórico Curto)
+    tierDemanda = 'TIER_1_BAYESIAN';
+    holt = holtDoubleExponential(demandaSemanalSeries);
+    demandaDiariaMedia = holt.forecast / 7;
+    const dataSigma = holt.sigma / Math.sqrt(7);
+    
+    const fallback = mathUtils.getCvFallback(dynamicCv, null, 1.0);
+    const priorSigma = fallback.cv * demandaDiariaMedia;
+    cvConfidence = fallback.confidence;
+    
+    sigmaD = mathUtils.bayesianShrinkage(dataSigma, priorSigma, demandaSemanalSeries.length);
+  } else {
+    // Tier 0 - Sem Histórico (Proxy)
+    tierDemanda = 'TIER_0_PROXY';
+    demandaDiariaMedia = expectedDemand || 0;
+    const fallback = mathUtils.getCvFallback(dynamicCv, null, 1.0);
+    cvConfidence = fallback.confidence;
+    sigmaD = fallback.cv * demandaDiariaMedia;
+    alertas.push('AVISO: Produto sem histórico. Utilizado proxy de categoria para sigma.');
+  }
 
   // 2. Regressão → lead time previsto e seu desvio
   const usandoLeadTimeFornecedor = (!leadTimeSeries || leadTimeSeries.length < 2) && leadTimeFornecedor;
@@ -223,9 +250,18 @@ function calcularParametrosKanban({
   //
   //    Versão anterior usava ES = Z × σd × √LT_seguro, que IGNORAVA o segundo termo
   //    e subestimava o estoque de segurança em 30–50% para itens com d alto e LT instável.
-  const varDuranteLT = ltPrevisto * sigmaD * sigmaD + demandaDiariaMedia * demandaDiariaMedia * sigmaLT * sigmaLT;
-  const sigmaDuranteLT = Math.sqrt(Math.max(0, varDuranteLT));
-  const ES = Math.ceil(Z * sigmaDuranteLT);
+  let ES;
+  let sigmaDuranteLT = 0;
+  
+  if (demandaDiariaMedia === 0 && tierDemanda === 'TIER_0_PROXY') {
+    // Fallback: Método de King para demanda zero
+    ES = mathUtils.applyKingMethod(classificacaoAbc);
+    alertas.push('AVISO: Demanda nula. Utilizado Método de King para Estoque de Segurança.');
+  } else {
+    const varDuranteLT = ltPrevisto * sigmaD * sigmaD + demandaDiariaMedia * demandaDiariaMedia * sigmaLT * sigmaLT;
+    sigmaDuranteLT = Math.sqrt(Math.max(0, varDuranteLT));
+    ES = Math.ceil(Z * sigmaDuranteLT);
+  }
 
   // 4. PR = ceil(demanda_diaria × lt_previsto + ES)
   const PR = Math.ceil(demandaDiariaMedia * ltPrevisto + ES);
@@ -288,6 +324,8 @@ function calcularParametrosKanban({
       dAnual,
       H,
       nivelServico,
+      tierDemanda,
+      cvConfidence,
     },
   };
 }

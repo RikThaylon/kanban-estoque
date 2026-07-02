@@ -1,9 +1,10 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const { env } = require('../config/env');
 const { query } = require('../config/database');
 const { redis } = require('../config/redis');
-const { AuthError, AppError } = require('../utils/errors');
+const { AuthError } = require('../utils/errors');
 const logger = require('../utils/logger');
 const { hashToken, legacyHashToken } = require('../utils/sensitiveData');
 
@@ -11,16 +12,17 @@ class AuthService {
   /**
    * Gera par de tokens (access + refresh)
    */
-  generateTokens(user) {
+  generateTokens(user, rememberMe = false) {
     const accessToken = jwt.sign(
       { id: user.id, username: user.username, perfil: user.perfil, nome: user.nome },
       env.JWT_SECRET,
       { expiresIn: env.JWT_ACCESS_EXPIRY }
     );
+    const refreshExpiresIn = rememberMe ? '30d' : '1d';
     const refreshToken = jwt.sign(
-      { id: user.id, type: 'refresh' },
+      { id: user.id, type: 'refresh', rememberMe },
       env.JWT_REFRESH_SECRET,
-      { expiresIn: env.JWT_REFRESH_EXPIRY }
+      { expiresIn: refreshExpiresIn }
     );
     return { accessToken, refreshToken };
   }
@@ -28,7 +30,7 @@ class AuthService {
   /**
    * Login com username e senha
    */
-  async login(username, senha, ip, userAgent) {
+  async login(username, senha, ip, userAgent, rememberMe = false) {
     const result = await query(
       'SELECT id, nome, username, senha_hash, perfil, ativo, tentativas_login, bloqueado_ate FROM usuarios WHERE username = $1',
       [username]
@@ -69,13 +71,18 @@ class AuthService {
       [user.id]
     );
 
-    const tokens = this.generateTokens(user);
+    const tokens = this.generateTokens(user, rememberMe);
 
-    // Salvar refresh token no banco
+    // Salvar refresh token no banco com family_id e absolute_ttl
     const tokenHash = hashToken(tokens.refreshToken);
+    const familyId = uuidv4();
+    const intervalStr = rememberMe ? '30 days' : '1 day';
+
     await query(
-      'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-      [user.id, tokenHash, ip, userAgent]
+      `INSERT INTO refresh_tokens 
+       (usuario_id, token_hash, family_id, absolute_ttl, expira_em, ip_origem, user_agent) 
+       VALUES ($1, $2, $3, NOW() + INTERVAL '${intervalStr}', NOW() + INTERVAL '${intervalStr}', $4, $5)`,
+      [user.id, tokenHash, familyId, ip, userAgent]
     );
 
     // Audit log
@@ -105,7 +112,7 @@ class AuthService {
     const tokenHash = hashToken(refreshToken);
     const legacyTokenHash = legacyHashToken(refreshToken);
     const result = await query(
-      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.expira_em > NOW()',
+      'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.absolute_ttl > NOW() AND rt.expira_em > NOW()',
       [[tokenHash, legacyTokenHash]]
     );
 
@@ -113,44 +120,51 @@ class AuthService {
     const row = result.rows[0];
     if (!row.ativo) throw new AuthError('Usuário desativado');
 
-    if (row.revogado) {
-      if (row.rotacionado_em) {
-        const rotatedAt = new Date(row.rotacionado_em);
-        const now = new Date();
-        const diffMs = now.getTime() - rotatedAt.getTime();
-        
-        // 15 seconds Grace Period
-        if (diffMs <= 15000) {
-          logger.warn('Token Refresh Grace Period ativado (concorrência de rede/abas)', { userId: row.usuario_id, ip });
-          const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
-          const tokens = this.generateTokens(user);
-
-          const newHash = hashToken(tokens.refreshToken);
-          await query(
-            'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-            [user.id, newHash, ip, userAgent]
-          );
-          return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, usuario: user };
-        }
+    if (row.revogado || row.revoked_at) {
+      // Race condition mitigation: Grace Period via Redis
+      const cachedNewToken = await redis.get(`grace:${tokenHash}`);
+      if (cachedNewToken) {
+        logger.warn('Token Refresh Grace Period ativado (concorrência de rede/abas)', { userId: row.usuario_id, ip });
+        const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
+        // Generate a new access token to accompany the cached refresh token
+        const accessToken = jwt.sign(
+          { id: user.id, username: user.username, perfil: user.perfil, nome: user.nome },
+          env.JWT_SECRET,
+          { expiresIn: env.JWT_ACCESS_EXPIRY }
+        );
+        return { accessToken, refreshToken: cachedNewToken, usuario: user };
       }
       
-      // Strict Token Theft Detection:
+      // Token Reuse Detection: Revoke the whole family
       logger.error('Possível roubo de token detectado (Reuso fora do grace period)', { userId: row.usuario_id, ip });
-      await query('UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1', [row.usuario_id]);
+      await query('UPDATE refresh_tokens SET revogado = true, revoked_at = NOW() WHERE family_id = $1', [row.family_id]);
       throw new AuthError('Sessão comprometida por segurança. Faça login novamente.');
     }
 
-    // Revogar token anterior (rotation) e salvar a data da rotação
-    await query('UPDATE refresh_tokens SET revogado = true, rotacionado_em = NOW() WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
-
+    // Normal Rotation
     const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
-    const tokens = this.generateTokens(user);
-
-    // Salvar novo refresh token
+    const rememberMe = decoded.rememberMe === true;
+    const tokens = this.generateTokens(user, rememberMe);
     const newHash = hashToken(tokens.refreshToken);
-    await query(
-      'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-      [user.id, newHash, ip, userAgent]
+
+    // Save the new plaintext token in Redis for 15s (Grace Period)
+    await redis.setex(`grace:${tokenHash}`, 15, tokens.refreshToken);
+
+    // Revoke old token and link to new one
+    await query(`
+      UPDATE refresh_tokens 
+      SET revogado = true, revoked_at = NOW(), rotacionado_em = NOW(), replaced_by_token_hash = $1
+      WHERE id = $2`, 
+      [newHash, row.id]
+    );
+
+    // Insert new token in the same family
+    const intervalStr = rememberMe ? '30 days' : '1 day';
+    await query(`
+      INSERT INTO refresh_tokens 
+      (usuario_id, token_hash, family_id, absolute_ttl, expira_em, ip_origem, user_agent) 
+      VALUES ($1, $2, $3, $4, NOW() + INTERVAL '${intervalStr}', $5, $6)`,
+      [user.id, newHash, row.family_id, row.absolute_ttl, ip, userAgent]
     );
 
     return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, usuario: user };
@@ -172,14 +186,14 @@ class AuthService {
       // Ignora erro de decode
     }
 
-    await query('UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1 AND revogado = false', [userId]);
+    await query('UPDATE refresh_tokens SET revogado = true, revoked_at = NOW() WHERE usuario_id = $1 AND (revogado = false OR revogado IS NULL)', [userId]);
   }
 
   async revokeRefreshToken(refreshToken) {
     if (!refreshToken) return;
     const tokenHash = hashToken(refreshToken);
     const legacyTokenHash = legacyHashToken(refreshToken);
-    await query('UPDATE refresh_tokens SET revogado = true WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
+    await query('UPDATE refresh_tokens SET revogado = true, revoked_at = NOW() WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
   }
 
   /**

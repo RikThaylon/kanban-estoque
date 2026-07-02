@@ -15,7 +15,6 @@ const cookieOptions = {
   secure: env.NODE_ENV === 'production',
   sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
   path: '/api/v1/auth',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
 const readCookie = (req, name) => {
@@ -28,8 +27,18 @@ const readCookie = (req, name) => {
   return found ? decodeURIComponent(found.slice(name.length + 1)) : null;
 };
 
+const jwt = require('jsonwebtoken');
+
 const sendAuthResponse = (res, result) => {
-  res.cookie(REFRESH_COOKIE, result.refreshToken, cookieOptions);
+  let maxAge = 24 * 60 * 60 * 1000; // 1 day default
+  try {
+    const decoded = jwt.decode(result.refreshToken);
+    if (decoded && decoded.rememberMe) {
+      maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    }
+  } catch (err) {}
+
+  res.cookie(REFRESH_COOKIE, result.refreshToken, { ...cookieOptions, maxAge });
   res.set('Cache-Control', 'no-store');
   const { refreshToken, ...safeResult } = result;
   res.json(safeResult);
@@ -40,12 +49,13 @@ router.post('/login',
   [
     body('username').isString().trim().isLength({ min: 1, max: 60 }).withMessage('Usuario obrigatorio'),
     body('senha').isLength({ min: 6, max: 100 }).trim().withMessage('Senha deve ter entre 6 e 100 caracteres'),
+    body('rememberMe').optional().isBoolean()
   ],
   validate,
   async (req, res, next) => {
     try {
-      const { username, senha } = req.body;
-      const result = await authService.login(username, senha, req.ip, req.get('user-agent'));
+      const { username, senha, rememberMe } = req.body;
+      const result = await authService.login(username, senha, req.ip, req.get('user-agent'), rememberMe === true);
       sendAuthResponse(res, result);
     } catch (err) {
       next(err);
