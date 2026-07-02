@@ -39,8 +39,8 @@ const EMPTY_FILTERS = {
 };
 
 const TYPE_ORDER = ['pedido', 'produto', 'estoque', 'maquina', 'departamento', 'supervisor', 'fornecedor'];
-const NODE_W = 164;
-const NODE_H = 64;
+const NODE_W = 220;
+const NODE_H = 80;
 
 const TYPE_META = {
   produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
@@ -129,11 +129,11 @@ function buildLayout(nodes) {
     });
   });
 
-  const GAP_Y = 96;
+  const GAP_Y = 110;
   const maxColumn = Math.max(1, ...columns.map((column) => column.length));
   const canvasHeight = Math.max(720, 150 + maxColumn * GAP_Y);
   const positions = new Map();
-  const columnX = [48, 252, 456, 660, 864, 1068];
+  const columnX = [40, 300, 560, 820, 1080, 1340];
 
   columns.forEach((column, columnIndex) => {
     const blockHeight = Math.max(0, (column.length - 1) * GAP_Y);
@@ -146,7 +146,7 @@ function buildLayout(nodes) {
     });
   });
 
-  return { positions, canvasHeight, canvasWidth: 1280 };
+  return { positions, canvasHeight, canvasWidth: 1600 };
 }
 
 function buildPath(source, target) {
@@ -155,7 +155,8 @@ function buildPath(source, target) {
   const sy = source.y + NODE_H / 2;
   const tx = target.x;
   const ty = target.y + NODE_H / 2;
-  const bend = Math.max(38, Math.abs(tx - sx) * 0.45);
+  // Increase bend radius to make overlapping lines more distinguishable
+  const bend = Math.max(50, Math.abs(tx - sx) * 0.55);
   return `M ${sx} ${sy} C ${sx + bend} ${sy}, ${tx - bend} ${ty}, ${tx} ${ty}`;
 }
 
@@ -651,11 +652,11 @@ const GrafoRelacionamentos = () => {
                       <path
                         d={buildPath(source, target)}
                         fill="none"
-                        stroke={highlighted ? '#667085' : '#CDD7E6'}
+                        stroke={highlighted ? '#667085' : '#E8EEF7'}
                         strokeWidth={highlighted ? 2.2 : 1.4}
                         markerEnd="url(#arrow-grafo)"
                       />
-                      {source && target && highlighted && (
+                      {source && target && highlighted && selectedNodeId && (
                         <text
                           x={(source.x + target.x + NODE_W) / 2}
                           y={(source.y + target.y + NODE_H) / 2 - 8}
@@ -686,37 +687,46 @@ const GrafoRelacionamentos = () => {
                       key={node.id}
                       data-node="true"
                       transform={`translate(${pos.x} ${pos.y})`}
-                      opacity={dimmed ? 0.22 : 1}
+                      opacity={dimmed ? 0.15 : 1}
                       onMouseDown={(event) => event.stopPropagation()}
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelectedNodeId(node.id);
                       }}
-                      className="cursor-pointer"
+                      className="cursor-pointer transition-opacity duration-200"
                     >
                       <rect
                         width={NODE_W}
                         height={NODE_H}
-                        rx="8"
+                        rx="12"
                         fill={selected ? '#DCEBFF' : meta.bg}
                         stroke={selected ? '#005DFF' : meta.color}
-                        strokeWidth={selected ? 2.5 : 1.4}
+                        strokeWidth={selected ? 2.5 : 1.5}
                         filter={selected ? 'drop-shadow(0 10px 14px rgba(0,93,255,0.18))' : 'none'}
                       />
-                      <circle cx="19" cy="20" r="10" fill="#ffffff" stroke={meta.color} strokeWidth="1" />
-                      <foreignObject x="13" y="14" width="12" height="12">
-                        <Icon size={12} color={meta.color} />
+                      <foreignObject x="0" y="0" width={NODE_W} height={NODE_H}>
+                        <div className="flex h-full w-full flex-col justify-between p-3" xmlns="http://www.w3.org/1999/xhtml">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm" style={{ border: `1px solid ${meta.color}` }}>
+                              <Icon size={14} color={meta.color} />
+                            </div>
+                            <span className="truncate text-sm font-black text-steel-900 leading-tight" title={node.label}>
+                              {node.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 pl-9">
+                            <span className="truncate text-[11px] font-bold text-steel-500 flex-1" title={node.subtitle}>
+                              {node.subtitle || '-'}
+                            </span>
+                            <div className="flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 bg-white/60">
+                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: statusColor(node.status) }} />
+                              <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: statusColor(node.status) }}>
+                                {compactText(labelStatus(node.status), 14)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </foreignObject>
-                      <text x="36" y="20" fontSize="11" fontWeight="900" fill="#000000">
-                        {compactText(node.label, 14)}
-                      </text>
-                      <text x="36" y="34" fontSize="9.5" fontWeight="600" fill="#667085">
-                        {compactText(node.subtitle, 16)}
-                      </text>
-                      <circle cx="148" cy="15" r="5" fill={statusColor(node.status)} />
-                      <text x="10" y="56" fontSize="8.5" fontWeight="800" fill={statusColor(node.status)}>
-                        {compactText(labelStatus(node.status), 20)}
-                      </text>
                     </g>
                   );
                 })}
