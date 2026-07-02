@@ -18,7 +18,7 @@ class AuthService {
       { expiresIn: env.JWT_ACCESS_EXPIRY }
     );
     const refreshToken = jwt.sign(
-      { id: user.id, type: 'refresh' },
+      { id: user.id, type: 'refresh', jti: require('crypto').randomUUID() },
       env.JWT_REFRESH_SECRET,
       { expiresIn: env.JWT_REFRESH_EXPIRY }
     );
@@ -28,7 +28,7 @@ class AuthService {
   /**
    * Login com username e senha
    */
-  async login(username, senha, ip, userAgent, skipPassword = false) {
+  async login(username, senha, ip, userAgent) {
     const result = await query(
       'SELECT id, nome, username, senha_hash, perfil, ativo, tentativas_login, bloqueado_ate FROM usuarios WHERE username = $1',
       [username]
@@ -48,21 +48,33 @@ class AuthService {
       throw new AuthError(`Conta bloqueada. Tente novamente em ${minutosRestantes} minutos.`);
     }
 
-    if (!skipPassword) {
-      const senhaValida = await bcrypt.compare(senha, user.senha_hash);
-      if (!senhaValida) {
-        const tentativas = (user.tentativas_login || 0) + 1;
-        if (tentativas >= 5) {
-          await query(
-            'UPDATE usuarios SET tentativas_login = $1, bloqueado_ate = NOW() + INTERVAL \'15 minutes\' WHERE id = $2',
-            [tentativas, user.id]
-          );
-          logger.warn('Usuário bloqueado após 5 tentativas', { userId: user.id, ip });
-          throw new AuthError('Conta bloqueada por 15 minutos após 5 tentativas falhas.');
-        }
-        await query('UPDATE usuarios SET tentativas_login = $1 WHERE id = $2', [tentativas, user.id]);
-        throw new AuthError(`Credenciais inválidas. ${5 - tentativas} tentativas restantes.`);
+    // Validação do hash antes de chamar bcrypt para evitar crashes
+    if (!user.senha_hash || typeof user.senha_hash !== 'string' || !/\$2[aby]\$/.test(user.senha_hash)) {
+      logger.warn('Usuario sem senha_hash válido durante login', { userId: user.id, ip });
+      // Não fornecer detalhes ao cliente para evitar informação de enumeração
+      throw new AuthError('Credenciais inválidas');
+    }
+
+    let senhaValida = false;
+    try {
+      senhaValida = await bcrypt.compare(senha, user.senha_hash);
+    } catch (err) {
+      logger.error('Erro ao comparar senha com bcrypt', { err: err.message, userId: user.id, ip });
+      throw new AuthError('Erro ao autenticar');
+    }
+
+    if (!senhaValida) {
+      const tentativas = (user.tentativas_login || 0) + 1;
+      if (tentativas >= 5) {
+        await query(
+          'UPDATE usuarios SET tentativas_login = $1, bloqueado_ate = NOW() + INTERVAL \'15 minutes\' WHERE id = $2',
+          [tentativas, user.id]
+        );
+        logger.warn('Usuário bloqueado após 5 tentativas', { userId: user.id, ip });
+        throw new AuthError('Conta bloqueada por 15 minutos após 5 tentativas falhas.');
       }
+      await query('UPDATE usuarios SET tentativas_login = $1 WHERE id = $2', [tentativas, user.id]);
+      throw new AuthError(`Credenciais inválidas. ${5 - tentativas} tentativas restantes.`);
     }
 
     // Reset tentativas e atualiza ultimo_login
@@ -73,11 +85,11 @@ class AuthService {
 
     const tokens = this.generateTokens(user);
 
-    // Salvar refresh token no banco
+    // Salvar refresh token no banco usando hash
     const tokenHash = hashToken(tokens.refreshToken);
     await query(
-      'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-      [user.id, tokenHash, ip, userAgent]
+      'INSERT INTO refresh_tokens (usuario_id, token_hash, jti, expira_em, ip_origem, user_agent) VALUES ($1, $2, $3, NOW() + INTERVAL \'7 days\', $4, $5)',
+      [user.id, tokenHash, jwt.decode(tokens.refreshToken).jti, ip, userAgent]
     );
 
     // Audit log
@@ -112,18 +124,21 @@ class AuthService {
     );
 
     if (rows.length === 0) {
+      // No token found -> possible theft. Revoke all tokens for the subject if identifiable
+      logger.error('Refresh token não encontrado ou expirado', { tokenHash, ip });
       throw new AuthError('Refresh token não encontrado ou expirado');
     }
 
     const row = rows[0];
     if (!row.ativo) throw new AuthError('Usuário desativado');
 
+    // If token already revoked -> check grace period for rotation concurrency
     if (row.revogado) {
       if (row.rotacionado_em) {
         const rotatedAt = new Date(row.rotacionado_em);
         const now = new Date();
         const diffMs = now.getTime() - rotatedAt.getTime();
-        
+
         // 15 seconds Grace Period
         if (diffMs <= 15000) {
           logger.warn('Token Refresh Grace Period ativado (concorrência de rede/abas)', { userId: row.usuario_id, ip });
@@ -132,20 +147,20 @@ class AuthService {
 
           const newHash = hashToken(tokens.refreshToken);
           await query(
-            'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-            [user.id, newHash, ip, userAgent]
+            'INSERT INTO refresh_tokens (usuario_id, token_hash, jti, expira_em, ip_origem, user_agent) VALUES ($1, $2, $3, NOW() + INTERVAL \'7 days\', $4, $5)',
+            [user.id, newHash, jwt.decode(tokens.refreshToken).jti, ip, userAgent]
           );
           return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, usuario: user };
         }
       }
-      
+
       // Strict Token Theft Detection:
       logger.error('Possível roubo de token detectado (Reuso fora do grace period)', { userId: row.usuario_id, ip });
       await query('UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1', [row.usuario_id]);
       throw new AuthError('Sessão comprometida por segurança. Faça login novamente.');
     }
 
-    // Revogar token anterior (rotation) e salvar a data da rotação
+    // Rotation: mark previous token as revoked and set rotacionado_em
     await query('UPDATE refresh_tokens SET revogado = true, rotacionado_em = NOW() WHERE token_hash = ANY($1)', [[tokenHash, legacyTokenHash]]);
 
     const user = { id: row.usuario_id, nome: row.nome, username: row.username, perfil: row.perfil };
@@ -154,8 +169,8 @@ class AuthService {
     // Salvar novo refresh token
     const newHash = hashToken(tokens.refreshToken);
     await query(
-      'INSERT INTO refresh_tokens (usuario_id, token_hash, expira_em, ip_origem, user_agent) VALUES ($1, $2, NOW() + INTERVAL \'7 days\', $3, $4)',
-      [user.id, newHash, ip, userAgent]
+      'INSERT INTO refresh_tokens (usuario_id, token_hash, jti, expira_em, ip_origem, user_agent) VALUES ($1, $2, $3, NOW() + INTERVAL \'7 days\', $4, $5)',
+      [user.id, newHash, jwt.decode(tokens.refreshToken).jti, ip, userAgent]
     );
 
     return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, usuario: user };
