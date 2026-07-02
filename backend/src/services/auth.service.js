@@ -28,7 +28,7 @@ class AuthService {
   /**
    * Login com username e senha
    */
-  async login(username, senha, ip, userAgent) {
+  async login(username, senha, ip, userAgent, skipPassword = false) {
     const result = await query(
       'SELECT id, nome, username, senha_hash, perfil, ativo, tentativas_login, bloqueado_ate FROM usuarios WHERE username = $1',
       [username]
@@ -48,19 +48,21 @@ class AuthService {
       throw new AuthError(`Conta bloqueada. Tente novamente em ${minutosRestantes} minutos.`);
     }
 
-    const senhaValida = await bcrypt.compare(senha, user.senha_hash);
-    if (!senhaValida) {
-      const tentativas = (user.tentativas_login || 0) + 1;
-      if (tentativas >= 5) {
-        await query(
-          'UPDATE usuarios SET tentativas_login = $1, bloqueado_ate = NOW() + INTERVAL \'15 minutes\' WHERE id = $2',
-          [tentativas, user.id]
-        );
-        logger.warn('Usuário bloqueado após 5 tentativas', { userId: user.id, ip });
-        throw new AuthError('Conta bloqueada por 15 minutos após 5 tentativas falhas.');
+    if (!skipPassword) {
+      const senhaValida = await bcrypt.compare(senha, user.senha_hash);
+      if (!senhaValida) {
+        const tentativas = (user.tentativas_login || 0) + 1;
+        if (tentativas >= 5) {
+          await query(
+            'UPDATE usuarios SET tentativas_login = $1, bloqueado_ate = NOW() + INTERVAL \'15 minutes\' WHERE id = $2',
+            [tentativas, user.id]
+          );
+          logger.warn('Usuário bloqueado após 5 tentativas', { userId: user.id, ip });
+          throw new AuthError('Conta bloqueada por 15 minutos após 5 tentativas falhas.');
+        }
+        await query('UPDATE usuarios SET tentativas_login = $1 WHERE id = $2', [tentativas, user.id]);
+        throw new AuthError(`Credenciais inválidas. ${5 - tentativas} tentativas restantes.`);
       }
-      await query('UPDATE usuarios SET tentativas_login = $1 WHERE id = $2', [tentativas, user.id]);
-      throw new AuthError(`Credenciais inválidas. ${5 - tentativas} tentativas restantes.`);
     }
 
     // Reset tentativas e atualiza ultimo_login
