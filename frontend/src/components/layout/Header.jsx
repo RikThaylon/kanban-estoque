@@ -8,18 +8,19 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const TITLES = {
-  dashboard: ['Centro de comando', 'Visão operacional do estoque Kanban'],
-  produtos: ['Catálogo técnico', 'Itens, parâmetros e curvas de consumo'],
-  movimentacoes: ['Movimentações', 'Entradas, saídas e ajustes de estoque'],
-  pedidos: ['Compras e aprovação', 'Solicitações, status e recebimentos'],
-  grafo: ['Informações', 'Peças, máquinas, compras e responsáveis'],
-  maquinas: ['Máquinas e departamentos', 'Vínculos produtivos e responsáveis'],
-  alertas: ['Alertas', 'Riscos e pendências do sistema'],
-  relatorios: ['Relatórios', 'Análise gerencial e exportações'],
-  usuarios: ['Usuários', 'Perfis e acessos'],
-  fornecedores: ['Fornecedores', 'Base de compra e lead times'],
-  configuracoes: ['Configurações', 'Regras administrativas do fluxo'],
-  raci: ['Matriz RACI', 'Responsabilidades do processo'],
+  dashboard:     ['Centro de comando',          'Visão operacional do estoque Kanban'],
+  produtos:      ['Catálogo técnico',            'Itens, parâmetros e curvas de consumo'],
+  movimentacoes: ['Movimentações',               'Entradas, saídas e ajustes de estoque'],
+  pedidos:       ['Compras e aprovação',         'Solicitações, status e recebimentos'],
+  grafo:         ['Informações',                 'Peças, máquinas, compras e responsáveis'],
+  maquinas:      ['Máquinas e departamentos',    'Vínculos produtivos e responsáveis'],
+  alertas:       ['Alertas',                     'Riscos e pendências do sistema'],
+  relatorios:    ['Relatórios',                  'Análise gerencial e exportações'],
+  simulacao:     ['Auditoria Monte Carlo',       'Validação estocástica dos parâmetros Kanban'],
+  usuarios:      ['Usuários',                    'Perfis e acessos'],
+  fornecedores:  ['Fornecedores',                'Base de compra e lead times'],
+  configuracoes: ['Configurações',               'Regras administrativas do fluxo'],
+  raci:          ['Matriz RACI',                 'Responsabilidades do processo'],
 };
 
 const Header = () => {

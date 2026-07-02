@@ -22,6 +22,23 @@
   --focus: rgba(0, 136, 255, 0.28);
   --panel-shadow: 0 10px 30px rgba(0, 36, 96, 0.08);
   --control-shadow: 0 4px 12px rgba(0, 93, 255, 0.08);
+
+  /* ── Sidebar BRIMAJOR Navy ──────────────────────────────────────
+     All text-on-sidebar colours pass WCAG AA (contrast ≥ 4.5:1)
+     against the sidebar bg #071525.
+     white           on #071525 → 18.1:1  ✓
+     white/90 (#e6e6e6) on #071525 → 15.4:1  ✓
+     white/60 (#999) on #071525  →  6.0:1  ✓ (AA)
+     white/40 (#666) on #071525  →  3.4:1  ✗ → use /50 (#808080) → 4.6:1 ✓
+  ─────────────────────────────────────────────────────────────── */
+  --sidebar-bg-start: #071525;
+  --sidebar-bg-end: #0c2340;
+  --sidebar-text: rgba(255,255,255,0.92);      /* primary labels  18:1 ✓ */
+  --sidebar-text-muted: rgba(255,255,255,0.55); /* group labels    4.7:1 ✓ */
+  --sidebar-text-dim: rgba(255,255,255,0.50);   /* non-active nav  4.6:1 ✓ */
+  --sidebar-active-bg: rgba(0, 136, 255, 0.14);
+  --sidebar-active-border: #0088ff;
+  --sidebar-hover-bg: rgba(255,255,255,0.07);
 }
 
 @layer base {
