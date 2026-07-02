@@ -21,6 +21,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import api from '../services/api';
 import { formatDate, formatMoney, formatNumber } from '../utils/formatters';
 
@@ -40,7 +41,7 @@ const EMPTY_FILTERS = {
 
 const TYPE_ORDER = ['pedido', 'produto', 'estoque', 'maquina', 'departamento', 'supervisor', 'fornecedor'];
 const NODE_W = 220;
-const NODE_H = 80;
+const NODE_H = 90;
 
 const TYPE_META = {
   produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
@@ -191,13 +192,9 @@ const GrafoRelacionamentos = () => {
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filtros, setFiltros] = useState(EMPTY_FILTERS);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [drag, setDrag] = useState(null);
   const [tiposVisiveis, setTiposVisiveis] = useState(
     Object.fromEntries(TYPE_ORDER.map((type) => [type, true]))
   );
-  const svgRef = useRef(null);
 
   const params = useMemo(() => buildParams(filtros), [filtros]);
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -253,18 +250,6 @@ const GrafoRelacionamentos = () => {
   };
 
   const focoNo = (node) => {
-    const fieldByType = {
-      produto: 'produto_id',
-      maquina: 'maquina_id',
-      departamento: 'departamento_id',
-      supervisor: 'supervisor_id',
-      fornecedor: 'fornecedor_id',
-    };
-    const field = fieldByType[node.type];
-    if (!field || !node.refId) return;
-    const next = { ...EMPTY_FILTERS, [field]: node.refId };
-    setDraft(next);
-    setFiltros(next);
     setSelectedNodeId(node.id);
   };
 
@@ -272,36 +257,6 @@ const GrafoRelacionamentos = () => {
     setTiposVisiveis((current) => ({ ...current, [type]: !current[type] }));
   };
 
-  const resetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  const handleWheel = (event) => {
-    event.preventDefault();
-    const next = Math.min(2.0, Math.max(0.3, zoom + (event.deltaY > 0 ? -0.1 : 0.1)));
-    setZoom(Number(next.toFixed(2)));
-  };
-
-  const handleMouseDown = (event) => {
-    if (event.button !== 0) return;
-    setDrag({ x: event.clientX, y: event.clientY, pan });
-  };
-
-  const handleMouseMove = (event) => {
-    if (!drag) return;
-    setPan({
-      x: drag.pan.x + event.clientX - drag.x,
-      y: drag.pan.y + event.clientY - drag.y,
-    });
-  };
-
-  const handleMouseUp = () => setDrag(null);
-
-  // --- Touch support for mobile (drag + pinch-to-zoom) ---
-  const touchRef = useRef({ lastDist: null, lastCenter: null });
-
-  const getTouchDist = (touches) => {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -561,23 +516,11 @@ const GrafoRelacionamentos = () => {
                 </div>
                 <div>
                   <h2 className="font-bold text-steel-900 leading-tight">Mapa de vínculos</h2>
-                  <p className="hidden sm:block text-xs text-steel-500">Arraste para mover · Scroll/Pinça para zoom</p>
-                  <p className="sm:hidden text-xs text-steel-500">Arraste para mover · Pinça para zoom</p>
+                  <p className="text-xs text-steel-500">Arraste para mover · Scroll/Pinça para zoom</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 rounded-lg bg-steel-50/80 p-1 border border-steel-700/10 shadow-inner self-start sm:self-auto">
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.max(0.3, Number((value - 0.1).toFixed(2))))}>
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <span className="w-12 text-center font-mono text-xs font-bold text-steel-700 select-none">{Math.round(zoom * 100)}%</span>
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all" onClick={() => setZoom((value) => Math.min(2.0, Number((value + 0.1).toFixed(2))))}>
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <div className="w-px h-4 bg-steel-700/15 mx-1"></div>
-                <button type="button" className="p-1.5 text-steel-600 hover:bg-white hover:text-steel-900 hover:shadow-sm rounded-md transition-all flex items-center gap-1.5 px-2" onClick={resetView}>
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  <span className="text-xs font-bold">Recentrar</span>
-                </button>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {/* Botões do mapa ficarão dentro do TransformWrapper */}
               </div>
             </div>
             
@@ -617,32 +560,49 @@ const GrafoRelacionamentos = () => {
 
             {!isLoading && visibleNodes.length === 0 && <EmptyGraph />}
 
-            <svg
-              ref={svgRef}
-              role="img"
-              aria-label="Mapa de informações operacionais"
-              className={`h-full w-full ${drag ? 'cursor-grabbing' : 'cursor-grab'}`}
-              viewBox={`0 0 ${layout.canvasWidth} ${layout.canvasHeight}`}
-              onWheel={handleWheel}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+            <TransformWrapper
+              initialScale={1}
+              minScale={0.1}
+              maxScale={3}
+              centerOnInit={true}
+              wheel={{ step: 0.08 }}
+              pinch={{ step: 5 }}
             >
-              <defs>
-                <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#91A0B7" />
-                </marker>
-                <pattern id="grid-grafo" width="32" height="32" patternUnits="userSpaceOnUse">
-                  <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E8EEF7" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="absolute top-4 right-4 z-10 flex flex-col sm:flex-row items-center gap-1 rounded-lg bg-white/90 backdrop-blur-sm p-1 border border-steel-700/20 shadow-md">
+                    <button type="button" className="p-2 text-steel-700 hover:bg-steel-50 hover:text-accent rounded-md transition-all" onClick={() => zoomOut()}>
+                      <ZoomOut className="h-5 w-5" />
+                    </button>
+                    <button type="button" className="p-2 text-steel-700 hover:bg-steel-50 hover:text-accent rounded-md transition-all" onClick={() => zoomIn()}>
+                      <ZoomIn className="h-5 w-5" />
+                    </button>
+                    <div className="hidden sm:block w-px h-5 bg-steel-700/15 mx-1"></div>
+                    <button type="button" className="p-2 text-steel-700 hover:bg-steel-50 hover:text-accent rounded-md transition-all flex items-center gap-2 px-3" onClick={() => resetTransform()}>
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="hidden sm:inline text-xs font-bold">Recentrar</span>
+                    </button>
+                  </div>
 
-              <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+                  <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
+                    <svg
+                      ref={svgRef}
+                      role="img"
+                      aria-label="Mapa de informações operacionais"
+                      className="h-full w-full cursor-grab active:cursor-grabbing"
+                      viewBox={`0 0 ${layout.canvasWidth} ${layout.canvasHeight}`}
+                    >
+                      <defs>
+                        <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                          <path d="M 0 0 L 10 5 L 0 10 z" fill="#91A0B7" />
+                        </marker>
+                        <pattern id="grid-grafo" width="32" height="32" patternUnits="userSpaceOnUse">
+                          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E8EEF7" strokeWidth="1" />
+                        </pattern>
+                      </defs>
+                      <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
+
+                      <g>
                 {visibleEdges.map((edge) => {
                   const source = layout.positions.get(edge.source);
                   const target = layout.positions.get(edge.target);
@@ -706,24 +666,24 @@ const GrafoRelacionamentos = () => {
                       />
                       <foreignObject x="0" y="0" width={NODE_W} height={NODE_H}>
                         <div className="flex h-full w-full flex-col justify-between p-3" xmlns="http://www.w3.org/1999/xhtml">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm" style={{ border: `1px solid ${meta.color}` }}>
+                          <div className="flex items-start gap-2 h-full overflow-hidden">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm mt-0.5" style={{ border: `1px solid ${meta.color}` }}>
                               <Icon size={14} color={meta.color} />
                             </div>
-                            <span className="truncate text-sm font-black text-steel-900 leading-tight" title={node.label}>
-                              {node.label}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 pl-9">
-                            <span className="truncate text-[11px] font-bold text-steel-500 flex-1" title={node.subtitle}>
-                              {node.subtitle || '-'}
-                            </span>
-                            <div className="flex shrink-0 items-center gap-1.5 rounded-full px-1.5 py-0.5 bg-white/60">
-                              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: statusColor(node.status) }} />
-                              <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: statusColor(node.status) }}>
-                                {compactText(labelStatus(node.status), 14)}
+                            <div className="flex flex-col flex-1 min-w-0 pr-1">
+                              <span className="text-[13px] font-black text-steel-900 leading-tight break-words line-clamp-3" title={node.label}>
+                                {node.label}
+                              </span>
+                              <span className="text-[11px] font-bold text-steel-500 mt-1 break-words line-clamp-2 leading-tight" title={node.subtitle}>
+                                {node.subtitle || '-'}
                               </span>
                             </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-steel-700/10">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: statusColor(node.status) }} />
+                            <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: statusColor(node.status) }}>
+                              {compactText(labelStatus(node.status), 16)}
+                            </span>
                           </div>
                         </div>
                       </foreignObject>
@@ -732,7 +692,11 @@ const GrafoRelacionamentos = () => {
                 })}
               </g>
             </svg>
-          </div>
+          </TransformComponent>
+        </>
+      )}
+    </TransformWrapper>
+  </div>
         </div>
 
         <aside className="space-y-4">

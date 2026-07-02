@@ -104,13 +104,16 @@ class AuthService {
 
     const tokenHash = hashToken(refreshToken);
     const legacyTokenHash = legacyHashToken(refreshToken);
-    const result = await query(
+    const { rows } = await query(
       'SELECT rt.*, u.nome, u.username, u.perfil, u.ativo FROM refresh_tokens rt JOIN usuarios u ON u.id = rt.usuario_id WHERE rt.token_hash = ANY($1) AND rt.expira_em > NOW()',
       [[tokenHash, legacyTokenHash]]
     );
 
-    if (result.rows.length === 0) throw new AuthError('Refresh token inválido ou expirado');
-    const row = result.rows[0];
+    if (rows.length === 0) {
+      throw new AuthError('Refresh token não encontrado ou expirado');
+    }
+
+    const row = rows[0];
     if (!row.ativo) throw new AuthError('Usuário desativado');
 
     if (row.revogado) {
