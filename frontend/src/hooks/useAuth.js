@@ -8,11 +8,11 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const login = async (username, senha, rememberMe = false) => {
+  const login = async (username, senha) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.post('/auth/login', { username, senha, rememberMe });
+      const response = await api.post('/auth/login', { username, senha });
       const { accessToken, usuario } = response.data;
 
       setAuth(usuario, accessToken);

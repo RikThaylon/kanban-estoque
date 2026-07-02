@@ -6,7 +6,6 @@ import { useAuth } from '../hooks/useAuth';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [senha, setSenha] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
@@ -14,7 +13,7 @@ const Login = () => {
     e.preventDefault();
     if (!username || !senha) return;
 
-    const success = await login(username.trim(), senha, rememberMe);
+    const success = await login(username.trim(), senha);
     if (success) {
       navigate('/dashboard', { replace: true });
     }
@@ -141,21 +140,6 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4.5 w-4.5 rounded border-gray-300 text-blue-700 focus:ring-blue-700 transition-colors cursor-pointer"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer select-none">
-                  Manter conectado
-                </label>
-              </div>
-            </div>
 
             <button 
               type="submit" 
