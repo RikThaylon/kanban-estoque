@@ -189,12 +189,18 @@ const EmptyGraph = () => (
 );
 
 const GrafoRelacionamentos = () => {
+  const svgRef = useRef(null);
+  const touchRef = useRef({});
+  
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filtros, setFiltros] = useState(EMPTY_FILTERS);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [tiposVisiveis, setTiposVisiveis] = useState(
     Object.fromEntries(TYPE_ORDER.map((type) => [type, true]))
   );
+  const [drag, setDrag] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const params = useMemo(() => buildParams(filtros), [filtros]);
   const { data, isLoading, isFetching, error, refetch } = useQuery({
@@ -257,6 +263,7 @@ const GrafoRelacionamentos = () => {
     setTiposVisiveis((current) => ({ ...current, [type]: !current[type] }));
   };
 
+  const getTouchDist = (touches) => {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
@@ -692,11 +699,11 @@ const GrafoRelacionamentos = () => {
                 })}
               </g>
             </svg>
-          </TransformComponent>
-        </>
-      )}
-    </TransformWrapper>
-  </div>
+           </TransformComponent>
+         </>
+       )}
+     </TransformWrapper>
+   </div>
         </div>
 
         <aside className="space-y-4">
