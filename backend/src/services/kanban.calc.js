@@ -100,8 +100,8 @@ async function recalcularKanban(produtoId, io = null) {
     INSERT INTO kanban_parametros (produto_id, demanda_diaria_media, sigma_demanda_diaria,
       lead_time_previsto_dias, lead_time_seguro_dias, sigma_lead_time, fator_z,
       estoque_seguranca, ponto_reposicao, eoq, estoque_maximo, faixa_atual,
-      semanas_historico_usadas, pedidos_historico_usados, calculado_em, proximo_calculo)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW() + INTERVAL '12 hours')
+      semanas_historico_usadas, pedidos_historico_usados, sigma_durante_lt, tier_demanda, cv_confidence, calculado_em, proximo_calculo)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW() + INTERVAL '12 hours')
     ON CONFLICT (produto_id) DO UPDATE SET
       demanda_diaria_media = EXCLUDED.demanda_diaria_media,
       sigma_demanda_diaria = EXCLUDED.sigma_demanda_diaria,
@@ -116,6 +116,9 @@ async function recalcularKanban(produtoId, io = null) {
       faixa_atual = EXCLUDED.faixa_atual,
       semanas_historico_usadas = EXCLUDED.semanas_historico_usadas,
       pedidos_historico_usados = EXCLUDED.pedidos_historico_usados,
+      sigma_durante_lt = EXCLUDED.sigma_durante_lt,
+      tier_demanda = EXCLUDED.tier_demanda,
+      cv_confidence = EXCLUDED.cv_confidence,
       calculado_em = NOW(),
       proximo_calculo = NOW() + INTERVAL '12 hours'
   `, [
@@ -133,6 +136,9 @@ async function recalcularKanban(produtoId, io = null) {
     result.faixa,
     demandaSemanalSeries.length,
     leadTimeSeries.length,
+    result.intermediarios.sigmaDuranteLT ?? null,
+    result.intermediarios.tierDemanda ?? null,
+    result.intermediarios.cvConfidence ?? null,
   ]);
 
   // Se faixa mudou, criar alerta e emitir evento
