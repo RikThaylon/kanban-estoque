@@ -51,7 +51,7 @@ const MENU_GROUPS = [
     items: [
       { key: 'alertas',       path: '/alertas',        icon: AlertTriangle,   label: 'Alertas' },
       { key: 'relatorios',    path: '/relatorios',     icon: BarChart2,       label: 'Relatórios' },
-      { key: 'relatorios',    path: '/simulacao',      icon: Activity,        label: 'Monte Carlo' },
+      { key: 'simulacao',     path: '/simulacao',      icon: Activity,        label: 'Monte Carlo' },
       { key: 'raci',          path: '/raci',            icon: GitBranch,       label: 'Matriz RACI' },
     ],
   },

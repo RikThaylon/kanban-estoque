@@ -24,6 +24,7 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.alertas': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.raci': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.relatorios': 'admin,gerente_operacoes,gerente_engenharia,plant_manager,comprador,visualizador',
+  'permissoes.paginas.simulacao': 'admin',
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
@@ -47,6 +48,7 @@ const PAGINAS_SISTEMA = [
   'alertas',
   'raci',
   'relatorios',
+  'simulacao',
   'usuarios',
 ];
 

@@ -138,7 +138,7 @@ function App() {
               <Route path="/fornecedores" element={<PageRoute pagina="fornecedores"><Fornecedores /></PageRoute>} />
               <Route path="/configuracoes" element={<PageRoute pagina="configuracoes"><Configuracoes /></PageRoute>} />
               <Route path="/raci" element={<PageRoute pagina="raci"><Raci /></PageRoute>} />
-              <Route path="/simulacao" element={<PageRoute pagina="relatorios"><AuditoriaMonteCarlo /></PageRoute>} />
+              <Route path="/simulacao" element={<PageRoute pagina="simulacao"><AuditoriaMonteCarlo /></PageRoute>} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>
           </Route>

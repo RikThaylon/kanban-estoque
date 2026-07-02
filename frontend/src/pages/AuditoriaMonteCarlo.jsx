@@ -62,7 +62,7 @@ const AuditoriaMonteCarlo = () => {
     queryKey: ['mc-produtos'],
     queryFn: async () => {
       const res = await api.get('/produtos?limit=200&com_kanban=true');
-      return res.data?.produtos || res.data || [];
+      return Array.isArray(res.data?.data) ? res.data.data : [];
     },
   });
 

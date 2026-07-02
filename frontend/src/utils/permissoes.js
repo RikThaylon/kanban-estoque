@@ -10,6 +10,7 @@ export const PAGINAS_SISTEMA = [
   'alertas',
   'raci',
   'relatorios',
+  'simulacao',
   'usuarios',
 ];
 
@@ -25,6 +26,7 @@ export const PAGINA_LABELS = {
   alertas: 'Alertas',
   raci: 'Matriz RACI',
   relatorios: 'Relatórios',
+  simulacao: 'Monte Carlo',
   usuarios: 'Usuários',
 };
 
