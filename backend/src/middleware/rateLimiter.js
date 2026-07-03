@@ -31,4 +31,16 @@ const createLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id || req.ip,
 });
 
-module.exports = { loginLimiter, apiLimiter, createLimiter };
+// Refresh token: 60 req / 15 min por IP
+// Alto o suficiente para múltiplas abas + retries de rede legítimos,
+// mas capaz de bloquear abuso automatizado
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { error: 'RATE_LIMIT', message: 'Muitas tentativas de refresh. Aguarde alguns minutos.', code: 429 },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip,
+});
+
+module.exports = { loginLimiter, apiLimiter, createLimiter, refreshLimiter };

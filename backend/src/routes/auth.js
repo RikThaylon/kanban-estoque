@@ -2,7 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate, optionalAuth } = require('../middleware/auth');
-const { loginLimiter } = require('../middleware/rateLimiter');
+const { loginLimiter, refreshLimiter } = require('../middleware/rateLimiter');
 const { antiCsrf } = require('../middleware/csrf');
 const authService = require('../services/auth.service');
 const { env } = require('../config/env');
@@ -10,6 +10,9 @@ const { env } = require('../config/env');
 const router = express.Router();
 const REFRESH_COOKIE = 'kanban_refresh_token';
 
+// Phase 1.2 — httpOnly + Secure + SameSite=Strict for production
+// SameSite=None is required for cross-origin cookie (Render frontend ↔ backend on different domains)
+// but must always be paired with Secure=true
 const cookieOptions = {
   httpOnly: true,
   secure: env.NODE_ENV === 'production',
@@ -35,6 +38,7 @@ const sendAuthResponse = (res, result) => {
   res.json(safeResult);
 };
 
+// ─── Login ───────────────────────────────────────────────────────────────────
 router.post('/login',
   loginLimiter,
   [
@@ -53,7 +57,9 @@ router.post('/login',
   }
 );
 
+// ─── Refresh ─────────────────────────────────────────────────────────────────
 router.post('/refresh',
+  refreshLimiter,
   antiCsrf,
   [body('refreshToken').optional().isString().notEmpty().withMessage('Refresh token obrigatorio')],
   validate,
@@ -68,11 +74,13 @@ router.post('/refresh',
   }
 );
 
+// ─── Logout (this device) ────────────────────────────────────────────────────
 router.post('/logout', optionalAuth, antiCsrf, async (req, res, next) => {
   try {
     const refreshToken = readCookie(req, REFRESH_COOKIE);
     if (req.token && req.user?.id) {
-      await authService.logout(req.token, req.user.id);
+      // Phase 2.3 — revoke token family (not all sessions)
+      await authService.logout(req.token, refreshToken, req.user.id);
     } else {
       await authService.revokeRefreshToken(refreshToken);
     }
@@ -84,6 +92,19 @@ router.post('/logout', optionalAuth, antiCsrf, async (req, res, next) => {
   }
 });
 
+// ─── Logout all devices ──────────────────────────────────────────────────────
+router.post('/logout-all', authenticate, antiCsrf, async (req, res, next) => {
+  try {
+    await authService.logoutAll(req.user.id);
+    res.clearCookie(REFRESH_COOKIE, { ...cookieOptions, maxAge: undefined });
+    res.set('Cache-Control', 'no-store');
+    res.json({ message: 'Todas as sessões encerradas com sucesso' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Me ──────────────────────────────────────────────────────────────────────
 router.get('/me', authenticate, async (req, res, next) => {
   try {
     const user = await authService.getMe(req.user.id);

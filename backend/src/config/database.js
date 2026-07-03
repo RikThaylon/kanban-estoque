@@ -20,9 +20,10 @@ pool.on('connect', () => {
 
 /**
  * Executa query com parâmetros posicionais
+ * @template T
  * @param {string} text - SQL query com $1, $2...
- * @param {Array} params - Parâmetros
- * @returns {Promise<import('pg').QueryResult>}
+ * @param {Array} [params] - Parâmetros
+ * @returns {Promise<{ rows: T[], rowCount: number }>} Result object guaranteeing rows and rowCount
  */
 const query = (text, params) => pool.query(text, params);
 

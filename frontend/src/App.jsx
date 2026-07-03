@@ -37,10 +37,10 @@ const FullPageLoader = () => (
 
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos
 
-// Protected Route Wrapper
+// Protected Route Wrapper — Phase 4.1: explicit state machine
 const ProtectedRoute = () => {
-  const { isAuthenticated, authChecked } = useAuthStore();
-  const { checkAuth, logout } = useAuth();
+  const { isAuthenticated, authStatus } = useAuthStore();
+  const { checkAuth, logout, initMultiTabSync } = useAuth();
   const authCheckRun = React.useRef(false);
   
   useEffect(() => {
@@ -49,6 +49,23 @@ const ProtectedRoute = () => {
       checkAuth();
     }
   }, []);
+
+  // Phase 4.3 — Multi-tab sync: if another tab logs out, this tab reflects it
+  useEffect(() => {
+    return initMultiTabSync();
+  }, []);
+
+  // Phase 4.2 — Show clear message when session was revoked for security reasons
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      const wasSecurityRevocation = sessionStorage.getItem('kanban_security_logout');
+      if (wasSecurityRevocation) {
+        sessionStorage.removeItem('kanban_security_logout');
+        // Message will be picked up by the Login page
+        sessionStorage.setItem('kanban_login_message', 'Sua sessão foi encerrada por motivos de segurança. Faça login novamente.');
+      }
+    }
+  }, [authStatus]);
 
   // Monitoramento de Inatividade (10 min) com Throttle
   useEffect(() => {
@@ -85,7 +102,8 @@ const ProtectedRoute = () => {
     };
   }, [isAuthenticated, logout]);
 
-  if (!authChecked) {
+  // Phase 4.1 — ONLY show loader while actively checking; never flash /login prematurely
+  if (authStatus === 'checking') {
     return <FullPageLoader />;
   }
 
