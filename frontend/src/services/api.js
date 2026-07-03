@@ -69,7 +69,11 @@ export const globalRefreshToken = () => {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
         resolve(data);
       } catch (err) {
-        useAuthStore.getState().logout();
+        // DO NOT call logout() here — the caller (checkAuth) must evaluate the error
+        // and decide whether it's a confirmed server rejection (401/403) or a transient
+        // network error. Calling logout() here was the root cause of the "redirect to
+        // login on page refresh" bug: it destroyed auth state before checkAuth could
+        // distinguish between "session expired" and "network hiccup".
         reject(err);
       } finally {
         refreshPromise = null;
