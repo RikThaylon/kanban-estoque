@@ -130,9 +130,9 @@ function buildLayout(nodes) {
     });
   });
 
-  const GAP_Y = 110;
+  const GAP_Y = 125;
   const maxColumn = Math.max(1, ...columns.map((column) => column.length));
-  const canvasHeight = Math.max(720, 150 + maxColumn * GAP_Y);
+  const canvasHeight = Math.max(800, 200 + maxColumn * GAP_Y);
   const positions = new Map();
   const columnX = [40, 300, 560, 820, 1080, 1340];
 
@@ -614,28 +614,42 @@ const GrafoRelacionamentos = () => {
                   const source = layout.positions.get(edge.source);
                   const target = layout.positions.get(edge.target);
                   const highlighted = !selectedNodeId || edge.source === selectedNodeId || edge.target === selectedNodeId;
+                  const pathId = `ep-${edge.id}`;
+                  const pathD = buildPath(source, target);
+                  const showLabel = source && target && highlighted && selectedNodeId && edge.label;
+                  const labelText = showLabel ? compactText(edge.label, 22) : '';
+                  
                   return (
                     <g key={edge.id} opacity={highlighted ? 1 : 0.18}>
+                      {/* Invisible path used for textPath reference */}
+                      {showLabel && (
+                        <path id={pathId} d={pathD} fill="none" stroke="none" />
+                      )}
+                      
+                      {/* Visible arrow path */}
                       <path
-                        d={buildPath(source, target)}
+                        d={pathD}
                         fill="none"
                         stroke={highlighted ? '#667085' : '#E8EEF7'}
-                        strokeWidth={highlighted ? 2.2 : 1.4}
+                        strokeWidth={highlighted ? 2.0 : 1.4}
                         markerEnd="url(#arrow-grafo)"
                       />
-                      {source && target && highlighted && selectedNodeId && (
+                      
+                      {/* Label along the curve */}
+                      {showLabel && (
                         <text
-                          x={(source.x + target.x + NODE_W) / 2}
-                          y={(source.y + target.y + NODE_H) / 2 - 8}
-                          textAnchor="middle"
                           fontSize="10"
                           fontWeight="700"
                           fill="#3F4959"
                           paintOrder="stroke"
                           stroke="#ffffff"
-                          strokeWidth="4"
+                          strokeWidth={4}
+                          textAnchor="middle"
+                          dy="-4"
                         >
-                          {compactText(edge.label, 20)}
+                          <textPath href={`#${pathId}`} startOffset="50%">
+                            {labelText}
+                          </textPath>
                         </text>
                       )}
                     </g>
