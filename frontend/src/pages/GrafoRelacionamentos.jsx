@@ -42,6 +42,8 @@ const EMPTY_FILTERS = {
 const TYPE_ORDER = ['pedido', 'produto', 'estoque', 'maquina', 'departamento', 'supervisor', 'fornecedor'];
 const NODE_W = 220;
 const NODE_H = 90;
+const GAP_Y = 125;
+const PADDING_COLLISION = 12;
 
 const TYPE_META = {
   produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
@@ -150,15 +152,73 @@ function buildLayout(nodes) {
   return { positions, canvasHeight, canvasWidth: 1600 };
 }
 
-function buildPath(source, target) {
-  if (!source || !target) return '';
-  const sx = source.x + NODE_W;
-  const sy = source.y + NODE_H / 2;
-  const tx = target.x;
-  const ty = target.y + NODE_H / 2;
-  // Increase bend radius to make overlapping lines more distinguishable
-  const bend = Math.max(50, Math.abs(tx - sx) * 0.55);
-  return `M ${sx} ${sy} C ${sx + bend} ${sy}, ${tx - bend} ${ty}, ${tx} ${ty}`;
+function getBezierXY(t, p0, p1, p2, p3) {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return {
+    x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y,
+  };
+}
+
+function checkCollision(p0, p1, p2, p3, nodes, positions, sourceId, targetId) {
+  for (let t = 0; t <= 1; t += 0.05) {
+    const pt = getBezierXY(t, p0, p1, p2, p3);
+    for (const node of nodes) {
+      if (node.id === sourceId || node.id === targetId) continue;
+      
+      const pos = positions.get(node.id);
+      if (!pos) continue;
+
+      const minX = pos.x - PADDING_COLLISION;
+      const maxX = pos.x + NODE_W + PADDING_COLLISION;
+      const minY = pos.y - PADDING_COLLISION;
+      const maxY = pos.y + NODE_H + PADDING_COLLISION;
+
+      if (pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function buildSmartPath(sourceNode, targetNode, positions, nodes) {
+  if (!sourceNode || !targetNode) return { pathD: '', midPt: null };
+
+  const sourcePos = positions.get(sourceNode.id);
+  const targetPos = positions.get(targetNode.id);
+  if (!sourcePos || !targetPos) return { pathD: '', midPt: null };
+
+  const p0 = { x: sourcePos.x + NODE_W, y: sourcePos.y + NODE_H / 2 };
+  const p3 = { x: targetPos.x, y: targetPos.y + NODE_H / 2 };
+  const bendBase = Math.max(50, Math.abs(p3.x - p0.x) * 0.55);
+  const offsets = [0, -100, 100, -160, 160, -220, 220, -280, 280];
+
+  let bestD = '';
+  let bestMidPt = null;
+
+  for (let offset of offsets) {
+    const p1 = { x: p0.x + bendBase, y: p0.y + offset };
+    const p2 = { x: p3.x - bendBase, y: p3.y + offset };
+    
+    const d = `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, ${p3.x} ${p3.y}`;
+    const midPt = getBezierXY(0.5, p0, p1, p2, p3);
+
+    if (offset === 0) {
+      bestD = d;
+      bestMidPt = midPt;
+    }
+
+    if (!checkCollision(p0, p1, p2, p3, nodes, positions, sourceNode.id, targetNode.id)) {
+      return { pathD: d, midPt };
+    }
+  }
+
+  return { pathD: bestD, midPt: bestMidPt };
 }
 
 function formatMetric(key, value) {
@@ -221,6 +281,15 @@ const GrafoRelacionamentos = () => {
     [rawEdges, visibleIds]
   );
   const layout = useMemo(() => buildLayout(visibleNodes), [visibleNodes]);
+
+  const edgesData = useMemo(() => {
+    return visibleEdges.map((edge) => {
+      const sourceNode = visibleNodes.find((n) => n.id === edge.source);
+      const targetNode = visibleNodes.find((n) => n.id === edge.target);
+      const { pathD, midPt } = buildSmartPath(sourceNode, targetNode, layout.positions, visibleNodes);
+      return { ...edge, pathD, midPt };
+    });
+  }, [visibleEdges, visibleNodes, layout.positions]);
 
   const connectedIds = useMemo(() => {
     if (!selectedNodeId) return new Set();
@@ -609,109 +678,112 @@ const GrafoRelacionamentos = () => {
                       </defs>
                       <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
 
-                      <g>
-                {visibleEdges.map((edge) => {
-                  const source = layout.positions.get(edge.source);
-                  const target = layout.positions.get(edge.target);
-                  const highlighted = !selectedNodeId || edge.source === selectedNodeId || edge.target === selectedNodeId;
-                  const pathId = `ep-${edge.id}`;
-                  const pathD = buildPath(source, target);
-                  const showLabel = source && target && highlighted && selectedNodeId && edge.label;
-                  const labelText = showLabel ? compactText(edge.label, 22) : '';
-                  
-                  return (
-                    <g key={edge.id} opacity={highlighted ? 1 : 0.18}>
-                      {/* Invisible path used for textPath reference */}
-                      {showLabel && (
-                        <path id={pathId} d={pathD} fill="none" stroke="none" />
-                      )}
-                      
-                      {/* Visible arrow path */}
-                      <path
-                        d={pathD}
-                        fill="none"
-                        stroke={highlighted ? '#667085' : '#E8EEF7'}
-                        strokeWidth={highlighted ? 2.0 : 1.4}
-                        markerEnd="url(#arrow-grafo)"
-                      />
-                      
-                      {/* Label along the curve */}
-                      {showLabel && (
-                        <text
-                          fontSize="10"
-                          fontWeight="700"
-                          fill="#3F4959"
-                          paintOrder="stroke"
-                          stroke="#ffffff"
-                          strokeWidth={4}
-                          textAnchor="middle"
-                          dy="-4"
-                        >
-                          <textPath href={`#${pathId}`} startOffset="50%">
-                            {labelText}
-                          </textPath>
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
+                      <g className="layer-edges">
+                        {edgesData.map((edge) => {
+                          const highlighted = !selectedNodeId || edge.source === selectedNodeId || edge.target === selectedNodeId;
+                          if (!edge.pathD) return null;
+                          return (
+                            <path
+                              key={`path-${edge.id}`}
+                              d={edge.pathD}
+                              fill="none"
+                              stroke={highlighted ? '#667085' : '#E8EEF7'}
+                              strokeWidth={highlighted ? 2.0 : 1.4}
+                              markerEnd="url(#arrow-grafo)"
+                              opacity={highlighted ? 1 : 0.18}
+                            />
+                          );
+                        })}
+                      </g>
 
-                {visibleNodes.map((node) => {
-                  const pos = layout.positions.get(node.id);
-                  if (!pos) return null;
-                  const meta = TYPE_META[node.type] || TYPE_META.produto;
-                  const dimmed = selectedNodeId && !connectedIds.has(node.id);
-                  const selected = selectedNodeId === node.id;
-                  const Icon = meta.icon;
-                  return (
-                    <g
-                      key={node.id}
-                      data-node="true"
-                      transform={`translate(${pos.x} ${pos.y})`}
-                      opacity={dimmed ? 0.15 : 1}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedNodeId(node.id);
-                      }}
-                      className="cursor-pointer transition-opacity duration-200"
-                    >
-                      <rect
-                        width={NODE_W}
-                        height={NODE_H}
-                        rx="12"
-                        fill={selected ? '#DCEBFF' : meta.bg}
-                        stroke={selected ? '#005DFF' : meta.color}
-                        strokeWidth={selected ? 2.5 : 1.5}
-                        filter={selected ? 'drop-shadow(0 10px 14px rgba(0,93,255,0.18))' : 'none'}
-                      />
-                      <foreignObject x="0" y="0" width={NODE_W} height={NODE_H}>
-                        <div className="flex h-full w-full flex-col justify-between p-3" xmlns="http://www.w3.org/1999/xhtml">
-                          <div className="flex items-start gap-2 h-full overflow-hidden">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm mt-0.5" style={{ border: `1px solid ${meta.color}` }}>
-                              <Icon size={14} color={meta.color} />
-                            </div>
-                            <div className="flex flex-col flex-1 min-w-0 pr-1">
-                              <span className="text-[13px] font-black text-steel-900 leading-tight break-words line-clamp-3" title={node.label}>
-                                {node.label}
-                              </span>
-                              <span className="text-[11px] font-bold text-steel-500 mt-1 break-words line-clamp-2 leading-tight" title={node.subtitle}>
-                                {node.subtitle || '-'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-steel-700/10">
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: statusColor(node.status) }} />
-                            <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: statusColor(node.status) }}>
-                              {compactText(labelStatus(node.status), 16)}
-                            </span>
-                          </div>
-                        </div>
-                      </foreignObject>
-                    </g>
-                  );
-                })}
-              </g>
+                      <g className="layer-nodes">
+                        {visibleNodes.map((node) => {
+                          const pos = layout.positions.get(node.id);
+                          if (!pos) return null;
+                          const meta = TYPE_META[node.type] || TYPE_META.produto;
+                          const dimmed = selectedNodeId && !connectedIds.has(node.id);
+                          const selected = selectedNodeId === node.id;
+                          const Icon = meta.icon;
+                          return (
+                            <g
+                              key={node.id}
+                              data-node="true"
+                              transform={`translate(${pos.x} ${pos.y})`}
+                              opacity={dimmed ? 0.15 : 1}
+                              onMouseDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedNodeId(node.id);
+                              }}
+                              className="cursor-pointer transition-opacity duration-200"
+                            >
+                              <foreignObject x="0" y="0" width={NODE_W} height={NODE_H}>
+                                <div 
+                                  className="flex h-full w-full flex-col justify-between p-3 rounded-xl"
+                                  style={{
+                                    backgroundColor: selected ? '#DCEBFF' : meta.bg,
+                                    border: `${selected ? 2.5 : 1.5}px solid ${selected ? '#005DFF' : meta.color}`,
+                                    boxShadow: selected ? '0 10px 14px rgba(0,93,255,0.18)' : 'none',
+                                    boxSizing: 'border-box'
+                                  }}
+                                  xmlns="http://www.w3.org/1999/xhtml"
+                                >
+                                  <div className="flex items-start gap-2 h-full overflow-hidden">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white shadow-sm mt-0.5" style={{ border: `1px solid ${meta.color}` }}>
+                                      <Icon size={14} color={meta.color} />
+                                    </div>
+                                    <div className="flex flex-col flex-1 min-w-0 pr-1">
+                                      <span className="text-[13px] font-black text-steel-900 leading-tight break-words line-clamp-3" title={node.label}>
+                                        {node.label}
+                                      </span>
+                                      <span className="text-[11px] font-bold text-steel-500 mt-1 break-words line-clamp-2 leading-tight" title={node.subtitle}>
+                                        {node.subtitle || '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-steel-700/10">
+                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: statusColor(node.status) }} />
+                                    <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: statusColor(node.status) }}>
+                                      {compactText(labelStatus(node.status), 16)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </foreignObject>
+                            </g>
+                          );
+                        })}
+                      </g>
+
+                      <g className="layer-labels">
+                        {edgesData.map((edge) => {
+                          const highlighted = !selectedNodeId || edge.source === selectedNodeId || edge.target === selectedNodeId;
+                          const showLabel = edge.midPt && highlighted && selectedNodeId && edge.label;
+                          if (!showLabel) return null;
+
+                          const labelText = compactText(edge.label, 22);
+                          const w = labelText.length * 6.5 + 24; 
+                          const h = 24;
+                          
+                          return (
+                            <foreignObject 
+                              key={`label-${edge.id}`}
+                              x={edge.midPt.x - w / 2} 
+                              y={edge.midPt.y - h / 2} 
+                              width={w} 
+                              height={h}
+                              style={{ pointerEvents: 'none' }}
+                            >
+                              <div 
+                                className="flex items-center justify-center rounded-full bg-white text-[10px] font-bold text-steel-700 shadow-sm border border-steel-200"
+                                style={{ width: '100%', height: '100%', whiteSpace: 'nowrap', padding: '0 8px' }}
+                                xmlns="http://www.w3.org/1999/xhtml"
+                              >
+                                {labelText}
+                              </div>
+                            </foreignObject>
+                          );
+                        })}
+                      </g>
             </svg>
            </TransformComponent>
          </>
