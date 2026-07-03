@@ -60,7 +60,12 @@ export const globalRefreshToken = () => {
           withCredentials: true,
           headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        useAuthStore.getState().setTokens(data.accessToken);
+        // Atualiza token E usuário no store se o backend os retornar
+        if (data.usuario) {
+          useAuthStore.getState().setAuth(data.usuario, data.accessToken);
+        } else {
+          useAuthStore.getState().setTokens(data.accessToken);
+        }
         api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
         resolve(data);
       } catch (err) {

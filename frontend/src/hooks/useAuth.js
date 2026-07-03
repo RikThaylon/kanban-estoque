@@ -43,25 +43,32 @@ export const useAuth = () => {
   const checkAuth = async () => {
     try {
       if (!useAuthStore.getState().accessToken) {
-        const refreshed = await globalRefreshToken();
-        const { accessToken, usuario } = refreshed;
-        useAuthStore.getState().setAuth(usuario, accessToken);
+        // Sem token em memória → tenta renovar via cookie httpOnly
+        const refreshData = await globalRefreshToken();
+
+        // Busca dados do usuário após renovação bem-sucedida
+        const meResponse = await api.get('/auth/me');
+        useAuthStore.getState().setAuth(meResponse.data, refreshData.accessToken);
       } else {
+        // Já tem token em memória → apenas valida com /me
         const response = await api.get('/auth/me');
-        useAuthStore.getState().setUser(response.data);
-        setAuthChecked(true);
+        useAuthStore.getState().setAuth(response.data, useAuthStore.getState().accessToken);
       }
       connectSocket();
       return true;
     } catch (err) {
-      console.error('Sessão inválida', err);
-      // Se não for erro de rede, limpa sessão
-      if (err.response) {
+      console.error('checkAuth falhou', err);
+      // Só desloga se o servidor respondeu explicitamente com erro (401/403)
+      // Erros de rede (sem err.response) NÃO devem derrubar a sessão
+      if (err.response && (err.response.status === 401 || err.response.status === 403)) {
         storeLogout();
         disconnectSocket();
       }
-      setAuthChecked(true);
       return false;
+    } finally {
+      // SEMPRE marca authChecked=true ao terminar, independente do resultado
+      // Sem isso, ProtectedRoute fica em loop de loading e redireciona para login
+      setAuthChecked(true);
     }
   };
 
