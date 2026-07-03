@@ -58,7 +58,9 @@ const sanitizeSensitiveData = (value) => {
 };
 
 const legacyHashToken = (token) => crypto.createHash(HASH_ALGORITHM).update(token).digest('hex');
-const hashToken = (token) => crypto.createHmac(HASH_ALGORITHM, env.JWT_REFRESH_SECRET).update(token).digest('hex');
+// Use explicit dedicated env var for token hashing secret to allow independent rotation
+const TOKEN_HASH_SECRET = env.REFRESH_TOKEN_HASH_SECRET || env.JWT_REFRESH_SECRET;
+const hashToken = (token) => crypto.createHmac(HASH_ALGORITHM, TOKEN_HASH_SECRET).update(token).digest('hex');
 
 module.exports = {
   decryptValue,
