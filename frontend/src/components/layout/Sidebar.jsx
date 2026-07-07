@@ -60,6 +60,7 @@ const MENU_GROUPS = [
     items: [
       { key: 'usuarios',      path: '/usuarios',       icon: Users,           label: 'Usuários' },
       { key: 'configuracoes', path: '/configuracoes',  icon: Settings,        label: 'Configurações' },
+      { key: 'sap_integration', path: '/sap',          icon: Cog,             label: 'Integração SAP' },
     ],
   },
 ];

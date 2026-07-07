@@ -70,6 +70,10 @@ cron.schedule('0 3 * * *', () => limparTokensExpirados());
 // Classificação ABC: domingo 02:00
 cron.schedule('0 2 * * 0', () => recalcularABC());
 
+// SAP Sync Worker
+const { SapSyncWorker } = require('./jobs/SapSyncWorker');
+SapSyncWorker.start();
+
 // Tratamento de erro do listen (porta ocupada, permissão, etc.)
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {

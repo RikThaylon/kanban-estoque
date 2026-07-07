@@ -23,6 +23,7 @@ const Fornecedores = React.lazy(() => import('./pages/Fornecedores'));
 const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const AuditoriaMonteCarlo = React.lazy(() => import('./pages/AuditoriaMonteCarlo'));
+const SapIntegration = React.lazy(() => import('./pages/SapIntegration'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
 
 // Loading Fallback
@@ -157,6 +158,7 @@ function App() {
               <Route path="/configuracoes" element={<PageRoute pagina="configuracoes"><Configuracoes /></PageRoute>} />
               <Route path="/raci" element={<PageRoute pagina="raci"><Raci /></PageRoute>} />
               <Route path="/simulacao" element={<PageRoute pagina="simulacao"><AuditoriaMonteCarlo /></PageRoute>} />
+              <Route path="/sap" element={<PageRoute pagina="sap_integration"><SapIntegration /></PageRoute>} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>
           </Route>

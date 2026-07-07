@@ -12,6 +12,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   REDIS_ENABLED: z.enum(['true', 'false']).default('true'),
+  SAP_MODE: z.enum(['true', 'false']).transform(v => v === 'true').default('false'),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   DATA_ENCRYPTION_SECRET: z.string().min(32).optional(),
