@@ -218,13 +218,13 @@ router.post('/:id/consume', authenticate,
         parseFloat(produto.estoque_atual) - qtyToConsume,
         'SERVICE_ORDER',
         machineId, // destino é o UUID da máquina atendida
-        \`Consumo na OS: \${id}\`,
+        `Consumo na OS: ${id}`,
         req.user.id
       ]);
 
       // 6. Atualizar status da OS para IN_PROGRESS se estiver OPEN
       if (osCheck.rows[0].status === 'OPEN') {
-        await client.query(\`UPDATE service_orders SET status = 'IN_PROGRESS', updated_at = NOW() WHERE id = $1\`, [id]);
+        await client.query(`UPDATE service_orders SET status = 'IN_PROGRESS', updated_at = NOW() WHERE id = $1`, [id]);
       }
 
       await client.query('COMMIT'); // Consolida a Transação
