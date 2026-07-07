@@ -17,8 +17,104 @@ async function generateOsNumber() {
   `);
   const year = new Date().getFullYear();
   const seq = String(result.rows[0].next_val).padStart(4, '0');
-  return \`OS-\${year}-\${seq}\`;
+  return `OS-${year}-${seq}`;
 }
+
+// GET /api/v1/service-orders
+// Lista todas as ordens de serviço com filtro por status
+router.get('/', authenticate, async (req, res, next) => {
+  try {
+    const { status, machine_id, limit = 50, offset = 0 } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (status) {
+      params.push(status);
+      conditions.push(`so.status = $${params.length}`);
+    }
+    if (machine_id) {
+      params.push(machine_id);
+      conditions.push(`so.machine_id = $${params.length}`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    params.push(parseInt(limit), parseInt(offset));
+
+    const result = await query(`
+      SELECT 
+        so.*,
+        m.nome as machine_name,
+        d.nome as department_name,
+        u.nome as created_by_name,
+        COUNT(som.id) as materials_count
+      FROM service_orders so
+      LEFT JOIN maquinas m ON m.id = so.machine_id
+      LEFT JOIN departamentos d ON d.id = so.department_id
+      LEFT JOIN usuarios u ON u.id = so.created_by
+      LEFT JOIN service_order_materials som ON som.so_id = so.id
+      ${where}
+      GROUP BY so.id, m.nome, d.nome, u.nome
+      ORDER BY so.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+
+    res.json({ data: result.rows, total: result.rowCount });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/v1/service-orders/:id
+// Detalhes completos de uma OS com seus materiais consumidos
+router.get('/:id', authenticate,
+  [param('id').isUUID()], validate,
+  async (req, res, next) => {
+    try {
+      const osRes = await query(`
+        SELECT so.*, m.nome as machine_name, d.nome as department_name
+        FROM service_orders so
+        LEFT JOIN maquinas m ON m.id = so.machine_id
+        LEFT JOIN departamentos d ON d.id = so.department_id
+        WHERE so.id = $1
+      `, [req.params.id]);
+
+      if (osRes.rowCount === 0) return next(new NotFoundError('OS não encontrada'));
+
+      const materialsRes = await query(`
+        SELECT som.*, p.nome as product_name, p.codigo, p.unidade
+        FROM service_order_materials som
+        JOIN produtos p ON p.id = som.product_id
+        WHERE som.so_id = $1
+        ORDER BY som.added_at ASC
+      `, [req.params.id]);
+
+      res.json({ ...osRes.rows[0], materials: materialsRes.rows });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /api/v1/service-orders/:id/close
+// Fecha/conclui uma OS
+router.patch('/:id/close', authenticate, audit('FECHAR_OS', 'service_orders'),
+  [param('id').isUUID()], validate,
+  async (req, res, next) => {
+    try {
+      const result = await query(`
+        UPDATE service_orders 
+        SET status = 'COMPLETED', closed_at = NOW(), updated_at = NOW()
+        WHERE id = $1 AND status IN ('OPEN','IN_PROGRESS')
+        RETURNING *
+      `, [req.params.id]);
+
+      if (result.rowCount === 0) return next(new NotFoundError('OS não encontrada ou já encerrada'));
+      res.json(result.rows[0]);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // POST /api/v1/service-orders
 // Cria uma nova Ordem de Serviço
