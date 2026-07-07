@@ -105,12 +105,13 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
     body('custo_pedido').optional().isFloat({ min: 0 }),
     body('taxa_carregamento').optional().isFloat({ min: 0, max: 1 }),
     body('nivel_servico').optional().isIn(['90', '95', '98', '99']),
+    body('category').optional().isIn(['product_direct', 'machine_mro']).withMessage('Categoria inválida'),
   ], validate,
   async (req, res, next) => {
     try {
       const {
         codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido,
-        taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
+        taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial, category
       } = req.body;
       const defaultsKanban = await getKanbanDefaults();
       const {
@@ -127,9 +128,9 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
         lead_time_inicial,
       }, defaultsKanban);
       const result = await query(
-        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
+        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por, category)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12, 'product_direct')) RETURNING *`,
+        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id, category]
       );
       const seriesEstimadas = buildEstimatedKanbanSeries({
         cmd: cmdInicial,

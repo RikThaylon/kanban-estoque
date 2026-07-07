@@ -16,6 +16,8 @@ import {
   Truck,
   Users,
   X,
+  Calculator,
+  Wrench
 } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -34,6 +36,9 @@ const MENU_GROUPS = [
     items: [
       { key: 'dashboard',     path: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
       { key: 'produtos',      path: '/produtos',       icon: Package,         label: 'Produtos' },
+      { key: 'bom',           path: '/bom',            icon: Network,         label: 'BOM (Estrutura)' },
+      { key: 'pcp',           path: '/pcp',            icon: Calculator,      label: 'PCP (MRP)' },
+      { key: 'os',            path: '/os',             icon: Wrench,          label: 'Ordens de Serviço' },
       { key: 'movimentacoes', path: '/movimentacoes',  icon: ArrowLeftRight,  label: 'Movimentações' },
       { key: 'pedidos',       path: '/pedidos',        icon: ShoppingCart,    label: 'Pedidos de Compra' },
     ],

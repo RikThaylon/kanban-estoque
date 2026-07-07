@@ -282,6 +282,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     taxa_carregamento: produto?.taxa_carregamento || 0.20,
     nivel_servico: produto?.nivel_servico || 95,
     localizacao: produto?.localizacao || '',
+    category: produto?.category || 'product_direct',
     // Parâmetros iniciais Kanban (só no cadastro)
     cmd_inicial: '',
     lead_time_inicial: '',
@@ -360,6 +361,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
         custo_pedido: parseFloat(form.custo_pedido),
         taxa_carregamento: parseFloat(form.taxa_carregamento),
         localizacao: form.localizacao,
+        category: form.category,
       };
       if (isEdit) payload.nivel_servico = parseInt(form.nivel_servico);
       if (isEdit) {
@@ -442,9 +444,18 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                 <input className="input" value={form.nome} onChange={e => f('nome', e.target.value)} required />
               </div>
             </div>
-            <div className="mt-3">
-              <Label>Descrição</Label>
-              <textarea className="input resize-none" rows={2} value={form.descricao} onChange={e => f('descricao', e.target.value)} />
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Descrição</Label>
+                <textarea className="input resize-none" rows={2} value={form.descricao} onChange={e => f('descricao', e.target.value)} />
+              </div>
+              <div>
+                <Label>Categoria de Estoque</Label>
+                <select className="input" value={form.category} disabled={isEdit} onChange={e => f('category', e.target.value)}>
+                  <option value="product_direct">Produto / Matéria-prima (BOM)</option>
+                  <option value="machine_mro">Peça de Manutenção (OS/MRO)</option>
+                </select>
+              </div>
             </div>
           </div>
 
