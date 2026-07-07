@@ -155,10 +155,10 @@ router.post('/:id/consume', authenticate,
   ], validate,
   async (req, res, next) => {
     const client = await pool.connect(); // Obtém um cliente do pool para a transação
-    
+
     try {
       await client.query('BEGIN'); // Inicia a Transação
-      
+
       const { id } = req.params;
       const { product_id, quantity, notes } = req.body;
 
@@ -168,7 +168,7 @@ router.post('/:id/consume', authenticate,
       if (osCheck.rows[0].status !== 'OPEN' && osCheck.rows[0].status !== 'IN_PROGRESS') {
         throw new AppError('Apenas Ordens de Serviço abertas ou em progresso podem consumir materiais', 400);
       }
-      
+
       const machineId = osCheck.rows[0].machine_id;
 
       // 2. Travar a linha do estoque com SELECT FOR UPDATE (Previne Race Conditions)
@@ -179,14 +179,14 @@ router.post('/:id/consume', authenticate,
       `, [product_id]);
 
       if (stockCheck.rowCount === 0) throw new NotFoundError('Produto não encontrado');
-      
+
       const produto = stockCheck.rows[0];
       const qtyToConsume = parseFloat(quantity);
 
       // (Regra de Negócio: OS normalmente consome itens MRO, mas se a empresa permitir outro, 
       // verificamos apenas se há estoque físico, como solicitado)
       if (parseFloat(produto.estoque_atual) < qtyToConsume) {
-        throw new AppError(\`Estoque insuficiente. Disponível: \${produto.estoque_atual}\`, 400);
+        throw new AppError(`Estoque insuficiente. Disponível: ${produto.estoque_atual}`, 400);
       }
 
       const totalCost = qtyToConsume * parseFloat(produto.custo_unitario || 0);
