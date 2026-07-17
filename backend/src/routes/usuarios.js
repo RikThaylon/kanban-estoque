@@ -1,12 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
-const bcrypt = require('bcrypt');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { authorize, PERFIS_VALIDOS } = require('../middleware/rbac');
 const { audit } = require('../middleware/audit');
 const { query } = require('../config/database');
-const { env } = require('../config/env');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError } = require('../utils/errors');
 const {
@@ -117,18 +115,12 @@ router.delete('/:id', authenticate, authorize('admin'), audit('DESATIVAR_USUARIO
   }
 );
 
-router.post('/:id/reset-senha', authenticate, authorize('admin'), audit('RESET_SENHA', 'usuarios'),
-  [validarSenha('nova_senha')], validate,
-  async (req, res, next) => {
-    try {
-      const senhaHash = await bcrypt.hash(req.body.nova_senha, env.BCRYPT_ROUNDS);
-      await query(
-        'UPDATE usuarios SET senha_hash = $1, tentativas_login = 0, bloqueado_ate = NULL, atualizado_em = NOW() WHERE id = $2',
-        [senhaHash, req.params.id]
-      );
-      res.json({ message: 'Senha redefinida com sucesso' });
-    } catch (err) { next(err); }
-  }
-);
+// NOTA SEGURANÇA: A rota POST /:id/reset-senha foi removida intencionalmente.
+// O reset de senha DEVE passar pelo fluxo corporativo em password-recovery.js:
+//   1. Usuário solicita via POST /auth/forgot-password
+//   2. Admin aprova via POST /auth/password-reset-requests/:id/approve
+//   3. Token é entregue ao usuário por canal interno
+//   4. Usuário redefine via POST /auth/reset-password
+// Isso garante que apenas o próprio usuário define sua nova senha.
 
 module.exports = router;

@@ -133,9 +133,9 @@ const Sidebar = () => {
         fixed top-0 left-0 h-screen z-20 flex flex-col
         text-white overflow-hidden
         transition-[width] duration-300 ease-in-out
-        bg-[linear-gradient(168deg,#071525_0%,#0c2340_55%,#071525_100%)]
+        bg-[linear-gradient(168deg,#0D0102_0%,#1A0508_55%,#0D0102_100%)]
         border-r border-white/[0.07]
-        shadow-[4px_0_32px_rgba(0,10,40,0.35)]
+        shadow-[4px_0_32px_rgba(10,0,2,0.50)]
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
