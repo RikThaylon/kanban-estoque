@@ -88,11 +88,11 @@ const Login = () => {
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-6 sm:mb-8 w-full">
           <div className="flex items-center gap-3 mb-4 p-2">
-            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
-              B
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-accent to-red-800 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-red-900/50 border border-red-400/30">
+              K
             </div>
             <span className="text-2xl sm:text-3xl font-bold tracking-wide text-white drop-shadow-lg">
-              Brimajor Kanban
+              Smart Kanban
             </span>
           </div>
           
@@ -102,7 +102,7 @@ const Login = () => {
             </h1>
           </div>
           
-          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-semibold text-blue-200 bg-slate-800/60 px-4 py-2.5 rounded-full border border-slate-700/50 backdrop-blur-md shadow-inner">
+          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-semibold text-slate-200 bg-slate-800/60 px-4 py-2.5 rounded-full border border-slate-700/50 backdrop-blur-md shadow-inner">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span>Sessão segura</span>

@@ -52,19 +52,19 @@ const Header = () => {
   const badgeTotal = alertsUnread + (notificacoes || 0);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-primary/15 bg-white/85 backdrop-blur-xl px-3 shadow-[0_10px_28px_rgba(0,68,204,0.06)] sm:px-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
+    <header className="sticky top-0 z-10 border-b border-primary/15 bg-white/85 backdrop-blur-xl px-3 shadow-[0_10px_28px_rgba(192,24,42,0.06)] sm:px-6 [padding-left:max(0.75rem,env(safe-area-inset-left))] [padding-right:max(0.75rem,env(safe-area-inset-right))]">
       <div className="h-16 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={toggleSidebar}
-            className="p-2 -ml-1 rounded-md text-steel-600 hover:text-primary hover:bg-blue-50 transition-colors"
+            className="p-2 -ml-1 rounded-md text-steel-600 hover:text-primary hover:bg-red-50 transition-colors"
             aria-label="Alternar menu"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           <div className="min-w-0">
-            <p className="text-[10px] uppercase font-bold text-primary hidden sm:block">Brimajor Kanban</p>
+            <p className="text-[10px] uppercase font-bold text-primary hidden sm:block">Smart Kanban</p>
             <h1 className="font-display text-base sm:text-lg font-bold text-steel-900 leading-tight truncate">{title}</h1>
             <p className="text-xs text-steel-500 hidden md:block truncate">{subtitle}</p>
           </div>
@@ -78,7 +78,7 @@ const Header = () => {
 
           <Link
             to="/alertas"
-            className="relative p-2 text-steel-600 hover:text-primary hover:bg-blue-50 rounded-md transition-colors"
+            className="relative p-2 text-steel-600 hover:text-primary hover:bg-red-50 rounded-md transition-colors"
             aria-label="Alertas"
           >
             <Bell className="w-5 h-5" />

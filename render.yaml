@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: brimajor-kanban-estoque-api
+    name: smart-kanban-estoque-api
     runtime: node
     rootDir: .
     buildCommand: npm ci --prefix backend
@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: BRAND_NAME
-        value: BRIMAJOR
+        value: SMART_KANBAN
       - key: REDIS_ENABLED
         value: true
       - key: DATABASE_URL
@@ -25,7 +25,7 @@ services:
         sync: false
 
   - type: web
-    name: brimajor-kanban-estoque-web
+    name: smart-kanban-estoque-web
     runtime: static
     rootDir: frontend
     buildCommand: npm ci && npm run build

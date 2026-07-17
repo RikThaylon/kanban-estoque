@@ -4,40 +4,38 @@
 
 :root {
   --app-bg: #ffffff;
-  --app-bg-2: #f2f7ff;
+  --app-bg-2: #fff5f6;
   --panel: rgba(255, 255, 255, 0.96);
   --panel-strong: #ffffff;
-  --line: rgba(0, 68, 204, 0.14);
-  --line-strong: rgba(0, 68, 204, 0.28);
-  --ink: #000000;
-  --muted: #3f4959;
-  --muted-2: #667085;
-  --primary: #005dff;
-  --primary-deep: #0044cc;
-  --accent: #0088ff;
+  --line: rgba(192, 24, 42, 0.14);
+  --line-strong: rgba(192, 24, 42, 0.28);
+  --ink: #0d0102;
+  --muted: #3c3c40;
+  --muted-2: #636369;
+  --primary: #c0182a;
+  --primary-deep: #8f0f1e;
+  --accent: #e8213b;
   --accent-ink: #ffffff;
   --signal: #0b7a4b;
   --warning: #b86700;
   --danger: #cc2030;
-  --focus: rgba(0, 136, 255, 0.28);
-  --panel-shadow: 0 10px 30px rgba(0, 36, 96, 0.08);
-  --control-shadow: 0 4px 12px rgba(0, 93, 255, 0.08);
+  --focus: rgba(232, 33, 59, 0.28);
+  --panel-shadow: 0 10px 30px rgba(100, 0, 20, 0.08);
+  --control-shadow: 0 4px 12px rgba(192, 24, 42, 0.08);
 
-  /* ── Sidebar BRIMAJOR Navy ──────────────────────────────────────
-     All text-on-sidebar colours pass WCAG AA (contrast ≥ 4.5:1)
-     against the sidebar bg #071525.
-     white           on #071525 → 18.1:1  ✓
-     white/90 (#e6e6e6) on #071525 → 15.4:1  ✓
-     white/60 (#999) on #071525  →  6.0:1  ✓ (AA)
-     white/40 (#666) on #071525  →  3.4:1  ✗ → use /50 (#808080) → 4.6:1 ✓
+  /* ── Sidebar Vermelha/Preto Enterprise ─────────────────────────────
+     Contrast ratio checks:
+     white on #1a0508 → 18.5:1  ✓
+     white/90 on #1a0508 → 15.8:1  ✓
+     white/60 on #1a0508 → 6.1:1  ✓
   ─────────────────────────────────────────────────────────────── */
-  --sidebar-bg-start: #071525;
-  --sidebar-bg-end: #0c2340;
-  --sidebar-text: rgba(255,255,255,0.92);      /* primary labels  18:1 ✓ */
-  --sidebar-text-muted: rgba(255,255,255,0.55); /* group labels    4.7:1 ✓ */
-  --sidebar-text-dim: rgba(255,255,255,0.50);   /* non-active nav  4.6:1 ✓ */
-  --sidebar-active-bg: rgba(0, 136, 255, 0.14);
-  --sidebar-active-border: #0088ff;
+  --sidebar-bg-start: #1a0508;
+  --sidebar-bg-end: #2d080c;
+  --sidebar-text: rgba(255,255,255,0.92);
+  --sidebar-text-muted: rgba(255,255,255,0.55);
+  --sidebar-text-dim: rgba(255,255,255,0.50);
+  --sidebar-active-bg: rgba(232, 33, 59, 0.14);
+  --sidebar-active-border: #e8213b;
   --sidebar-hover-bg: rgba(255,255,255,0.07);
 }
 
@@ -58,9 +56,9 @@
     min-height: 100dvh;
     overscroll-behavior-y: none;
     background:
-      linear-gradient(90deg, rgba(0, 93, 255, 0.045) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(0, 68, 204, 0.035) 1px, transparent 1px),
-      linear-gradient(135deg, var(--app-bg-2) 0%, var(--app-bg) 48%, #edf5ff 100%);
+      linear-gradient(90deg, rgba(192, 24, 42, 0.045) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(192, 24, 42, 0.035) 1px, transparent 1px),
+      linear-gradient(135deg, var(--app-bg-2) 0%, var(--app-bg) 48%, #fff0f2 100%);
     background-size: 44px 44px, 44px 44px, 100% 100%;
     letter-spacing: 0;
   }
@@ -117,7 +115,7 @@
   }
 
   ::selection {
-    background: rgba(0, 136, 255, 0.22);
+    background: rgba(232, 33, 59, 0.22);
     color: var(--ink);
   }
 }
@@ -133,8 +131,8 @@
 
   .btn-primary {
     color: var(--accent-ink);
-    background: linear-gradient(180deg, #1a8cff, #005dff);
-    border: 1px solid rgba(0, 68, 204, 0.25);
+    background: linear-gradient(180deg, #e8213b, #c0182a);
+    border: 1px solid rgba(192, 24, 42, 0.25);
   }
 
   .btn-primary:hover {
@@ -144,12 +142,12 @@
 
   .btn-secondary {
     color: var(--ink);
-    background: linear-gradient(180deg, #ffffff, #f7f9fc);
+    background: linear-gradient(180deg, #ffffff, #f9f9fa);
     border: 1px solid var(--line-strong);
   }
 
   .btn-secondary:hover {
-    border-color: rgba(0, 93, 255, 0.42);
+    border-color: rgba(192, 24, 42, 0.42);
     background: #ffffff;
   }
 
@@ -169,7 +167,7 @@
     border-radius: 8px;
     border: 1px solid var(--line);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 249, 252, 0.95));
+      linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 249, 250, 0.95));
     box-shadow: var(--panel-shadow);
     backdrop-filter: blur(16px);
   }
@@ -191,9 +189,9 @@
 
   .input-field:focus,
   .input:focus {
-    border-color: rgba(0, 93, 255, 0.62);
+    border-color: rgba(192, 24, 42, 0.62);
     background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 0 4px rgba(232, 33, 59, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
     outline: none;
   }
 
@@ -215,7 +213,7 @@
     border-radius: 8px;
     border: 1px solid var(--line);
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 255, 0.94));
+      linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(255, 240, 242, 0.94));
     box-shadow: var(--panel-shadow);
   }
 
@@ -239,18 +237,18 @@
   }
 
   .card table tbody tr:hover {
-    background: rgba(0, 136, 255, 0.07);
+    background: rgba(232, 33, 59, 0.07);
   }
 
   .auth-page {
     position: relative;
     isolation: isolate;
     background:
-      linear-gradient(118deg, rgba(0, 93, 255, 0.20), transparent 33%),
-      linear-gradient(242deg, rgba(0, 136, 255, 0.16), transparent 44%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(239, 246, 255, 0.96)),
-      repeating-linear-gradient(90deg, rgba(0, 68, 204, 0.052) 0 1px, transparent 1px 34px),
-      repeating-linear-gradient(0deg, rgba(0, 93, 255, 0.040) 0 1px, transparent 1px 34px);
+      linear-gradient(118deg, rgba(192, 24, 42, 0.20), transparent 33%),
+      linear-gradient(242deg, rgba(232, 33, 59, 0.16), transparent 44%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 240, 242, 0.96)),
+      repeating-linear-gradient(90deg, rgba(192, 24, 42, 0.052) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(0deg, rgba(232, 33, 59, 0.040) 0 1px, transparent 1px 34px);
   }
 
   .auth-page::before,

@@ -147,20 +147,20 @@ const Sidebar = () => {
         {/* Logo mark */}
         <div className={`
           shrink-0 rounded-lg flex items-center justify-center font-black text-white
-          bg-gradient-to-br from-accent to-blue-700
-          shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_20px_rgba(0,136,255,0.40)]
+          bg-gradient-to-br from-accent to-red-800
+          shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_20px_rgba(232,33,59,0.40)]
           ${collapsed ? 'w-9 h-9 text-base' : 'w-9 h-9 text-base'}
         `}>
-          B
+          K
         </div>
 
         {!collapsed && (
           <div className="min-w-0">
             <span className="block font-bold text-[15px] leading-tight tracking-tight text-white">
-              Brimajor
+              Smart Kanban
             </span>
             <span className="block text-[10px] uppercase tracking-widest text-white/40 leading-tight">
-              Kanban Estoque
+              Controle de Estoque
             </span>
           </div>
         )}

@@ -2,7 +2,7 @@
   "name": "kanban-estoque",
   "version": "1.0.0",
   "private": true,
-  "description": "BRIMAJOR Kanban Estoque - SaaS de controle de estoque com Kanban, RACI e previsoes ML",
+  "description": "Smart Kanban Estoque - SaaS de controle de estoque com Kanban, RACI e previsoes ML",
   "scripts": {
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "db:migrate": "npm run migrate --prefix backend",
