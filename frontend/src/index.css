@@ -908,7 +908,105 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in { animation: fadeIn 0.28s ease-out; }
+.animate-fade-in { animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMAÇÕES PREMIUM — Spring Physics & Microinterações
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Modal Overlay — fade escuro com blur */
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-overlay-enter {
+  animation: overlayIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Modal Content — spring scale + fade + slide */
+@keyframes modalSpringIn {
+  0%   { opacity: 0; transform: scale(0.94) translateY(12px); filter: blur(3px); }
+  60%  { filter: blur(0px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+}
+@keyframes modalSpringOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(8px); }
+}
+.modal-spring-enter {
+  animation: modalSpringIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.modal-spring-exit {
+  animation: modalSpringOut 0.18s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* Bottom Sheet mobile — slide from bottom */
+@keyframes sheetIn {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sheet-enter {
+  animation: sheetIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Card hover com elevação */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 16px 40px rgba(0, 36, 96, 0.12);
+}
+
+/* Stagger para listas */
+@keyframes staggerFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item { animation: staggerFade 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger-item:nth-child(1)  { animation-delay: 0ms; }
+.stagger-item:nth-child(2)  { animation-delay: 40ms; }
+.stagger-item:nth-child(3)  { animation-delay: 80ms; }
+.stagger-item:nth-child(4)  { animation-delay: 120ms; }
+.stagger-item:nth-child(5)  { animation-delay: 160ms; }
+.stagger-item:nth-child(6)  { animation-delay: 200ms; }
+.stagger-item:nth-child(7)  { animation-delay: 240ms; }
+.stagger-item:nth-child(8)  { animation-delay: 280ms; }
+.stagger-item:nth-child(9)  { animation-delay: 320ms; }
+.stagger-item:nth-child(10) { animation-delay: 360ms; }
+.stagger-item:nth-child(n+11) { animation-delay: 400ms; }
+
+/* Badge pop com spring */
+@keyframes badgePop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.badge-pop { animation: badgePop 0.26s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Mapa — fade in suave */
+@keyframes mapFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.map-enter { animation: mapFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer-loading {
+  background: linear-gradient(90deg,
+    rgba(226,232,240,0.8) 25%,
+    rgba(241,245,249,1) 50%,
+    rgba(226,232,240,0.8) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -931,12 +1029,24 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
   .auth-panel::after,
   .animate-fade-in,
   .animate-pulse-dot,
-  .animate-slide-in {
-    animation: none;
+  .animate-slide-in,
+  .modal-spring-enter,
+  .modal-spring-exit,
+  .modal-overlay-enter,
+  .sheet-enter,
+  .stagger-item,
+  .badge-pop,
+  .map-enter,
+  .shimmer-loading {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    filter: none !important;
   }
 }
+
 
 

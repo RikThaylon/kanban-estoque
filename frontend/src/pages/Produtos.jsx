@@ -41,6 +41,7 @@ const Produtos = () => {
   const [page, setPage] = useState(1);
   const [busca, setBusca] = useState('');
   const [faixaFiltro, setFaixaFiltro] = useState('');
+  const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [openModal, setOpenModal] = useState(null); // null | { tipo, produto? }
 
   const desativar = useMutation({
@@ -48,11 +49,16 @@ const Produtos = () => {
     onSuccess: () => invalidateOperationalData(queryClient),
   });
 
+  const { data: categorias } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => (await api.get('/categorias')).data,
+  });
+
   const { data, isLoading } = useQuery({
-    queryKey: ['produtos', page, busca, faixaFiltro],
+    queryKey: ['produtos', page, busca, faixaFiltro, categoriaFiltro],
     queryFn: async () => {
       const res = await api.get('/produtos', {
-        params: { page, limit: 10, busca, faixa: faixaFiltro }
+        params: { page, limit: 10, busca, faixa: faixaFiltro, categoria_id: categoriaFiltro || undefined }
       });
       return res.data;
     },
@@ -119,6 +125,17 @@ const Produtos = () => {
               <option value="VERDE">Verde (Normal)</option>
               <option value="SEM_DADOS">Sem Dados</option>
             </select>
+
+            <select
+              className="input-field w-full sm:w-44"
+              value={categoriaFiltro}
+              onChange={e => { setCategoriaFiltro(e.target.value); setPage(1); }}
+            >
+              <option value="">Todas as Categorias</option>
+              {categorias?.map(c => (
+                <option key={c.id} value={c.id}>{c.nome}</option>
+              ))}
+            </select>
           </div>
 
           <button onClick={exportCSV} className="btn-secondary whitespace-nowrap justify-center w-full sm:w-auto">
@@ -138,7 +155,14 @@ const Produtos = () => {
                   <div className="min-w-0">
                     <p className="font-mono text-xs text-steel-400">{produto.codigo}</p>
                     <h2 className="font-bold text-steel-800 break-words">{produto.nome}</h2>
-                    <p className="text-xs text-steel-400 mt-0.5">{produto.categoria_nome}</p>
+                    <div className="mt-1">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white badge-pop"
+                        style={{ backgroundColor: `#${produto.cor_hex || 'CBD5E1'}` }}
+                      >
+                        {produto.categoria_nome || 'Outros'}
+                      </span>
+                    </div>
                   </div>
                   <FaixaBadge faixa={produto.faixa_atual} />
                 </div>
@@ -185,6 +209,7 @@ const Produtos = () => {
               <tr className="border-b border-surface-200 text-xs font-bold text-steel-400 uppercase tracking-wider">
                 <th className="p-4">Código</th>
                 <th className="p-4">Produto</th>
+                <th className="p-4">Categoria</th>
                 <th className="p-4 text-right">Estoque</th>
                 <th className="p-4 text-center">Faixa Kanban</th>
                 <th className="p-4 text-right">PR</th>
@@ -195,11 +220,11 @@ const Produtos = () => {
             <tbody className="divide-y divide-surface-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-steel-400">Carregando...</td>
+                  <td colSpan="8" className="p-8 text-center text-steel-400">Carregando...</td>
                 </tr>
               ) : data?.data?.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-steel-400">Nenhum produto encontrado.</td>
+                  <td colSpan="8" className="p-8 text-center text-steel-400">Nenhum produto encontrado.</td>
                 </tr>
               ) : (
                 data?.data.map((produto) => {
@@ -212,7 +237,14 @@ const Produtos = () => {
                       <td className="p-4 font-mono text-sm text-steel-700">{produto.codigo}</td>
                       <td className="p-4">
                         <div className="font-bold text-steel-800">{produto.nome}</div>
-                        <div className="text-xs text-steel-400">{produto.categoria_nome}</div>
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold text-white badge-pop"
+                          style={{ backgroundColor: `#${produto.cor_hex || 'CBD5E1'}` }}
+                        >
+                          {produto.categoria_nome || 'Outros'}
+                        </span>
                       </td>
                       <td className="p-4 text-right font-bold text-steel-700">
                         {formatNumber(produto.estoque_atual)} {produto.unidade}
@@ -277,6 +309,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     nome: produto?.nome || '',
     descricao: produto?.descricao || '',
     unidade: produto?.unidade || 'UN',
+    categoria_id: produto?.categoria_id || '',
     custo_unitario: produto?.custo_unitario || '',
     custo_pedido: produto?.custo_pedido || 100,
     taxa_carregamento: produto?.taxa_carregamento || 0.20,
@@ -298,6 +331,11 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     queryFn: async () => (await api.get('/configuracoes/turnos')).data,
   });
   const turnos = turnosData?.turnos || [];
+
+  const { data: categoriasLista } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => (await api.get('/categorias')).data,
+  });
 
   const [erro, setErro] = useState('');
 
@@ -355,7 +393,10 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
   const salvar = useMutation({
     mutationFn: async () => {
       const payload = {
-        nome: form.nome, descricao: form.descricao, unidade: form.unidade,
+        nome: form.nome,
+        descricao: form.descricao,
+        unidade: form.unidade,
+        categoria_id: form.categoria_id || null,
         custo_unitario: parseFloat(form.custo_unitario),
         custo_pedido: parseFloat(form.custo_pedido),
         taxa_carregamento: parseFloat(form.taxa_carregamento),
@@ -431,7 +472,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {/* ── Seção: Identificação ── */}
           <div>
             <h3 className="text-xs font-bold text-steel-400 uppercase tracking-wider mb-3">Identificação</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="sm:col-span-1">
                 <Label>Código</Label>
                 <input className="input font-mono" value={form.codigo} disabled={isEdit}
@@ -440,6 +481,15 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
               <div className="sm:col-span-2">
                 <Label>Nome do produto</Label>
                 <input className="input" value={form.nome} onChange={e => f('nome', e.target.value)} required />
+              </div>
+              <div className="sm:col-span-1">
+                <Label>Categoria *</Label>
+                <select className="input" value={form.categoria_id} onChange={e => f('categoria_id', e.target.value)} required>
+                  <option value="">Selecionar...</option>
+                  {categoriasLista?.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="mt-3">

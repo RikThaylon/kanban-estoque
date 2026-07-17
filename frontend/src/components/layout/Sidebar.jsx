@@ -16,6 +16,7 @@ import {
   Truck,
   Users,
   X,
+  Shield,
 } from 'lucide-react';
 import { useUiStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -60,6 +61,7 @@ const MENU_GROUPS = [
     items: [
       { key: 'usuarios',      path: '/usuarios',       icon: Users,           label: 'Usuários' },
       { key: 'configuracoes', path: '/configuracoes',  icon: Settings,        label: 'Configurações' },
+      { key: 'seguranca',     path: '/seguranca',      icon: Shield,          label: 'Segurança' },
     ],
   },
 ];

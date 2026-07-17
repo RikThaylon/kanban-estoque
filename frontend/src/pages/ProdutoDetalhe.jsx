@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save, X } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
@@ -46,14 +46,21 @@ const ProdutoDetalhe = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const isAdmin = user?.perfil === 'admin';
   const [activeTab, setActiveTab] = useState('kanban');
   const [chartZoom, setChartZoom] = useState('todos');
   const [abcDraft, setAbcDraft] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [fornecedorForm, setFornecedorForm] = useState({
     fornecedor_id: '',
     prioridade: '',
     preco_acordado: '',
     lead_time_nominal_dias: '',
+  });
+
+  const { data: categorias } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: async () => (await api.get('/categorias')).data,
   });
 
   const { data: produto, isLoading } = useQuery({
@@ -188,6 +195,11 @@ const ProdutoDetalhe = () => {
           <p className="text-steel-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
+          {isAdmin && (
+            <button className="btn-secondary justify-center border-accent text-accent hover:bg-blue-50" onClick={() => setEditModalOpen(true)}>
+              Editar Produto
+            </button>
+          )}
           <button className="btn-secondary justify-center" onClick={() => navigate(`/movimentacoes?produto_id=${id}`)}>Lançar movimentação</button>
           <button className="btn-primary justify-center" onClick={() => navigate(`/pedidos?produto_id=${id}`)}>Emitir Pedido</button>
         </div>
@@ -602,6 +614,223 @@ const ProdutoDetalhe = () => {
 
         </div>
       </TabErrorBoundary>
+
+      {editModalOpen && (
+        <AdminProdutoEditModal
+          produto={produto}
+          categorias={categorias}
+          onClose={() => setEditModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─── Modal Exclusivo Admin: Editar Produto Completo ───────────────────────────
+const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
+  const queryClient = useQueryClient();
+  const [erro, setErro] = useState('');
+  const [form, setForm] = useState({
+    codigo: produto.codigo || '',
+    sku: produto.sku || '',
+    nome: produto.nome || '',
+    descricao: produto.descricao || '',
+    categoria_id: produto.categoria_id || '',
+    unidade: produto.unidade || 'UN',
+    custo_unitario: produto.custo_unitario != null ? produto.custo_unitario : '',
+    custo_pedido: produto.custo_pedido != null ? produto.custo_pedido : '',
+    taxa_carregamento: produto.taxa_carregamento != null ? produto.taxa_carregamento : '',
+    nivel_servico: produto.nivel_servico || '95',
+    localizacao: produto.localizacao || '',
+    estoque_atual: produto.estoque_atual != null ? produto.estoque_atual : '',
+    estoque_minimo: produto.estoque_minimo != null ? produto.estoque_minimo : '',
+    estoque_maximo: produto.estoque_maximo != null ? produto.estoque_maximo : '',
+    ponto_reposicao_manual: produto.ponto_reposicao_manual != null ? produto.ponto_reposicao_manual : '',
+    lead_time_padrao_dias: produto.lead_time_padrao_dias != null ? produto.lead_time_padrao_dias : '',
+    observacoes: produto.observacoes || '',
+    ativo: produto.ativo !== false,
+  });
+
+  const f = (k, v) => setForm(s => ({ ...s, [k]: v }));
+
+  const salvar = useMutation({
+    mutationFn: async (dados) => {
+      return (await api.patch(`/produtos/${produto.id}`, dados)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produto', produto.id] });
+      queryClient.invalidateQueries({ queryKey: ['produtos'] });
+      invalidateOperationalData(queryClient, produto.id);
+      onClose();
+    },
+    onError: (e) => setErro(e.response?.data?.message || e.message || 'Erro ao salvar alterações'),
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setErro('');
+
+    const payload = {
+      ...form,
+      custo_unitario: form.custo_unitario === '' ? null : parseFloat(form.custo_unitario),
+      custo_pedido: form.custo_pedido === '' ? null : parseFloat(form.custo_pedido),
+      taxa_carregamento: form.taxa_carregamento === '' ? null : parseFloat(form.taxa_carregamento),
+      nivel_servico: parseInt(form.nivel_servico),
+      estoque_atual: form.estoque_atual === '' ? null : parseFloat(form.estoque_atual),
+      estoque_minimo: form.estoque_minimo === '' ? null : parseFloat(form.estoque_minimo),
+      estoque_maximo: form.estoque_maximo === '' ? null : parseFloat(form.estoque_maximo),
+      ponto_reposicao_manual: form.ponto_reposicao_manual === '' ? null : parseFloat(form.ponto_reposicao_manual),
+      lead_time_padrao_dias: form.lead_time_padrao_dias === '' ? null : parseInt(form.lead_time_padrao_dias),
+    };
+
+    salvar.mutate(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-navy-900/60 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 modal-overlay-enter">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col modal-spring-enter">
+        <div className="p-5 border-b border-surface-200 flex justify-between items-center bg-surface-50 rounded-t-2xl">
+          <div>
+            <h2 className="text-lg font-bold text-steel-800">Administração: Editar Produto</h2>
+            <p className="text-xs text-steel-400 mt-0.5">Painel exclusivo para alteração manual de parâmetros operacionais e de estoque</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-steel-400 hover:text-steel-600 hover:bg-surface-100 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="p-5 overflow-y-auto flex-1">
+          {erro && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />{erro}
+            </div>
+          )}
+          <form id="prod-admin-form" onSubmit={handleSubmit} className="space-y-6">
+            {/* Seção 1: Identificação */}
+            <div>
+              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">1. Identificação Geral</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="label">Código *</label>
+                  <input className="input font-mono w-full" value={form.codigo} onChange={e => f('codigo', e.target.value.toUpperCase())} required />
+                </div>
+                <div>
+                  <label className="label">SKU</label>
+                  <input className="input font-mono w-full" value={form.sku} onChange={e => f('sku', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Nome *</label>
+                  <input className="input w-full" value={form.nome} onChange={e => f('nome', e.target.value)} required />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">Categoria *</label>
+                  <select className="input w-full" value={form.categoria_id} onChange={e => f('categoria_id', e.target.value)} required>
+                    <option value="">Selecione uma categoria...</option>
+                    {categorias?.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Unidade</label>
+                  <select className="input w-full" value={form.unidade} onChange={e => f('unidade', e.target.value)}>
+                    {['UN', 'MT', 'KG', 'LT', 'PC', 'CX', 'PA'].map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="label">Descrição</label>
+                  <textarea className="input w-full resize-none" rows={2} value={form.descricao} onChange={e => f('descricao', e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção 2: Estoques */}
+            <div>
+              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">2. Níveis de Estoque (Ajuste Manual)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                  <label className="label">Estoque Atual</label>
+                  <input type="number" step="0.0001" className="input font-mono w-full" value={form.estoque_atual} onChange={e => f('estoque_atual', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Estoque Mínimo</label>
+                  <input type="number" step="0.0001" className="input font-mono w-full" value={form.estoque_minimo} onChange={e => f('estoque_minimo', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Estoque Máximo</label>
+                  <input type="number" step="0.0001" className="input font-mono w-full" value={form.estoque_maximo} onChange={e => f('estoque_maximo', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">PR Manual (Substitui Estatística)</label>
+                  <input type="number" step="0.0001" className="input font-mono w-full" value={form.ponto_reposicao_manual} onChange={e => f('ponto_reposicao_manual', e.target.value)} placeholder="Automático se vazio" />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção 3: Parâmetros Kanban */}
+            <div>
+              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">3. Parâmetros de Custos e Lead Time</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                  <label className="label">Preço de compra (R$)</label>
+                  <input type="number" step="0.01" className="input font-mono w-full" value={form.custo_unitario} onChange={e => f('custo_unitario', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Custo do Pedido (R$)</label>
+                  <input type="number" step="0.01" className="input font-mono w-full" value={form.custo_pedido} onChange={e => f('custo_pedido', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Taxa de Carregamento</label>
+                  <input type="number" step="0.01" min="0" max="1" className="input font-mono w-full" value={form.taxa_carregamento} onChange={e => f('taxa_carregamento', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Lead time padrão (dias)</label>
+                  <input type="number" className="input font-mono w-full" value={form.lead_time_padrao_dias} onChange={e => f('lead_time_padrao_dias', e.target.value)} />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">Nível de serviço desejado</label>
+                  <select className="input w-full" value={form.nivel_servico} onChange={e => f('nivel_servico', e.target.value)}>
+                    <option value="90">90% — Básico</option>
+                    <option value="95">95% — Padrão industrial</option>
+                    <option value="98">98% — Alta disponibilidade</option>
+                    <option value="99">99% — Missão crítica</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">Localização no estoque</label>
+                  <input className="input w-full" value={form.localizacao} onChange={e => f('localizacao', e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção 4: Outros */}
+            <div>
+              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">4. Status e Notas</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 mt-6">
+                  <input
+                    type="checkbox"
+                    id="chk-ativo"
+                    checked={form.ativo}
+                    onChange={e => f('ativo', e.target.checked)}
+                    className="w-4 h-4 text-accent border-surface-300 rounded focus:ring-accent"
+                  />
+                  <label htmlFor="chk-ativo" className="text-sm font-semibold text-steel-700 cursor-pointer">Produto Ativo</label>
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="label">Observações Internas</label>
+                  <textarea className="input w-full" rows={3} value={form.observacoes} onChange={e => f('observacoes', e.target.value)} placeholder="Notas internas..." />
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div className="p-5 border-t border-surface-200 flex justify-end gap-3 bg-surface-50 rounded-b-2xl">
+          <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
+          <button type="submit" form="prod-admin-form" disabled={salvar.isPending} className="btn-primary">
+            {salvar.isPending ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

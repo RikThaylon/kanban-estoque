@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertCircle, Loader2, Lock, LogIn, ShieldCheck, User } from 'lucide-react';
+import { Activity, AlertCircle, Loader2, Lock, LogIn, ShieldCheck, User, X, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -9,13 +10,69 @@ const Login = () => {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
+  // Estados do Modal de Recuperação de Senha
+  const [recuperarOpen, setRecuperarOpen] = useState(false);
+  const [recUser, setRecUser] = useState('');
+  const [recMotivo, setRecMotivo] = useState('');
+  const [recLoading, setRecLoading] = useState(false);
+  const [recSucesso, setRecSucesso] = useState('');
+  const [recErro, setRecErro] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !senha) return;
 
-    const success = await login(username.trim(), senha);
-    if (success) {
-      navigate('/dashboard', { replace: true });
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const success = await login(
+            username.trim(),
+            senha,
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          if (success) {
+            navigate('/dashboard', { replace: true });
+          }
+        },
+        async (err) => {
+          // Geolocalização negada, indisponível ou timeout
+          const success = await login(username.trim(), senha, null, null);
+          if (success) {
+            navigate('/dashboard', { replace: true });
+          }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    } else {
+      // Navegador não suporta geolocalização
+      const success = await login(username.trim(), senha, null, null);
+      if (success) {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  };
+
+  const handleSolicitarRecuperacao = async (e) => {
+    e.preventDefault();
+    if (!recUser.trim()) return;
+
+    setRecLoading(true);
+    setRecErro('');
+    setRecSucesso('');
+
+    try {
+      const response = await api.post('/auth/forgot-password', {
+        username: recUser.trim(),
+        motivo: recMotivo.trim() || undefined,
+      });
+      setRecSucesso(response.data.message || 'Solicitação enviada com sucesso.');
+      setRecUser('');
+      setRecMotivo('');
+    } catch (err) {
+      setRecErro(err.response?.data?.message || 'Erro ao enviar solicitação.');
+    } finally {
+      setRecLoading(false);
     }
   };
 
@@ -29,7 +86,6 @@ const Login = () => {
           alt="Fluxo logístico industrial" 
           className="absolute inset-0 w-full h-full object-cover object-center opacity-30 mix-blend-luminosity"
         />
-        {/* Blue overlay for readability and dark theme feel */}
         <div 
           className="absolute inset-0"
           style={{
@@ -41,7 +97,7 @@ const Login = () => {
       {/* Main Content Container */}
       <div className="relative z-10 w-full max-w-md flex flex-col items-center">
         
-        {/* Header Branding (with subtle glow/glass on text for contrast) */}
+        {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-6 sm:mb-8 w-full">
           <div className="flex items-center gap-3 mb-4 p-2">
             <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
@@ -52,7 +108,6 @@ const Login = () => {
             </span>
           </div>
           
-          {/* Glassmorphism background for subtitle to guarantee readability against any image part */}
           <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-700/30 rounded-2xl p-4 mb-5 shadow-xl">
             <h1 className="text-base sm:text-lg font-medium text-slate-200 max-w-[320px] mx-auto leading-relaxed">
               Controle industrial com visão de comando em tempo real.
@@ -74,7 +129,7 @@ const Login = () => {
         </div>
 
         {/* Login Form Card */}
-        <div className="w-full bg-white shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/20 backdrop-blur-xl">
+        <div className="w-full bg-white shadow-2xl rounded-3xl p-6 sm:p-10 border border-white/20 backdrop-blur-xl animate-fade-in">
           <div className="text-center mb-8">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
               Acesso Operacional
@@ -119,9 +174,18 @@ const Login = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-gray-700" htmlFor="senha">
-                Senha
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-semibold text-gray-700" htmlFor="senha">
+                  Senha
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setRecuperarOpen(true); setRecSucesso(''); setRecErro(''); }}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold focus:outline-none"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -139,7 +203,6 @@ const Login = () => {
                 />
               </div>
             </div>
-
 
             <button 
               type="submit" 
@@ -161,6 +224,91 @@ const Login = () => {
           </form>
         </div>
       </div>
+
+      {/* Modal de Solicitação de Recuperação (Forgot Password) */}
+      {recuperarOpen && (
+        <div className="fixed inset-0 bg-navy-900/60 flex items-center justify-center z-50 p-4 modal-overlay-enter">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-spring-enter overflow-hidden">
+            <div className="p-5 border-b border-surface-200 flex justify-between items-center bg-surface-50">
+              <div>
+                <h3 className="font-bold text-steel-800">Recuperação de Senha</h3>
+                <p className="text-xs text-steel-400 mt-0.5">Sua solicitação será analisada pelo administrador</p>
+              </div>
+              <button 
+                onClick={() => setRecuperarOpen(false)}
+                className="p-1.5 text-steel-400 hover:text-steel-600 hover:bg-surface-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {recSucesso ? (
+                <div className="text-center py-4 space-y-3">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+                  <p className="text-sm font-semibold text-steel-800">{recSucesso}</p>
+                  <p className="text-xs text-steel-400">Entre em contato com o suporte ou gestor local para obter seu token de redefinição.</p>
+                  <button 
+                    onClick={() => setRecuperarOpen(false)}
+                    className="btn-secondary w-full mt-4 justify-center"
+                  >
+                    Fechar Janela
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSolicitarRecuperacao} className="space-y-4">
+                  {recErro && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      {recErro}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="label">Username / Usuário *</label>
+                    <input 
+                      type="text" 
+                      className="input w-full"
+                      value={recUser}
+                      onChange={e => setRecUser(e.target.value)}
+                      placeholder="Ex: joao.silva"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="label">Motivo do Chamado (opcional)</label>
+                    <textarea 
+                      className="input w-full resize-none"
+                      rows={2}
+                      value={recMotivo}
+                      onChange={e => setRecMotivo(e.target.value)}
+                      placeholder="Ex: Esqueci a senha temporária / bloqueio de conta"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2 justify-end">
+                    <button 
+                      type="button" 
+                      onClick={() => setRecuperarOpen(false)}
+                      className="btn-secondary"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={recLoading || !recUser.trim()}
+                      className="btn-primary"
+                    >
+                      {recLoading ? 'Processando...' : 'Solicitar Chamado'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

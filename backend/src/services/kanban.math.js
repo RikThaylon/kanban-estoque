@@ -187,6 +187,18 @@ function calcularParametrosKanban({
     };
   }
 
+  // Série de demanda com menos de 3 semanas → dados insuficientes para qualquer cálculo estatístico
+  if (demandaSemanalSeries && demandaSemanalSeries.length > 0 && demandaSemanalSeries.length < 3 && !expectedDemand) {
+    return {
+      ES: 0, PR: 0, EOQ: 0, Emax: 0,
+      faixa: 'SEM_DADOS',
+      diasCobertura: null,
+      alertas: ['Dados insuficientes: mínimo 3 semanas de demanda ou proxy de categoria'],
+      insuficiente_historico: true,
+      intermediarios: {},
+    };
+  }
+
   const Z = Z_TABLE[nivelServico] || Z_TABLE[95];
 
   // 1. Tiers de Maturidade de Dados para Demanda (Cold-start)

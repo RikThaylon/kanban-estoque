@@ -1,5 +1,8 @@
 const { AppError } = require('../utils/errors');
 
+/**
+ * Campos que qualquer perfil autorizado pode editar.
+ */
 const CAMPOS_ATUALIZAVEIS_PRODUTO = [
   'nome',
   'descricao',
@@ -11,6 +14,28 @@ const CAMPOS_ATUALIZAVEIS_PRODUTO = [
   'nivel_servico',
   'localizacao',
 ];
+
+/**
+ * Campos ADICIONAIS que apenas o admin pode editar.
+ * O admin pode editar TODOS os campos acima + estes.
+ */
+const CAMPOS_EXCLUSIVOS_ADMIN = [
+  'codigo',
+  'sku',
+  'estoque_atual',
+  'estoque_minimo',
+  'estoque_maximo',
+  'ponto_reposicao_manual',
+  'lead_time_padrao_dias',
+  'observacoes',
+  'ativo',
+  'classificacao_abc',
+];
+
+/**
+ * Conjunto completo de campos editáveis pelo admin.
+ */
+const CAMPOS_ATUALIZAVEIS_ADMIN = [...CAMPOS_ATUALIZAVEIS_PRODUTO, ...CAMPOS_EXCLUSIVOS_ADMIN];
 const PRIORIDADE_FORNECEDOR_PADRAO = 1;
 const CUSTO_PEDIDO_PADRAO = 100;
 const SEMANAS_HISTORICO_PADRAO = 12;
@@ -77,6 +102,8 @@ function limitarSemanasHistorico(semanas) {
 
 module.exports = {
   CAMPOS_ATUALIZAVEIS_PRODUTO,
+  CAMPOS_EXCLUSIVOS_ADMIN,
+  CAMPOS_ATUALIZAVEIS_ADMIN,
   PRIORIDADE_FORNECEDOR_PADRAO,
   CUSTO_PEDIDO_PADRAO,
   SEMANAS_HISTORICO_PADRAO,

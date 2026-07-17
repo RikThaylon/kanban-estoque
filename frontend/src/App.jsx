@@ -23,6 +23,8 @@ const Fornecedores = React.lazy(() => import('./pages/Fornecedores'));
 const Configuracoes = React.lazy(() => import('./pages/Configuracoes'));
 const Raci = React.lazy(() => import('./pages/Raci'));
 const AuditoriaMonteCarlo = React.lazy(() => import('./pages/AuditoriaMonteCarlo'));
+const Seguranca = React.lazy(() => import('./pages/Seguranca'));
+const RecuperacaoSenha = React.lazy(() => import('./pages/RecuperacaoSenha'));
 const Layout = React.lazy(() => import('./components/layout/Layout'));
 
 // Loading Fallback
@@ -138,6 +140,7 @@ function App() {
       <React.Suspense fallback={<FullPageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/recuperar-senha" element={<RecuperacaoSenha />} />
           
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
@@ -157,6 +160,7 @@ function App() {
               <Route path="/configuracoes" element={<PageRoute pagina="configuracoes"><Configuracoes /></PageRoute>} />
               <Route path="/raci" element={<PageRoute pagina="raci"><Raci /></PageRoute>} />
               <Route path="/simulacao" element={<PageRoute pagina="simulacao"><AuditoriaMonteCarlo /></PageRoute>} />
+              <Route path="/seguranca" element={<PageRoute pagina="seguranca"><Seguranca /></PageRoute>} />
               <Route path="*" element={<div className="p-8 text-center text-gray-500">Página em construção</div>} />
             </Route>
           </Route>

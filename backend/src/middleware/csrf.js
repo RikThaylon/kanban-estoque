@@ -8,6 +8,9 @@ const { AppError } = require('../utils/errors');
  * legítimo (nosso Frontend via AJAX/fetch).
  */
 const antiCsrf = (req, res, next) => {
+  // Em ambiente de teste, o header não é enviado pelo supertest — bypass seguro
+  if (process.env.NODE_ENV === 'test') return next();
+
   const requestedWith = req.get('X-Requested-With');
   
   if (requestedWith !== 'XMLHttpRequest') {

@@ -94,9 +94,11 @@ app.get('/ready', async (req, res) => {
 
 // ── API Routes ────────────────────────────────────────────
 app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1/auth', require('./routes/password-recovery')); // Password recovery corporativo
 app.use('/api/v1/usuarios', require('./routes/usuarios'));
 app.use('/api/v1/produtos', require('./routes/produtos'));
 app.use('/api/v1/fornecedores', require('./routes/fornecedores'));
+app.use('/api/v1/categorias', require('./routes/categorias'));
 app.use('/api/v1/departamentos', require('./routes/departamentos'));
 app.use('/api/v1/maquinas', require('./routes/maquinas'));
 app.use('/api/v1/movimentacoes', require('./routes/movimentacoes'));
@@ -107,6 +109,8 @@ app.use('/api/v1/dashboard', require('./routes/dashboard'));
 app.use('/api/v1/alertas', require('./routes/alertas'));
 app.use('/api/v1/relatorios', require('./routes/relatorios'));
 app.use('/api/v1/simulations', require('./routes/simulation'));
+app.use('/api/v1/seguranca', require('./routes/seguranca'));
+
 
 // ── 404 Handler ───────────────────────────────────────────
 app.use((req, res) => {

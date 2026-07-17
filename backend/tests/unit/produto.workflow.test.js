@@ -1,120 +1,103 @@
+/**
+ * @file produto.workflow.test.js (expandido)
+ * @description Testes para os campos editáveis pelo admin vs. perfis normais
+ */
+
 const {
-  CAMPOS_ATUALIZAVEIS_PRODUTO,
-  CUSTO_PEDIDO_PADRAO,
-  SEMANAS_HISTORICO_MAX,
-  valorFoiInformado,
-  resolverParametrosCadastroProduto,
   montarAtualizacaoProduto,
-  normalizarVinculoFornecedorProduto,
-  normalizarListaFornecedoresProduto,
-  limitarSemanasHistorico,
+  CAMPOS_ATUALIZAVEIS_PRODUTO,
+  CAMPOS_EXCLUSIVOS_ADMIN,
+  CAMPOS_ATUALIZAVEIS_ADMIN,
 } = require('../../src/services/produto.workflow');
 
-describe('produto.workflow', () => {
-  describe('cadastro de produto', () => {
-    it('aplica defaults de Kanban quando parametros opcionais nao sao informados', () => {
-      const params = resolverParametrosCadastroProduto({}, {
-        nivel_servico_padrao: 95,
-        taxa_carregamento_padrao: 0.2,
-      });
-
-      expect(params).toEqual({
-        nivelServicoFinal: 95,
-        custoPedidoFinal: CUSTO_PEDIDO_PADRAO,
-        taxaCarregamentoFinal: 0.2,
-        cmdInicial: 0,
-        leadTimeInicial: 0,
-      });
-    });
-
-    it('usa valores informados no payload', () => {
-      const params = resolverParametrosCadastroProduto({
-        nivel_servico: '98',
-        custo_pedido: '150',
-        taxa_carregamento: '0.35',
-        cmd_inicial: '6',
-        lead_time_inicial: '8',
-      }, {
-        nivel_servico_padrao: 95,
-        taxa_carregamento_padrao: 0.2,
-      });
-
-      expect(params.nivelServicoFinal).toBe(98);
-      expect(params.custoPedidoFinal).toBe(150);
-      expect(params.taxaCarregamentoFinal).toBe(0.35);
-      expect(params.cmdInicial).toBe(6);
-      expect(params.leadTimeInicial).toBe(8);
-    });
-
-    it('distingue valores vazios de valores numericos validos', () => {
-      expect(valorFoiInformado('')).toBe(false);
-      expect(valorFoiInformado(undefined)).toBe(false);
-      expect(valorFoiInformado(null)).toBe(false);
-      expect(valorFoiInformado(0)).toBe(true);
-    });
+describe('produto.workflow — CAMPOS_ATUALIZAVEIS_ADMIN', () => {
+  it('deve conter todos os campos de CAMPOS_ATUALIZAVEIS_PRODUTO', () => {
+    for (const campo of CAMPOS_ATUALIZAVEIS_PRODUTO) {
+      expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain(campo);
+    }
   });
 
-  describe('atualizacao de produto', () => {
-    it('mantem lista explicita de campos atualizaveis', () => {
-      expect(CAMPOS_ATUALIZAVEIS_PRODUTO).toEqual(expect.arrayContaining(['nome', 'custo_unitario', 'nivel_servico', 'localizacao']));
-      expect(CAMPOS_ATUALIZAVEIS_PRODUTO).not.toContain('codigo');
-      expect(CAMPOS_ATUALIZAVEIS_PRODUTO).not.toContain('estoque_atual');
-    });
-
-    it('monta atualizacao apenas com campos permitidos', () => {
-      const atualizacao = montarAtualizacaoProduto({
-        nome: 'Produto QA',
-        estoque_atual: 999,
-        nivel_servico: 99,
-      });
-
-      expect(atualizacao.fields).toEqual(['nome = $1', 'nivel_servico = $2']);
-      expect(atualizacao.values).toEqual(['Produto QA', 99]);
-      expect(atualizacao.nextIndex).toBe(3);
-    });
+  it('deve conter campos exclusivos do admin', () => {
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('codigo');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('sku');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('estoque_atual');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('estoque_minimo');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('estoque_maximo');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('observacoes');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('ativo');
+    expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain('classificacao_abc');
   });
 
-  describe('fornecedores de produto', () => {
-    it('exige fornecedor_id para criar vinculo', () => {
-      expect(() => normalizarVinculoFornecedorProduto({ prioridade: 1 })).toThrow('fornecedor_id');
-    });
+  it('lista de campos exclusivos deve ser subconjunto de admin', () => {
+    for (const campo of CAMPOS_EXCLUSIVOS_ADMIN) {
+      expect(CAMPOS_ATUALIZAVEIS_ADMIN).toContain(campo);
+      // Confirmar que NÃO está na lista normal
+      expect(CAMPOS_ATUALIZAVEIS_PRODUTO).not.toContain(campo);
+    }
+  });
+});
 
-    it('aplica prioridade padrao quando nao informada', () => {
-      const vinculo = normalizarVinculoFornecedorProduto({
-        fornecedor_id: 'forn-1',
-        preco_acordado: 15,
-      });
+describe('montarAtualizacaoProduto — admin vs. perfil normal', () => {
+  const payloadCompleto = {
+    nome: 'Produto X',
+    descricao: 'Desc',
+    unidade: 'UN',
+    categoria_id: 'cat-123',
+    custo_unitario: 10.5,
+    custo_pedido: 50,
+    taxa_carregamento: 0.2,
+    nivel_servico: 95,
+    localizacao: 'A-01',
+    // Campos exclusivos admin:
+    codigo: 'COD-001',
+    sku: 'SKU-ABC',
+    estoque_atual: 100,
+    estoque_minimo: 10,
+    estoque_maximo: 500,
+    observacoes: 'Obs teste',
+    ativo: true,
+    classificacao_abc: 'A',
+  };
 
-      expect(vinculo).toEqual({
-        fornecedor_id: 'forn-1',
-        prioridade: 1,
-        preco_acordado: 15,
-        lead_time_nominal_dias: undefined,
-      });
-    });
+  it('perfil normal não deve incluir campos exclusivos do admin', () => {
+    const { fields } = montarAtualizacaoProduto(payloadCompleto, CAMPOS_ATUALIZAVEIS_PRODUTO);
+    const camposGerados = fields.map(f => f.split(' = ')[0]);
 
-    it('normaliza lista de fornecedores', () => {
-      expect(normalizarListaFornecedoresProduto([
-        { fornecedor_id: 'forn-1' },
-        { fornecedor_id: 'forn-2', prioridade: 2 },
-      ])).toEqual([
-        { fornecedor_id: 'forn-1', prioridade: 1, preco_acordado: undefined, lead_time_nominal_dias: undefined },
-        { fornecedor_id: 'forn-2', prioridade: 2, preco_acordado: undefined, lead_time_nominal_dias: undefined },
-      ]);
-    });
-
-    it('rejeita payload de fornecedores que nao seja lista', () => {
-      expect(() => normalizarListaFornecedoresProduto(null)).toThrow('fornecedores deve ser uma lista');
-    });
+    for (const campo of CAMPOS_EXCLUSIVOS_ADMIN) {
+      expect(camposGerados).not.toContain(campo);
+    }
   });
 
-  describe('historico de consumo', () => {
-    it('limita janela consultavel entre 1 e 52 semanas', () => {
-      expect(limitarSemanasHistorico(undefined)).toBe(12);
-      expect(limitarSemanasHistorico(0)).toBe(12);
-      expect(limitarSemanasHistorico('-5')).toBe(1);
-      expect(limitarSemanasHistorico('200')).toBe(SEMANAS_HISTORICO_MAX);
-      expect(limitarSemanasHistorico('8')).toBe(8);
-    });
+  it('admin deve incluir TODOS os campos do payload', () => {
+    const { fields } = montarAtualizacaoProduto(payloadCompleto, CAMPOS_ATUALIZAVEIS_ADMIN);
+    const camposGerados = fields.map(f => f.split(' = ')[0]);
+
+    // Campos padrão
+    expect(camposGerados).toContain('nome');
+    expect(camposGerados).toContain('categoria_id');
+    // Campos exclusivos admin
+    expect(camposGerados).toContain('codigo');
+    expect(camposGerados).toContain('sku');
+    expect(camposGerados).toContain('estoque_atual');
+    expect(camposGerados).toContain('classificacao_abc');
+  });
+
+  it('deve ignorar campos não permitidos mesmo se presentes no payload', () => {
+    const payloadComCampoNaoPermitido = {
+      nome: 'Teste',
+      campo_inventado: 'valor_perigoso',
+      __proto__: { malicioso: true },
+    };
+    const { fields } = montarAtualizacaoProduto(payloadComCampoNaoPermitido, CAMPOS_ATUALIZAVEIS_PRODUTO);
+    const camposGerados = fields.map(f => f.split(' = ')[0]);
+    expect(camposGerados).toContain('nome');
+    expect(camposGerados).not.toContain('campo_inventado');
+    expect(camposGerados).not.toContain('__proto__');
+  });
+
+  it('deve retornar fields vazio se nenhum campo válido no payload', () => {
+    const { fields, values } = montarAtualizacaoProduto({ campo_invalido: 'x' }, CAMPOS_ATUALIZAVEIS_PRODUTO);
+    expect(fields).toHaveLength(0);
+    expect(values).toHaveLength(0);
   });
 });

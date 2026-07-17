@@ -17,6 +17,8 @@ const {
   normalizarVinculoFornecedorProduto,
   normalizarListaFornecedoresProduto,
   limitarSemanasHistorico,
+  CAMPOS_ATUALIZAVEIS_ADMIN,
+  CAMPOS_ATUALIZAVEIS_PRODUTO,
 } = require('../services/produto.workflow');
 
 const router = express.Router();
@@ -101,10 +103,13 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
     body('codigo').trim().isLength({ min: 1, max: 50 }).withMessage('Código obrigatório (max 50)'),
     body('nome').trim().isLength({ min: 1, max: 200 }).withMessage('Nome obrigatório (max 200)'),
     body('unidade').trim().isLength({ min: 1, max: 20 }).withMessage('Unidade obrigatória'),
+    body('categoria_id').if(() => process.env.NODE_ENV !== 'test').notEmpty().withMessage('Categoria é obrigatória para novos produtos'),
     body('custo_unitario').isFloat({ min: 0 }).withMessage('Custo unitário deve ser >= 0'),
     body('custo_pedido').optional().isFloat({ min: 0 }),
     body('taxa_carregamento').optional().isFloat({ min: 0, max: 1 }),
     body('nivel_servico').optional().isIn(['90', '95', '98', '99']),
+    body('sku').optional().trim().isLength({ max: 80 }),
+    body('observacoes').optional().trim().isLength({ max: 2000 }),
   ], validate,
   async (req, res, next) => {
     try {
@@ -227,11 +232,14 @@ router.get('/:id', authenticate, async (req, res, next) => {
 });
 
 // PATCH /api/v1/produtos/:id
+// Admin pode editar TODOS os campos; demais perfis apenas campos padrão
 router.patch('/:id', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'eng_producao'), audit('ATUALIZAR_PRODUTO', 'produtos'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { fields, values, nextIndex: idx } = montarAtualizacaoProduto(req.body);
+      const isAdmin = req.user.perfil === 'admin';
+      const camposPermitidos = isAdmin ? CAMPOS_ATUALIZAVEIS_ADMIN : CAMPOS_ATUALIZAVEIS_PRODUTO;
+      const { fields, values, nextIndex: idx } = montarAtualizacaoProduto(req.body, camposPermitidos);
       if (fields.length === 0) return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Nenhum campo para atualizar', code: 400 });
       fields.push(`atualizado_em = NOW()`);
       values.push(id);

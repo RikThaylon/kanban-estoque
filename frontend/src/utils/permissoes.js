@@ -12,6 +12,7 @@ export const PAGINAS_SISTEMA = [
   'relatorios',
   'simulacao',
   'usuarios',
+  'seguranca',
 ];
 
 export const PAGINA_LABELS = {

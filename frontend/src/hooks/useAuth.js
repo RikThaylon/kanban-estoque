@@ -49,11 +49,11 @@ export const useAuth = () => {
     return () => window.removeEventListener('storage', handler);
   };
 
-  const login = async (username, senha) => {
+  const login = async (username, senha, latitude, longitude) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.post('/auth/login', { username, senha });
+      const response = await api.post('/auth/login', { username, senha, latitude, longitude });
       const { accessToken, usuario } = response.data;
 
       setAuth(usuario, accessToken);
@@ -62,7 +62,7 @@ export const useAuth = () => {
 
       return true;
     } catch (err) {
-      setError(err.message || 'Erro ao realizar login');
+      setError(err.response?.data?.message || err.message || 'Erro ao realizar login');
       return false;
     } finally {
       setLoading(false);

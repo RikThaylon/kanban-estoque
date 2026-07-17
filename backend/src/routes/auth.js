@@ -44,12 +44,21 @@ router.post('/login',
   [
     body('username').isString().trim().isLength({ min: 1, max: 60 }).withMessage('Usuario obrigatorio'),
     body('senha').isLength({ min: 6, max: 100 }).trim().withMessage('Senha deve ter entre 6 e 100 caracteres'),
+    body('latitude').optional().isFloat({ min: -90, max: 90 }),
+    body('longitude').optional().isFloat({ min: -180, max: 180 }),
   ],
   validate,
   async (req, res, next) => {
     try {
-      const { username, senha } = req.body;
-      const result = await authService.login(username, senha, req.ip, req.get('user-agent'));
+      const { username, senha, latitude, longitude } = req.body;
+      const result = await authService.login(
+        username,
+        senha,
+        req.ip,
+        req.get('user-agent'),
+        latitude,
+        longitude
+      );
       sendAuthResponse(res, result);
     } catch (err) {
       next(err);
