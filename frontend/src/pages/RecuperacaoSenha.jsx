@@ -46,7 +46,7 @@ const RecuperacaoSenha = () => {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-950/80 to-slate-950">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
           <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
           <h1 className="text-white font-bold text-xl mb-2">Token Inválido</h1>
@@ -60,11 +60,11 @@ const RecuperacaoSenha = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-950/80 to-slate-950 p-4">
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-2xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-accent to-red-800 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-2xl">
             <KeyRound className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Redefinir Senha</h1>
@@ -113,7 +113,7 @@ const RecuperacaoSenha = () => {
                 <div className="relative">
                   <input
                     type={showNova ? 'text' : 'password'}
-                    className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:border-blue-400 focus:bg-white/15 focus:outline-none transition-all"
+                    className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:border-accent focus:bg-white/15 focus:outline-none transition-all"
                     placeholder="Nova senha forte"
                     value={novaSenha}
                     onChange={e => setNovaSenha(e.target.value)}
@@ -134,7 +134,7 @@ const RecuperacaoSenha = () => {
                 <div className="relative">
                   <input
                     type={showConfirmar ? 'text' : 'password'}
-                    className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:border-blue-400 focus:bg-white/15 focus:outline-none transition-all"
+                    className="w-full px-4 py-3 pr-12 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/30 focus:border-accent focus:bg-white/15 focus:outline-none transition-all"
                     placeholder="Confirme a nova senha"
                     value={confirmarSenha}
                     onChange={e => setConfirmarSenha(e.target.value)}
@@ -166,8 +166,8 @@ const RecuperacaoSenha = () => {
                 type="submit"
                 disabled={!allPassed || status === 'loading'}
                 className="w-full py-3 px-4 rounded-xl font-bold text-sm transition-all
-                  bg-gradient-to-r from-blue-500 to-indigo-600 text-white
-                  hover:from-blue-400 hover:to-indigo-500
+                  bg-gradient-to-r from-accent to-red-800 text-white
+                  hover:from-red-500 hover:to-red-700
                   disabled:opacity-40 disabled:cursor-not-allowed
                   flex items-center justify-center gap-2"
               >

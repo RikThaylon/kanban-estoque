@@ -96,7 +96,7 @@ const Header = () => {
               <p className="text-sm font-bold text-steel-900 leading-tight truncate max-w-[150px]">{user?.nome || 'Usuário'}</p>
               <p className="text-xs text-steel-500 capitalize">{(user?.perfil || 'Perfil').replace(/_/g, ' ')}</p>
             </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shrink-0 shadow-sm">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-red-800 flex items-center justify-center text-white shrink-0 shadow-sm">
               <User className="w-4 h-4" />
             </div>
             <button

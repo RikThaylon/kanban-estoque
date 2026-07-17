@@ -5,12 +5,12 @@ import api from '../services/api';
 import { formatNumber } from '../utils/formatters';
 
 // Cores por classe ABC
-const ABC_COLOR = { A: '#f59e0b', B: '#3b82f6', C: '#6b7280' };
+const ABC_COLOR = { A: '#f59e0b', B: '#e8213b', C: '#6b7280' };
 
 const StatusBadge = ({ status }) => {
   const cfg = {
     queued:    { bg: 'bg-gray-700', text: 'text-gray-300', label: 'Na fila' },
-    running:   { bg: 'bg-blue-900/50', text: 'text-blue-300', label: 'Executando...' },
+    running:   { bg: 'bg-red-950/50', text: 'text-red-300', label: 'Executando...' },
     completed: { bg: 'bg-green-900/50', text: 'text-green-300', label: 'Concluído' },
     failed:    { bg: 'bg-red-900/50', text: 'text-red-300', label: 'Erro' },
   }[status] || { bg: 'bg-gray-700', text: 'text-gray-300', label: status };
@@ -35,7 +35,7 @@ const Histogram = ({ data }) => {
         {data.map((bin, i) => (
           <div key={i} className="flex-1 flex flex-col items-center gap-1">
             <div
-              className="w-full rounded-sm bg-blue-500/60 hover:bg-blue-400 transition-all"
+              className="w-full rounded-sm bg-accent/60 hover:bg-red-600 transition-all"
               style={{ height: `${max > 0 ? (bin.count / max) * 88 : 0}px` }}
               title={`${bin.binStart}–${bin.binEnd}: ${bin.count}`}
             />
@@ -110,8 +110,8 @@ const AuditoriaMonteCarlo = () => {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-blue-600/20 border border-blue-500/30">
-          <Activity size={22} className="text-blue-400" />
+        <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30">
+          <Activity size={22} className="text-accent" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-white">Auditoria Monte Carlo</h1>
@@ -126,7 +126,7 @@ const AuditoriaMonteCarlo = () => {
             <label className="block text-xs text-gray-400 mb-1.5">SKU / Produto</label>
             <div className="relative">
               <select
-                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-accent transition-colors"
                 value={selectedSku}
                 onChange={e => { setSelectedSku(e.target.value); setRunId(null); setRunResult(null); }}
               >
@@ -142,7 +142,7 @@ const AuditoriaMonteCarlo = () => {
           </div>
           <div className="flex items-end">
             <button
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-accent hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
               disabled={!selectedSku || startSim.isPending}
               onClick={() => startSim.mutate()}
             >

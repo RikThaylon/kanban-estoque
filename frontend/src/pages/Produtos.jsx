@@ -697,7 +697,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
 
           {!isEdit && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs rounded-md p-3">
+            <div className="bg-red-50 border border-red-100 text-red-800 text-xs rounded-md p-3">
               Após criar, o produto entra com faixa <strong>SEM_DADOS</strong> (se CMD e Lead Time não forem informados) ou terá seus parâmetros calculados imediatamente. Conforme movimentações e pedidos forem registrados, o modelo estatístico (Holt-Winters + Regressão) refinará automaticamente os valores.
             </div>
           )}

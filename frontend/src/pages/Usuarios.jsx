@@ -22,7 +22,7 @@ const corPorTipo = {
   visualizador: 'bg-slate-100 text-slate-600',
   aprovador1: 'bg-amber-100 text-amber-700',
   aprovador2: 'bg-orange-100 text-orange-700',
-  executor: 'bg-blue-100 text-blue-700',
+  executor: 'bg-red-100 text-red-700',
 };
 
 const labelPerfil = (v) => PERFIS.find((p) => p.value === v)?.label || v;

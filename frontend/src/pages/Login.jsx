@@ -148,7 +148,7 @@ const Login = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
+                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
                   placeholder="Seu usuário"
                   required
                   autoComplete="username"
@@ -169,7 +169,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => { setRecuperarOpen(true); setRecSucesso(''); setRecErro(''); }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold focus:outline-none"
+                  className="text-xs text-primary hover:text-red-800 font-semibold focus:outline-none"
                 >
                   Esqueci minha senha
                 </button>
@@ -183,7 +183,7 @@ const Login = () => {
                   type="password"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
+                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
                   placeholder="Sua senha"
                   required
                   autoComplete="current-password"
@@ -195,7 +195,7 @@ const Login = () => {
             <button 
               type="submit" 
               disabled={loading || !username || !senha} 
-              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-[#003366] to-[#004080] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/30 hover:from-[#002244] hover:to-[#003366] hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#003366] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-red-800 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-950/20 hover:from-red-600 hover:to-red-900 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? (
                 <>

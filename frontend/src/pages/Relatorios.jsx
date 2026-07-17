@@ -78,8 +78,8 @@ const Relatorios = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           icon={Activity}
-          color="text-blue-600"
-          bg="bg-blue-100"
+          color="text-accent"
+          bg="bg-red-100"
           label="Saídas no período"
           value={formatNumber(stats?.movimentacoes?.saidas)}
         />

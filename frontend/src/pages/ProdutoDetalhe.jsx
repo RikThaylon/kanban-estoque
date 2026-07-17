@@ -196,7 +196,7 @@ const ProdutoDetalhe = () => {
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
           {isAdmin && (
-            <button className="btn-secondary justify-center border-accent text-accent hover:bg-blue-50" onClick={() => setEditModalOpen(true)}>
+            <button className="btn-secondary justify-center border-accent text-accent hover:bg-red-50" onClick={() => setEditModalOpen(true)}>
               Editar Produto
             </button>
           )}
@@ -587,7 +587,7 @@ const ProdutoDetalhe = () => {
                             {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
                           </td>
                           <td className="p-4">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-steel-500'}`}>
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-red-100 text-red-800' : 'bg-surface-100 text-steel-500'}`}>
                               {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
                             </span>
                           </td>
@@ -706,7 +706,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
           <form id="prod-admin-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Seção 1: Identificação */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">1. Identificação Geral</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">1. Identificação Geral</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="label">Código *</label>
@@ -744,7 +744,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 2: Estoques */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">2. Níveis de Estoque (Ajuste Manual)</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">2. Níveis de Estoque (Ajuste Manual)</h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="label">Estoque Atual</label>
@@ -767,7 +767,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 3: Parâmetros Kanban */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">3. Parâmetros de Custos e Lead Time</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">3. Parâmetros de Custos e Lead Time</h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="label">Preço de compra (R$)</label>
@@ -803,7 +803,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 4: Outros */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">4. Status e Notas</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">4. Status e Notas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center gap-3 mt-6">
                   <input

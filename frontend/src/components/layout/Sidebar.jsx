@@ -213,7 +213,7 @@ const Sidebar = () => {
           /* Collapsed: just avatar */
           <div className="flex justify-center">
             <div
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold shadow-sm"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-red-800 flex items-center justify-center text-white text-xs font-bold shadow-sm"
               title={user?.nome}
             >
               {initials}
@@ -222,7 +222,7 @@ const Sidebar = () => {
         ) : (
           /* Expanded: full card */
           <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.05] px-3 py-2.5 border border-white/[0.07]">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-red-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
               {initials}
             </div>
             <div className="min-w-0 flex-1">

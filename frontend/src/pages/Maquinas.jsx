@@ -97,7 +97,7 @@ const Maquinas = () => {
                   </div>
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     {podeVincular && (
-                      <button onClick={() => setOpenVincularPara(m)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Vincular produto"><LinkIcon className="w-4 h-4" /></button>
+                      <button onClick={() => setOpenVincularPara(m)} className="p-1.5 text-accent hover:bg-red-50 rounded" title="Vincular produto"><LinkIcon className="w-4 h-4" /></button>
                     )}
                     {isAdmin && (
                       <>

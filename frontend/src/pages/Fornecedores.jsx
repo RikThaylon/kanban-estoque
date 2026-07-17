@@ -83,12 +83,12 @@ const Fornecedores = () => {
         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
           <button
             onClick={() => setDetalhesModal(forn)}
-            className="p-1.5 text-steel-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            className="p-1.5 text-steel-400 hover:text-accent hover:bg-red-50 rounded-lg transition-colors"
             title="Ver produtos e histórico"
           >
             <Eye className="w-4 h-4" />
           </button>
-          <button onClick={() => handleEdit(forn)} className="p-1.5 text-steel-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+          <button onClick={() => handleEdit(forn)} className="p-1.5 text-steel-400 hover:text-accent hover:bg-red-50 rounded-lg transition-colors" title="Editar">
             <Edit2 className="w-4 h-4" />
           </button>
           <button onClick={() => handleDelete(forn.id, forn.nome)} className="p-1.5 text-steel-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Desativar">
@@ -113,9 +113,9 @@ const Fornecedores = () => {
       <div className="p-5">
         <div className="flex items-start gap-3 mb-4">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            forn.ativo ? 'bg-indigo-50' : 'bg-slate-100'
+            forn.ativo ? 'bg-red-50' : 'bg-slate-100'
           }`}>
-            <Building2 className={`w-5 h-5 ${forn.ativo ? 'text-indigo-600' : 'text-slate-400'}`} />
+            <Building2 className={`w-5 h-5 ${forn.ativo ? 'text-primary' : 'text-slate-400'}`} />
           </div>
           <div className="min-w-0 pr-12">
             <h3 className="font-bold text-steel-800 leading-tight truncate">{forn.nome}</h3>
@@ -445,8 +445,8 @@ const FornecedorDetalhesModal = ({ fornecedor, onClose }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col modal-spring-enter">
         <div className="p-5 border-b border-surface-200 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-indigo-600" />
+            <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h2 className="font-bold text-steel-800">{fornecedor.nome}</h2>
@@ -468,7 +468,7 @@ const FornecedorDetalhesModal = ({ fornecedor, onClose }) => {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border-b-2 transition-all ${
-                tab === t.id ? 'border-accent text-accent bg-blue-50' : 'border-transparent text-steel-500 hover:text-steel-700'
+                tab === t.id ? 'border-accent text-accent bg-red-50' : 'border-transparent text-steel-500 hover:text-steel-700'
               }`}
             >
               <t.icon className="w-4 h-4" />{t.label}

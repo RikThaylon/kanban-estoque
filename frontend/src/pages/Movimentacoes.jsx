@@ -10,7 +10,7 @@ import { invalidateOperationalData } from '../utils/queryInvalidation';
 const TIPOS = [
   { value: 'ENTRADA', label: 'Entrada', icon: ArrowDownCircle, color: 'text-green-600', bg: 'bg-green-50' },
   { value: 'SAIDA', label: 'Saída', icon: ArrowUpCircle, color: 'text-red-600', bg: 'bg-red-50' },
-  { value: 'AJUSTE_POSITIVO', label: 'Ajuste +', icon: Edit3, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { value: 'AJUSTE_POSITIVO', label: 'Ajuste +', icon: Edit3, color: 'text-accent', bg: 'bg-red-50' },
   { value: 'AJUSTE_NEGATIVO', label: 'Ajuste −', icon: Edit3, color: 'text-orange-600', bg: 'bg-orange-50' },
   { value: 'DEVOLUCAO', label: 'Devolução', icon: ArrowDownCircle, color: 'text-teal-600', bg: 'bg-teal-50' },
 ];
@@ -30,7 +30,7 @@ const formatTurno = (valor, turnos = []) => {
 
 const STATUS_BADGE = {
   PENDENTE: 'bg-amber-100 text-amber-800',
-  APROVADO: 'bg-blue-100 text-blue-800',
+  APROVADO: 'bg-red-100 text-red-800',
   EXECUTADO: 'bg-green-100 text-green-800',
   REJEITADO: 'bg-red-100 text-red-800',
 };

@@ -26,7 +26,7 @@ const LETRA_INFO = {
   R: { label: 'Responsável', cor: 'bg-emerald-500 text-white', desc: 'Executa a ação' },
   A: { label: 'Aprovador',   cor: 'bg-red-500 text-white',     desc: 'Responde pelo resultado' },
   C: { label: 'Consultado',  cor: 'bg-amber-400 text-white',   desc: 'Opina antes' },
-  I: { label: 'Informado',   cor: 'bg-blue-400 text-white',    desc: 'Recebe ciencia' },
+  I: { label: 'Informado',   cor: 'bg-red-400 text-white',    desc: 'Recebe ciencia' },
 };
 
 const Raci = () => {

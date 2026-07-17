@@ -3,8 +3,8 @@
 // eng_producao, eng_processos, gerente_engenharia, plant_manager, admin (visualizador também).
 
 export const PAPEIS = [
-  { key: 'comprador',          label: 'Comprador',           sigla: 'CMP', cor: 'bg-blue-100 text-blue-700' },
-  { key: 'facilitador',        label: 'Facilitador',         sigla: 'FAC', cor: 'bg-blue-100 text-blue-700' },
+  { key: 'comprador',          label: 'Comprador',           sigla: 'CMP', cor: 'bg-red-100 text-red-700' },
+  { key: 'facilitador',        label: 'Facilitador',         sigla: 'FAC', cor: 'bg-red-100 text-red-700' },
   { key: 'supervisor_turno',   label: 'Supervisor de Turno', sigla: 'STO', cor: 'bg-amber-100 text-amber-700' },
   { key: 'gerente_operacoes',  label: 'Gerente Operações',   sigla: 'GOP', cor: 'bg-orange-100 text-orange-700' },
   { key: 'eng_producao',       label: 'Eng. Produção',       sigla: 'EPD', cor: 'bg-slate-100 text-slate-600' },
@@ -19,7 +19,7 @@ export const PAPEIS = [
 //   - decisao: array de [{ resposta, indice (proximo step), acao? }]
 
 export const CATEGORIAS = [
-  { key: 'operacao',       label: 'Operação Diária',     cor: 'border-blue-400 bg-blue-50' },
+  { key: 'operacao',       label: 'Operação Diária',     cor: 'border-red-400 bg-red-50' },
   { key: 'parametrizacao', label: 'Parametrização',       cor: 'border-amber-400 bg-amber-50' },
   { key: 'processos',      label: 'Processos / Melhoria', cor: 'border-emerald-400 bg-emerald-50' },
   { key: 'sistema',        label: 'Sistema / TI',         cor: 'border-purple-400 bg-purple-50' },

@@ -262,7 +262,7 @@
 
   .auth-page::before {
     background:
-      linear-gradient(102deg, transparent 0 18%, rgba(255, 255, 255, 0.56) 18% 19%, transparent 19% 44%, rgba(0, 93, 255, 0.10) 44% 45%, transparent 45%),
+      linear-gradient(102deg, transparent 0 18%, rgba(255, 255, 255, 0.56) 18% 19%, transparent 19% 44%, rgba(192, 24, 42, 0.10) 44% 45%, transparent 45%),
       linear-gradient(154deg, rgba(255, 255, 255, 0.28), transparent 38%, rgba(0, 0, 0, 0.055) 76%);
     transform: skewY(-7deg) translateY(-9%);
   }

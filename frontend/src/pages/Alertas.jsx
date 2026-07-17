@@ -8,7 +8,7 @@ import { formatDateTime } from '../utils/formatters';
 const SEVERIDADE_CONF = {
   CRITICO: { icon: AlertTriangle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', label: 'Crítico' },
   AVISO: { icon: AlertCircle, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', label: 'Aviso' },
-  INFO: { icon: Info, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', label: 'Info' },
+  INFO: { icon: Info, bg: 'bg-steel-50', border: 'border-steel-200', text: 'text-steel-700', label: 'Info' },
 };
 
 const Alertas = () => {

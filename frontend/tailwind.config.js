@@ -60,8 +60,8 @@ export default {
         sidebar: brand.sidebar,
         light: brand.light,
       },
-      // "navy" mantido como alias para vermelho escuro (compatibilidade legada)
-      navy: redScale,
+      // "navy" mapeado para neutralScale para garantir backdrops neutros e evitar fundos vermelhos nos modais
+      navy: neutralScale,
       // Escala vermelha completa
       red: redScale,
       rose: redScale,
