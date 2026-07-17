@@ -11,14 +11,29 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 
 const router = express.Router();
 
+// Todos os perfis disponíveis no sistema
+const TODOS_PERFIS = [
+  'admin',
+  'supervisor_turno',
+  'gerente_manutencao',
+  'comprador',
+  'facilitador',
+  'eng_processos',
+  'operador',
+];
+
 // ─── GET /api/v1/seguranca/geo-mfa ───────────────────────────────────────────
 router.get('/geo-mfa', authenticate, authorize('admin'), async (req, res, next) => {
   try {
     const result = await query('SELECT * FROM geo_mfa_config ORDER BY configurado_em DESC LIMIT 1');
     if (result.rows.length === 0) {
-      return res.json({ ativo: false, latitude: null, longitude: null, raio_metros: 1000 });
+      return res.json({
+        ativo: false, latitude: null, longitude: null, raio_metros: 1000,
+        perfis_isentos: ['admin'],
+        todos_perfis: TODOS_PERFIS,
+      });
     }
-    res.json(result.rows[0]);
+    res.json({ ...result.rows[0], todos_perfis: TODOS_PERFIS });
   } catch (err) { next(err); }
 });
 
@@ -59,7 +74,44 @@ router.post('/geo-mfa', authenticate, authorize('admin'),
         `, [latitude, longitude, raio_metros, descricao || null, ativo, req.user.id]);
       }
 
-      res.json(result.rows[0]);
+      res.json({ ...result.rows[0], todos_perfis: TODOS_PERFIS });
+    } catch (err) { next(err); }
+  }
+);
+
+// ─── PATCH /api/v1/seguranca/geo-mfa/perfis-isentos ──────────────────────────
+// Atualiza quais perfis ficam isentos da verificação geográfica
+router.patch('/geo-mfa/perfis-isentos', authenticate, authorize('admin'),
+  audit('ATUALIZAR_PERFIS_ISENTOS_GEO_MFA', 'geo_mfa_config'),
+  [
+    body('perfis_isentos')
+      .isArray().withMessage('perfis_isentos deve ser um array')
+      .custom((arr) => {
+        const invalidos = arr.filter(p => !TODOS_PERFIS.includes(p));
+        if (invalidos.length > 0) throw new Error(`Perfis inválidos: ${invalidos.join(', ')}`);
+        return true;
+      }),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { perfis_isentos } = req.body;
+
+      const result = await query(`
+        UPDATE geo_mfa_config
+        SET perfis_isentos = $1::jsonb, atualizado_em = NOW(), configurado_por = $2
+        RETURNING *
+      `, [JSON.stringify(perfis_isentos), req.user.id]);
+
+      if (result.rows.length === 0) {
+        throw new AppError('Configuração de Geo MFA não encontrada', 404);
+      }
+
+      res.json({
+        message: 'Perfis isentos atualizados com sucesso',
+        perfis_isentos: result.rows[0].perfis_isentos,
+        todos_perfis: TODOS_PERFIS,
+      });
     } catch (err) { next(err); }
   }
 );

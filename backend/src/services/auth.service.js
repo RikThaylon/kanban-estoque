@@ -90,11 +90,19 @@ class AuthService {
     }
 
     // ─── Geo MFA Verification ──────────────────────────────────────────────────
-    // Admin é sempre isento do Geo MFA — evita lock-out durante configuração inicial
-    if (process.env.NODE_ENV !== 'test' && user.perfil !== 'admin') {
+    if (process.env.NODE_ENV !== 'test') {
       const mfaConfigResult = await query('SELECT * FROM geo_mfa_config WHERE ativo = true LIMIT 1');
       if (mfaConfigResult.rows.length > 0) {
         const config = mfaConfigResult.rows[0];
+        
+        // Verificar isenção de perfil
+        const perfisIsentos = Array.isArray(config.perfis_isentos)
+          ? config.perfis_isentos
+          : (typeof config.perfis_isentos === 'string' ? JSON.parse(config.perfis_isentos) : ['admin']);
+          
+        if (perfisIsentos.includes(user.perfil)) {
+          logger.info('geo_mfa: login de perfil isento', { username, perfil: user.perfil });
+        } else {
 
         // Geo MFA só é aplicável se as coordenadas de referência estiverem configuradas.
         // Se ativo=true mas lat/lon forem nulos, o admin ligou o toggle sem finalizar a
@@ -153,6 +161,7 @@ class AuthService {
               'MFA_BLOCKED'
             );
           }
+        }
         }
       }
     }

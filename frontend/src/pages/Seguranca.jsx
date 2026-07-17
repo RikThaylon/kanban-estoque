@@ -197,6 +197,7 @@ const Seguranca = () => {
   const [statusFiltro, setStatusFiltro] = useState('');
   const [activeTab, setActiveTab] = useState('config');
   const [saveMsg, setSaveMsg] = useState('');
+  const [perfisIsentos, setPerfisIsentos] = useState(['admin']);
 
   // Verificar permissão
   if (user?.perfil !== 'admin') {
@@ -235,6 +236,12 @@ const Seguranca = () => {
       }
       if (config.raio_metros) setRaio(config.raio_metros);
       if (config.descricao) setDescricao(config.descricao || '');
+      if (config.perfis_isentos) {
+        const parsed = Array.isArray(config.perfis_isentos)
+          ? config.perfis_isentos
+          : (typeof config.perfis_isentos === 'string' ? JSON.parse(config.perfis_isentos) : ['admin']);
+        setPerfisIsentos(parsed);
+      }
     }
   }, [config]);
 
@@ -253,6 +260,15 @@ const Seguranca = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['seguranca'] }),
   });
 
+  const salvarPerfisIsentos = useMutation({
+    mutationFn: (dados) => api.patch('/seguranca/geo-mfa/perfis-isentos', dados),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seguranca'] });
+      setSaveMsg('Perfis isentos atualizados com sucesso!');
+      setTimeout(() => setSaveMsg(''), 3000);
+    },
+  });
+
   // ─── Handlers ───────────────────────────────────────────────────
   const handleMapClick = useCallback((latlng) => {
     setPosition({ lat: latlng.lat, lng: latlng.lng });
@@ -262,6 +278,17 @@ const Seguranca = () => {
     setPosition(latlng);
     setMapCenter(latlng);
   }, []);
+
+  const handleTogglePerfil = (perfil) => {
+    let novosPerfis;
+    if (perfisIsentos.includes(perfil)) {
+      novosPerfis = perfisIsentos.filter(p => p !== perfil);
+    } else {
+      novosPerfis = [...perfisIsentos, perfil];
+    }
+    setPerfisIsentos(novosPerfis);
+    salvarPerfisIsentos.mutate({ perfis_isentos: novosPerfis });
+  };
 
   const handleSave = () => {
     if (!position) return;
@@ -442,6 +469,47 @@ const Seguranca = () => {
                   : <><Save className="w-4 h-4" /> Salvar Configuração</>
                 }
               </button>
+            </div>
+
+            {/* Card Perfis Isentos */}
+            <div className="bg-white rounded-xl border border-surface-200 p-5 shadow-sm space-y-3">
+              <div>
+                <h3 className="font-bold text-steel-800 text-sm">Cargos Isentos do MFA</h3>
+                <p className="text-xs text-steel-400 mt-0.5">
+                  Selecione quais cargos não passarão pela restrição geográfica
+                </p>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                {(config?.todos_perfis || [
+                  'admin',
+                  'supervisor_turno',
+                  'gerente_manutencao',
+                  'comprador',
+                  'facilitador',
+                  'eng_processos',
+                  'operador'
+                ]).map((perfil) => {
+                  const isChecked = perfisIsentos.includes(perfil);
+                  return (
+                    <label
+                      key={perfil}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg border border-surface-100 hover:bg-surface-50 cursor-pointer select-none transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleTogglePerfil(perfil)}
+                        disabled={salvarPerfisIsentos.isPending}
+                        className="rounded border-steel-300 text-accent focus:ring-accent w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm font-medium text-steel-750 capitalize">
+                        {perfil.replace(/_/g, ' ')}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
