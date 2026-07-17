@@ -7,9 +7,10 @@
 -- 1. Remover linhas duplicadas mantendo apenas a mais recente
 DELETE FROM geo_mfa_config
 WHERE id NOT IN (
-  SELECT DISTINCT ON (TRUE) id
+  SELECT id
   FROM geo_mfa_config
-  ORDER BY TRUE, atualizado_em DESC
+  ORDER BY atualizado_em DESC
+  LIMIT 1
 );
 
 -- 2. Adicionar CHECK: só permite ativo=true se lat e lon estiverem definidos
@@ -23,11 +24,16 @@ ALTER TABLE geo_mfa_config
     );
 
 -- 3. Garantir que existe exatamente 1 linha de configuração (singleton pattern)
---    Usando um índice parcial único que só permite 1 linha ativa por vez
-CREATE UNIQUE INDEX IF NOT EXISTS idx_geo_mfa_config_single
-  ON geo_mfa_config ((TRUE));
--- Nota: esse índice garante no máximo 1 linha na tabela toda
+--    Usando uma coluna guard com valor fixo e restrição de unicidade
+ALTER TABLE geo_mfa_config
+  ADD COLUMN IF NOT EXISTS singleton_guard BOOLEAN DEFAULT true CHECK (singleton_guard = true);
+
+ALTER TABLE geo_mfa_config
+  DROP CONSTRAINT IF EXISTS geo_mfa_config_singleton_unique;
+
+ALTER TABLE geo_mfa_config
+  ADD CONSTRAINT geo_mfa_config_singleton_unique UNIQUE (singleton_guard);
 
 -- 4. Garantir que há ao menos 1 linha (caso a tabela esteja vazia após cleanup)
 INSERT INTO geo_mfa_config (ativo) VALUES (false)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (singleton_guard) DO NOTHING;
