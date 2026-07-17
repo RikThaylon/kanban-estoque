@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Activity, AlertCircle, Loader2, Lock, LogIn, ShieldCheck, User, X, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../services/api';
@@ -9,6 +9,9 @@ const Login = () => {
   const [senha, setSenha] = useState('');
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Restaurar rota original após login (ex: usuário foi redirecionado do /produtos)
+  const from = location.state?.from?.pathname || '/dashboard';
 
   // Estados do Modal de Recuperação de Senha
   const [recuperarOpen, setRecuperarOpen] = useState(false);
@@ -22,34 +25,19 @@ const Login = () => {
     e.preventDefault();
     if (!username || !senha) return;
 
+    const doLogin = async (lat, lon) => {
+      const success = await login(username.trim(), senha, lat, lon);
+      if (success) navigate(from, { replace: true });
+    };
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const success = await login(
-            username.trim(),
-            senha,
-            position.coords.latitude,
-            position.coords.longitude
-          );
-          if (success) {
-            navigate('/dashboard', { replace: true });
-          }
-        },
-        async (err) => {
-          // Geolocalização negada, indisponível ou timeout
-          const success = await login(username.trim(), senha, null, null);
-          if (success) {
-            navigate('/dashboard', { replace: true });
-          }
-        },
+        (position) => doLogin(position.coords.latitude, position.coords.longitude),
+        () => doLogin(null, null),
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
-      // Navegador não suporta geolocalização
-      const success = await login(username.trim(), senha, null, null);
-      if (success) {
-        navigate('/dashboard', { replace: true });
-      }
+      doLogin(null, null);
     }
   };
 

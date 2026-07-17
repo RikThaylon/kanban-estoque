@@ -8,6 +8,7 @@ import {
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { invalidateOperationalData } from '../utils/queryInvalidation';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 const MODAL_VALIDOS = ['rodoviario', 'aereo', 'maritimo', 'ferroviario', 'expresso', 'motoboy', 'correios'];
 
@@ -259,7 +260,6 @@ const Fornecedores = () => {
 // Importar Eye icon que esquecemos acima
 import { Eye } from 'lucide-react';
 
-// ─── Modal Formulário ─────────────────────────────────────────────────────────
 const FornecedorModal = ({ fornecedor, onClose }) => {
   const queryClient = useQueryClient();
   const isEditing = !!fornecedor;
@@ -281,12 +281,24 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
 
   const f = (k, v) => setForm(s => ({ ...s, [k]: v }));
 
+  // Auto Save — salva rascunho apenas para novos fornecedores
+  const draftKey = isEditing ? null : 'form_novo_fornecedor';
+  const { saveStatus, hasDraft, draftAge, clearDraft, restoreDraft, discardDraft } = useAutoSave(
+    draftKey || '__noop__',
+    form,
+    {
+      enabled: !isEditing, // Apenas para criação (não edição)
+      onRestore: (data) => setForm(s => ({ ...s, ...data })),
+    }
+  );
+
   const salvar = useMutation({
     mutationFn: async (dados) => {
       if (isEditing) return (await api.patch(`/fornecedores/${fornecedor.id}`, dados)).data;
       return (await api.post('/fornecedores', dados)).data;
     },
     onSuccess: () => {
+      clearDraft(); // Limpa rascunho após salvar com sucesso
       queryClient.invalidateQueries({ queryKey: ['fornecedores'] });
       invalidateOperationalData(queryClient);
       onClose();
@@ -315,8 +327,30 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
             <h2 className="text-lg font-bold text-steel-800">{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h2>
             <p className="text-xs text-steel-400 mt-0.5">Todos os campos podem ser editados pelo administrador</p>
           </div>
-          <button onClick={onClose} className="p-2 text-steel-400 hover:text-steel-600 hover:bg-surface-100 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+          <div className="flex items-center gap-2">
+            {/* Indicador de Auto Save */}
+            {!isEditing && saveStatus === 'saved' && (
+              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 badge-pop">
+                <CheckCircle2 className="w-3 h-3" /> Rascunho salvo
+              </span>
+            )}
+            <button onClick={onClose} className="p-2 text-steel-400 hover:text-steel-600 hover:bg-surface-100 rounded-lg transition-colors"><X className="w-5 h-5" /></button>
+          </div>
         </div>
+
+        {/* Banner de Rascunho */}
+        {hasDraft && !isEditing && (
+          <div className="mx-5 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-sm">
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Rascunho salvo <strong>{draftAge}</strong>. Deseja restaurar?</span>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={discardDraft} className="text-xs text-amber-600 hover:underline">Descartar</button>
+              <button onClick={restoreDraft} className="text-xs font-bold text-accent hover:underline">Restaurar</button>
+            </div>
+          </div>
+        )}
 
         <div className="p-5 overflow-y-auto flex-1">
           {erro && (

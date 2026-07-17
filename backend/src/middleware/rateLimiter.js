@@ -1,10 +1,13 @@
 const rateLimit = require('express-rate-limit');
 const { env } = require('../config/env');
 
-// Login: 10 tentativas / 15 min por IP
+// Login: 10 tentativas falhas / 15 min por IP
+// CRÍTICO: skipSuccessfulRequests=true garante que apenas falhas (4xx/5xx) incrementam
+// o contador. Logins bem-sucedidos NÃO são contabilizados.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skipSuccessfulRequests: true, // ← FIX: não penaliza logins corretos
   message: { error: 'RATE_LIMIT', message: 'Muitas tentativas de login. Tente novamente em 15 minutos.', code: 429 },
   standardHeaders: true,
   legacyHeaders: false,
