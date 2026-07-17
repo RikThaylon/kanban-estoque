@@ -90,53 +90,69 @@ class AuthService {
     }
 
     // ─── Geo MFA Verification ──────────────────────────────────────────────────
-    if (process.env.NODE_ENV !== 'test') {
+    // Admin é sempre isento do Geo MFA — evita lock-out durante configuração inicial
+    if (process.env.NODE_ENV !== 'test' && user.perfil !== 'admin') {
       const mfaConfigResult = await query('SELECT * FROM geo_mfa_config WHERE ativo = true LIMIT 1');
       if (mfaConfigResult.rows.length > 0) {
         const config = mfaConfigResult.rows[0];
-        const lat = latitude !== undefined && latitude !== null ? parseFloat(latitude) : null;
-        const lon = longitude !== undefined && longitude !== null ? parseFloat(longitude) : null;
 
-        if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
+        // Geo MFA só é aplicável se as coordenadas de referência estiverem configuradas.
+        // Se ativo=true mas lat/lon forem nulos, o admin ligou o toggle sem finalizar a
+        // configuração — nesse caso o sistema NÃO deve bloquear (fail-open para não travar o sistema).
+        const configLatValida = config.latitude !== null && config.latitude !== undefined;
+        const configLonValida = config.longitude !== null && config.longitude !== undefined;
+
+        if (!configLatValida || !configLonValida) {
+          logger.warn('geo_mfa: ativo=true mas coordenadas de referência não configuradas — Geo MFA ignorado', {
+            configId: config.id,
+            event: 'geo_mfa_misconfigured',
+          });
+          // Segue o login normalmente — Geo MFA está incompleto
+        } else {
+          const lat = latitude !== undefined && latitude !== null ? parseFloat(latitude) : null;
+          const lon = longitude !== undefined && longitude !== null ? parseFloat(longitude) : null;
+
+          if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
+            await query(`
+              INSERT INTO geo_mfa_tentativas
+                (usuario_id, username, ip, latitude, longitude, distancia_metros, raio_configurado, status)
+              VALUES ($1, $2, $3, NULL, NULL, NULL, $4, 'SEM_LOCALIZACAO')
+            `, [user.id, username, ip, config.raio_metros]).catch(() => {});
+
+            throw new AppError(
+              'Localização é obrigatória. O MFA Geográfico está ativo.',
+              403,
+              'MFA_REQUIRED'
+            );
+          }
+
+          const { haversineDistance } = require('./geo.service');
+          const dist = haversineDistance(lat, lon, parseFloat(config.latitude), parseFloat(config.longitude));
+          const dentro = dist <= config.raio_metros;
+
+          const status = dentro ? 'PERMITIDO' : 'BLOQUEADO';
           await query(`
             INSERT INTO geo_mfa_tentativas
               (usuario_id, username, ip, latitude, longitude, distancia_metros, raio_configurado, status)
-            VALUES ($1, $2, $3, NULL, NULL, NULL, $4, 'SEM_LOCALIZACAO')
-          `, [user.id, username, ip, config.raio_metros]).catch(() => {});
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `, [
+            user.id,
+            username,
+            ip,
+            lat,
+            lon,
+            Math.round(dist),
+            config.raio_metros,
+            status
+          ]).catch(() => {});
 
-          throw new AppError(
-            'Localização é obrigatória. O MFA Geográfico está ativo.',
-            403,
-            'MFA_REQUIRED'
-          );
-        }
-
-        const { haversineDistance } = require('./geo.service');
-        const dist = haversineDistance(lat, lon, parseFloat(config.latitude), parseFloat(config.longitude));
-        const dentro = dist <= config.raio_metros;
-
-        const status = dentro ? 'PERMITIDO' : 'BLOQUEADO';
-        await query(`
-          INSERT INTO geo_mfa_tentativas
-            (usuario_id, username, ip, latitude, longitude, distancia_metros, raio_configurado, status)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [
-          user.id,
-          username,
-          ip,
-          lat,
-          lon,
-          Math.round(dist),
-          config.raio_metros,
-          status
-        ]).catch(() => {});
-
-        if (!dentro) {
-          throw new AppError(
-            `Acesso bloqueado. Você está fora do raio permitido pelo MFA Geográfico.`,
-            403,
-            'MFA_BLOCKED'
-          );
+          if (!dentro) {
+            throw new AppError(
+              `Acesso bloqueado. Você está fora do raio permitido pelo MFA Geográfico.`,
+              403,
+              'MFA_BLOCKED'
+            );
+          }
         }
       }
     }
