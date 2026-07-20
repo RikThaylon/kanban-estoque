@@ -82,7 +82,7 @@ const NavItem = ({ item, collapsed }) => {
         `group relative flex items-center gap-3 rounded-lg transition-all duration-150 select-none
         ${collapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2.5'}
         ${isActive
-          ? 'bg-cyan-500/15 text-white font-semibold shadow-[inset_3px_0_0_theme(colors.accent)]'
+          ? 'bg-accent/15 text-white font-semibold shadow-[inset_3px_0_0_theme(colors.accent)]'
           : 'text-white/60 hover:bg-white/[0.08] hover:text-white/90'
         }`
       }

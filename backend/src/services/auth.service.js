@@ -128,9 +128,9 @@ class AuthService {
             `, [user.id, username, ip, config.raio_metros]).catch(() => {});
 
             throw new AppError(
-              'Localização é obrigatória. O MFA Geográfico está ativo.',
+              'Acesso negado. Verifique suas credenciais e tente novamente.',
               403,
-              'MFA_REQUIRED'
+              'ACCESS_DENIED'
             );
           }
 
@@ -156,9 +156,9 @@ class AuthService {
 
           if (!dentro) {
             throw new AppError(
-              `Acesso bloqueado. Você está fora do raio permitido pelo MFA Geográfico.`,
+              'Acesso negado. Verifique suas credenciais e tente novamente.',
               403,
-              'MFA_BLOCKED'
+              'ACCESS_DENIED'
             );
           }
         }

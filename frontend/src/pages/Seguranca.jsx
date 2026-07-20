@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Shield, MapPin, ToggleLeft, ToggleRight, Save,
@@ -201,15 +202,7 @@ const Seguranca = () => {
 
   // Verificar permissão
   if (user?.perfil !== 'admin') {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Lock className="w-12 h-12 text-steel-300 mx-auto mb-3" />
-          <h2 className="font-bold text-steel-700 mb-1">Acesso Restrito</h2>
-          <p className="text-sm text-steel-400">Esta área é exclusiva para administradores.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   // ─── Queries ────────────────────────────────────────────────────
@@ -547,8 +540,8 @@ const Seguranca = () => {
                         center={[position.lat, position.lng]}
                         radius={raio}
                         pathOptions={{
-                          color: '#005dff',
-                          fillColor: '#005dff',
+                          color: '#C0182A',
+                          fillColor: '#C0182A',
                           fillOpacity: 0.08,
                           weight: 2,
                           dashArray: '6 4',

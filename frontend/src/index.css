@@ -896,10 +896,10 @@
 ::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 93, 255, 0.38);
+  background: rgba(192, 24, 42, 0.38);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 93, 255, 0.58); }
+::-webkit-scrollbar-thumb:hover { background: rgba(192, 24, 42, 0.58); }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }

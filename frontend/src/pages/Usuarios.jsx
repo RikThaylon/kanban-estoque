@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   UserPlus, Edit2, Trash2, X, Save, Loader2, ShieldCheck, Eye,
@@ -431,11 +432,7 @@ const Usuarios = () => {
   };
 
   if (!isAdmin && !['plant_manager', 'gerente_engenharia', 'eng_processos', 'eng_producao', 'gerente_operacoes'].includes(user?.perfil)) {
-    return (
-      <div className="bg-white rounded-lg p-8 text-center text-steel-400">
-        Acesso restrito.
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

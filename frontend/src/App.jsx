@@ -69,40 +69,81 @@ const ProtectedRoute = () => {
     }
   }, [authStatus]);
 
-  // Monitoramento de Inatividade (10 min) com Throttle
+  const [showIdleModal, setShowIdleModal] = React.useState(false);
+  const [countdown, setCountdown] = React.useState(60);
+
+  const idleTimeoutRef = React.useRef(null);
+  const countdownIntervalRef = React.useRef(null);
+  const showIdleModalRef = React.useRef(false);
+
   useEffect(() => {
-    if (!isAuthenticated) return;
+    showIdleModalRef.current = showIdleModal;
+  }, [showIdleModal]);
 
-    let timeoutId;
+  const startIdleTimer = React.useCallback(() => {
+    if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+    idleTimeoutRef.current = setTimeout(() => {
+      setShowIdleModal(true);
+      setCountdown(60);
+    }, 10 * 60 * 1000); // 10 minutos
+  }, []);
+
+  const handleKeepSession = () => {
+    setShowIdleModal(false);
+    startIdleTimer();
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setShowIdleModal(false);
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      return;
+    }
+
     let lastExecution = 0;
-
-    const startTimer = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        logout();
-      }, TIMEOUT_MS);
-    };
-
-    const resetTimerThrottled = () => {
+    const handleUserActivity = () => {
+      if (showIdleModalRef.current) return;
       const now = Date.now();
-      // Apenas reseta o timer se passou pelo menos 5 segundos desde o último reset
-      // Isso evita travar o navegador executando clearTimeout milhares de vezes por segundo no mousemove
       if (now - lastExecution >= 5000) {
-        startTimer();
+        startIdleTimer();
         lastExecution = now;
       }
     };
 
     const events = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
-    events.forEach(event => window.addEventListener(event, resetTimerThrottled));
+    events.forEach(event => window.addEventListener(event, handleUserActivity));
 
-    startTimer(); // Inicia o timer
+    startIdleTimer();
 
     return () => {
-      clearTimeout(timeoutId);
-      events.forEach(event => window.removeEventListener(event, resetTimerThrottled));
+      if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+      events.forEach(event => window.removeEventListener(event, handleUserActivity));
     };
-  }, [isAuthenticated, logout]);
+  }, [isAuthenticated, startIdleTimer]);
+
+  useEffect(() => {
+    if (!showIdleModal) {
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      return;
+    }
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownIntervalRef.current);
+          setShowIdleModal(false);
+          logout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    };
+  }, [showIdleModal, logout]);
 
   // Phase 4.1 — ONLY show loader while actively checking; never flash /login prematurely
   if (authStatus === 'checking') {
@@ -114,7 +155,30 @@ const ProtectedRoute = () => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      {showIdleModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center border border-surface-200">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⏳</span>
+            </div>
+            <h2 className="text-xl font-bold text-steel-800 mb-2">Você está aí?</h2>
+            <p className="text-sm text-steel-500 mb-6">
+              Sua sessão expirará em <span className="font-bold text-accent font-mono">{countdown}</span> segundos devido a inatividade.
+            </p>
+            <button
+              onClick={handleKeepSession}
+              className="btn-primary w-full justify-center"
+            >
+              Sim, continuar
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 const PageRoute = ({ pagina, children }) => {
@@ -126,11 +190,7 @@ const PageRoute = ({ pagina, children }) => {
 
   if (isLoading) return <FullPageLoader />;
   if (!perfilTemPagina(permissoes, user?.perfil, pagina)) {
-    return (
-      <div className="p-8 text-center text-steel-500">
-        Você não tem acesso a esta página.
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
