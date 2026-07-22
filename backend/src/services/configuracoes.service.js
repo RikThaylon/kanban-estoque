@@ -26,6 +26,7 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.relatorios': 'admin,gerente_operacoes,gerente_engenharia,plant_manager,comprador,visualizador',
   'permissoes.paginas.simulacao': 'admin',
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
+  'permissoes.paginas.seguranca': 'admin',
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
   'kanban.taxa_carregamento_padrao': 0.2,
@@ -50,6 +51,7 @@ const PAGINAS_SISTEMA = [
   'relatorios',
   'simulacao',
   'usuarios',
+  'seguranca',
 ];
 
 const PERMISSOES_CHAVES = {

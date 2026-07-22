@@ -44,12 +44,29 @@ export const PERFIL_LABELS = {
   visualizador: 'Visualizador',
 };
 
+export const DEFAULTS_PAGINAS = {
+  dashboard: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes','supervisor_turno','comprador','facilitador','visualizador'],
+  produtos: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes','supervisor_turno','comprador','facilitador','visualizador'],
+  movimentacoes: ['admin','gerente_operacoes','supervisor_turno','comprador','facilitador'],
+  pedidos: ['admin','gerente_operacoes','supervisor_turno','comprador','facilitador'],
+  grafo: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes','supervisor_turno','comprador','facilitador','visualizador'],
+  fornecedores: ['admin','comprador'],
+  configuracoes: ['admin'],
+  maquinas: ['admin','gerente_operacoes','supervisor_turno','eng_producao'],
+  alertas: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes','supervisor_turno','comprador','facilitador','visualizador'],
+  raci: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes','supervisor_turno','comprador','facilitador','visualizador'],
+  relatorios: ['admin','gerente_operacoes','gerente_engenharia','plant_manager','comprador','visualizador'],
+  simulacao: ['admin'],
+  usuarios: ['admin','plant_manager','gerente_engenharia','eng_processos','eng_producao','gerente_operacoes'],
+  seguranca: ['admin'],
+};
+
 export function perfilTemPagina(permissoes, perfil, pagina) {
   if (!perfil) return false;
   if (perfil === 'admin') return true;
   const paginas = permissoes?.paginas || {};
-  const perfisDaPagina = paginas[pagina];
-  if (!Array.isArray(perfisDaPagina)) return true;
+  const perfisDaPagina = paginas[pagina] ?? DEFAULTS_PAGINAS[pagina];
+  if (!Array.isArray(perfisDaPagina)) return false;
   return perfisDaPagina.includes(perfil);
 }
 

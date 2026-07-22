@@ -275,20 +275,29 @@ const Login = () => {
                     />
                   </div>
 
-                  <div className="flex gap-2 pt-2 justify-end">
-                    <button 
-                      type="button" 
-                      onClick={() => setRecuperarOpen(false)}
-                      className="btn-secondary"
+                  <div className="pt-2 border-t border-surface-100 flex flex-col gap-2">
+                    <div className="flex gap-2 justify-end">
+                      <button 
+                        type="button" 
+                        onClick={() => setRecuperarOpen(false)}
+                        className="btn-secondary"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={recLoading || !recUser.trim()}
+                        className="btn-primary"
+                      >
+                        {recLoading ? 'Processando...' : 'Solicitar Chamado'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/recuperar-senha')}
+                      className="text-xs text-center text-primary hover:underline pt-1"
                     >
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={recLoading || !recUser.trim()}
-                      className="btn-primary"
-                    >
-                      {recLoading ? 'Processando...' : 'Solicitar Chamado'}
+                      Já possui um token de recuperação? Digite o token aqui
                     </button>
                   </div>
                 </form>

@@ -1706,3 +1706,44 @@ Uma tarefa esta pronta quando dev e QA conseguem responder "sim" para:
 - documentacao foi atualizada?
 
 Se uma dessas respostas for "nao", a entrega ainda nao esta pronta.
+
+---
+
+## 27. Evidencias da Atualizacao QA - UI Redesign & Security Patch (2026-07-22)
+
+### 27.1 Correcoes de Seguranca, UI/UX e RBAC Aplicadas
+
+1. **Recuperacao de Senha com Token Manual (`/recuperar-senha`)**:
+   - Adicionado campo de input explicito de Token de Recuperacao na tela `RecuperacaoSenha.jsx`.
+   - Adicionada opcao *"Já possui um token de recuperação? Digite o token aqui"* no modal de login.
+   - Eliminada a mensagem impeditiva de "Token Invalido" quando o usuario navega sem parametro de query na URL.
+
+2. **RBAC Rigido na UI e Sidebar**:
+   - `Sidebar.jsx` e `permissoes.js` atualizados com fallback seguro `DEFAULTS_PAGINAS`.
+   - Modulos sensiveis como **Seguranca** e **Configuracoes** agora sao **totalmente ocultos na Sidebar** para perfis sem acesso (ex: `visualizador`, `comprador`, `facilitador`).
+   - `PageRoute` redireciona diretamente com `<Navigate to="/dashboard" replace />` impedindo acesso por URL direta.
+
+3. **Gestao de Fornecedores Vinculados ao Produto (`ProdutoDetalhe.jsx`)**:
+   - Criada coluna **Acoes** na tabela de fornecedores vinculados do produto.
+   - Adicionado botao de **Editar** (preenche form e permite atualizar prioridade, preco acordado e lead time nominal).
+   - Adicionado botao de **Desvincular / Excluir** (`DELETE /api/v1/produtos/:id/fornecedores/:fornecedor_id`).
+
+4. **Reformulacao da Regua Kanban (`KanbanBar.jsx`)**:
+   - Posicionamento da pill `Atual: X` isolado no topo da regua com seta indicadora.
+   - Marcacoes numericas (`0`, `ES`, `PR`, `Emax`) com alinhamento inteligente e sem sobreposicao ou corte de texto nas bordas.
+
+5. **Harmonizacao da Matriz RACI (`Raci.jsx` e `raci.data.js`)**:
+   - Cores das letras RACI diferenciadas e padronizadas:
+     - **R (Responsavel)**: Verde Esmeralda (`#0B7A4B`)
+     - **A (Aprovador)**: Red Accent (`#C0182A`)
+     - **C (Consultado)**: Ambar / Laranja (`#D97706`)
+     - **I (Informado)**: Grafite / Slate (`#475569`)
+   - Filtros de categoria integrados no tema Red & White.
+
+6. **Validacao de Logout por Inatividade**:
+   - Unificado o timer de inatividade (10 min) + modal com contagem regressiva de 60s em `App.jsx`.
+   - Removidos timers concorrentes ou redundantes.
+
+### 27.2 Status de Testes e Compilacao
+- **Backend Unit Tests:** 254/254 testes unitarios executados e aprovados.
+- **Frontend Build (Vite):** Compilacao final de producao concluida com sucesso.

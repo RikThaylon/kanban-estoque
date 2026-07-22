@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save, X } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save, X, Trash2, Edit2 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
@@ -127,6 +127,15 @@ const ProdutoDetalhe = () => {
     onSuccess: () => {
       setFornecedorForm({ fornecedor_id: '', prioridade: '', preco_acordado: '', lead_time_nominal_dias: '' });
       invalidateOperationalData(queryClient, id);
+      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
+    },
+  });
+
+  const removerFornecedor = useMutation({
+    mutationFn: (fornecedorId) => api.delete(`/produtos/${id}/fornecedores/${fornecedorId}`),
+    onSuccess: () => {
+      invalidateOperationalData(queryClient, id);
+      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
     },
   });
 
@@ -577,33 +586,69 @@ const ProdutoDetalhe = () => {
                         <th className="p-4 text-right">Preço acordado</th>
                         <th className="p-4 text-right">Lead time</th>
                         <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-center">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-100">
-                      {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => (
-                        <tr key={i} className="hover:bg-surface-50">
-                          <td className="p-4">
-                            <div className="font-bold text-steel-800">{fv.fornecedor_nome || fv.nome}</div>
-                            {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
-                          </td>
-                          <td className="p-4">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-red-100 text-red-800' : 'bg-surface-100 text-steel-500'}`}>
-                              {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right font-medium text-steel-700">
-                            {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
-                          </td>
-                          <td className="p-4 text-right text-steel-600">
-                            {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {fv.ativo !== false ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => {
+                        const fvId = fv.fornecedor_id || fv.id;
+                        return (
+                          <tr key={i} className="hover:bg-surface-50">
+                            <td className="p-4">
+                              <div className="font-bold text-steel-800">{fv.fornecedor_nome || fv.nome}</div>
+                              {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
+                            </td>
+                            <td className="p-4">
+                              <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-red-100 text-red-800' : 'bg-surface-100 text-steel-500'}`}>
+                                {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right font-medium text-steel-700">
+                              {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
+                            </td>
+                            <td className="p-4 text-right text-steel-600">
+                              {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`text-xs font-bold px-2 py-1 rounded ${fv.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {fv.ativo !== false ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFornecedorForm({
+                                      fornecedor_id: fvId,
+                                      prioridade: fv.prioridade || '',
+                                      preco_acordado: fv.preco_acordado || '',
+                                      lead_time_nominal_dias: fv.lead_time_nominal_dias || '',
+                                    });
+                                  }}
+                                  className="p-1.5 text-steel-400 hover:text-accent hover:bg-red-50 rounded transition-colors"
+                                  title="Editar parâmetros deste fornecedor"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Desvincular o fornecedor "${fv.fornecedor_nome || fv.nome}" deste produto?`)) {
+                                      removerFornecedor.mutate(fvId);
+                                    }
+                                  }}
+                                  disabled={removerFornecedor.isPending}
+                                  className="p-1.5 text-steel-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Remover / Desvincular fornecedor"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   </div>

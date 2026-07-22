@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { KeyRound, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { KeyRound, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft, ShieldCheck, Key } from 'lucide-react';
 import api from '../services/api';
 
 const POLITICA = [
@@ -14,8 +14,9 @@ const POLITICA = [
 const RecuperacaoSenha = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
+  const initialToken = searchParams.get('token') || '';
 
+  const [tokenInput, setTokenInput] = useState(initialToken);
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [showNova, setShowNova] = useState(false);
@@ -27,7 +28,7 @@ const RecuperacaoSenha = () => {
     ...p,
     passed: p.id === 'match' ? p.check(novaSenha, confirmarSenha) : p.check(novaSenha),
   }));
-  const allPassed = checks.every(c => c.passed);
+  const allPassed = checks.every(c => c.passed) && tokenInput.trim().length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +37,11 @@ const RecuperacaoSenha = () => {
     setStatus('loading');
     setErrorMsg('');
     try {
-      await api.post('/auth/reset-password', { token, nova_senha: novaSenha, confirmar_senha: confirmarSenha });
+      await api.post('/auth/reset-password', {
+        token: tokenInput.trim(),
+        nova_senha: novaSenha,
+        confirmar_senha: confirmarSenha,
+      });
       setStatus('success');
     } catch (err) {
       setStatus('error');
@@ -44,31 +49,16 @@ const RecuperacaoSenha = () => {
     }
   };
 
-  if (!token) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-950/80 to-slate-950">
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h1 className="text-white font-bold text-xl mb-2">Token Inválido</h1>
-          <p className="text-white/60 text-sm mb-6">Este link não contém um token de recuperação válido.</p>
-          <button onClick={() => navigate('/login')} className="btn-primary w-full justify-center">
-            Voltar ao Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-950/80 to-slate-950 p-4">
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="w-16 h-16 bg-gradient-to-br from-accent to-red-800 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-2xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-accent to-red-800 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-2xl border border-red-500/30">
             <KeyRound className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">Redefinir Senha</h1>
-          <p className="text-white/50 text-sm mt-1">Digite sua nova senha segura</p>
+          <p className="text-white/60 text-sm mt-1">Insira seu token de recuperação e sua nova senha</p>
         </div>
 
         {/* Card */}
@@ -96,10 +86,10 @@ const RecuperacaoSenha = () => {
                 <p className="text-red-300 font-semibold text-sm">Erro na redefinição</p>
                 <p className="text-red-400 text-sm mt-0.5">{errorMsg}</p>
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => { setStatus('idle'); setErrorMsg(''); }}
                   className="text-red-300 text-xs underline mt-2 hover:text-white"
                 >
-                  Solicitar nova recuperação
+                  Tentar novamente
                 </button>
               </div>
             </div>
@@ -108,8 +98,28 @@ const RecuperacaoSenha = () => {
           {/* Formulário */}
           {status !== 'success' && (
             <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* Input de Token */}
               <div>
-                <label className="block text-white/70 text-sm font-medium mb-1.5">Nova Senha</label>
+                <label className="block text-white/80 text-sm font-medium mb-1.5 flex items-center justify-between">
+                  <span>Token de Recuperação *</span>
+                  <span className="text-xs text-white/40">Fornecido pelo Administrador</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 pl-11 rounded-xl bg-white/10 border border-white/20 text-white font-mono text-sm placeholder-white/30 focus:border-accent focus:bg-white/15 focus:outline-none transition-all"
+                    placeholder="Cole ou digite seu token aqui..."
+                    value={tokenInput}
+                    onChange={e => setTokenInput(e.target.value)}
+                    required
+                  />
+                  <Key className="w-5 h-5 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-1.5">Nova Senha *</label>
                 <div className="relative">
                   <input
                     type={showNova ? 'text' : 'password'}
@@ -130,7 +140,7 @@ const RecuperacaoSenha = () => {
               </div>
 
               <div>
-                <label className="block text-white/70 text-sm font-medium mb-1.5">Confirmar Nova Senha</label>
+                <label className="block text-white/80 text-sm font-medium mb-1.5">Confirmar Nova Senha *</label>
                 <div className="relative">
                   <input
                     type={showConfirmar ? 'text' : 'password'}
@@ -154,7 +164,7 @@ const RecuperacaoSenha = () => {
               {novaSenha && (
                 <div className="space-y-1.5 p-4 bg-white/5 rounded-xl border border-white/10 badge-pop">
                   {checks.map(c => (
-                    <div key={c.id} className={`flex items-center gap-2 text-xs transition-colors ${c.passed ? 'text-emerald-400' : 'text-white/40'}`}>
+                    <div key={c.id} className={`flex items-center gap-2 text-xs transition-colors ${c.passed ? 'text-emerald-400 font-medium' : 'text-white/40'}`}>
                       <div className={`w-1.5 h-1.5 rounded-full transition-colors ${c.passed ? 'bg-emerald-400' : 'bg-white/20'}`} />
                       {c.label}
                     </div>
@@ -167,9 +177,9 @@ const RecuperacaoSenha = () => {
                 disabled={!allPassed || status === 'loading'}
                 className="w-full py-3 px-4 rounded-xl font-bold text-sm transition-all
                   bg-gradient-to-r from-accent to-red-800 text-white
-                  hover:from-red-500 hover:to-red-700
+                  hover:from-red-600 hover:to-red-900
                   disabled:opacity-40 disabled:cursor-not-allowed
-                  flex items-center justify-center gap-2"
+                  flex items-center justify-center gap-2 shadow-lg shadow-red-950/40"
               >
                 {status === 'loading'
                   ? 'Redefinindo...'
@@ -180,7 +190,7 @@ const RecuperacaoSenha = () => {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="w-full flex items-center justify-center gap-2 text-white/40 hover:text-white/70 text-sm transition-colors"
+                className="w-full flex items-center justify-center gap-2 text-white/50 hover:text-white text-sm transition-colors pt-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Voltar ao Login

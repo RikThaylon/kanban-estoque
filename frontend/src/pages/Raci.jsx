@@ -23,10 +23,10 @@ const ICONES = {
 };
 
 const LETRA_INFO = {
-  R: { label: 'Responsável', cor: 'bg-emerald-500 text-white', desc: 'Executa a ação' },
-  A: { label: 'Aprovador',   cor: 'bg-red-500 text-white',     desc: 'Responde pelo resultado' },
-  C: { label: 'Consultado',  cor: 'bg-amber-400 text-white',   desc: 'Opina antes' },
-  I: { label: 'Informado',   cor: 'bg-red-400 text-white',    desc: 'Recebe ciencia' },
+  R: { label: 'Responsável', cor: 'bg-emerald-600 text-white font-bold shadow-sm', desc: 'Executa a ação' },
+  A: { label: 'Aprovador',   cor: 'bg-accent text-white font-black shadow-sm ring-2 ring-red-300', desc: 'Responde pelo resultado' },
+  C: { label: 'Consultado',  cor: 'bg-amber-500 text-white font-bold shadow-sm', desc: 'Opina antes' },
+  I: { label: 'Informado',   cor: 'bg-slate-600 text-white font-bold shadow-sm', desc: 'Recebe ciência' },
 };
 
 const Raci = () => {
@@ -129,7 +129,7 @@ const Raci = () => {
         <div className="flex gap-2 overflow-x-auto">
           <button
             onClick={() => setCategoriaSel('todas')}
-            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === 'todas' ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all ${categoriaSel === 'todas' ? 'bg-gradient-to-r from-accent to-red-800 text-white shadow-sm' : 'bg-white text-steel-600 hover:bg-surface-100 border border-surface-200'}`}
           >
             Todas
           </button>
@@ -137,7 +137,7 @@ const Raci = () => {
             <button
               key={c.key}
               onClick={() => setCategoriaSel(c.key)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === c.key ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all ${categoriaSel === c.key ? 'bg-gradient-to-r from-accent to-red-800 text-white shadow-sm' : 'bg-white text-steel-600 hover:bg-surface-100 border border-surface-200'}`}
             >
               {c.label}
             </button>
@@ -306,7 +306,7 @@ const Raci = () => {
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-kanban-verde text-steel-800' : 'border-transparent text-steel-400 hover:text-steel-700'}`}
+    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-accent text-accent font-bold' : 'border-transparent text-steel-400 hover:text-steel-700'}`}
   >
     <Icon className="w-4 h-4" /> {children}
   </button>
