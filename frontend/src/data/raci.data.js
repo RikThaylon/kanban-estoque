@@ -19,11 +19,11 @@ export const PAPEIS = [
 //   - decisao: array de [{ resposta, indice (proximo step), acao? }]
 
 export const CATEGORIAS = [
-  { key: 'operacao',       label: 'Operação Diária',     cor: 'border-red-400 bg-red-50' },
-  { key: 'parametrizacao', label: 'Parametrização',       cor: 'border-amber-400 bg-amber-50' },
-  { key: 'processos',      label: 'Processos / Melhoria', cor: 'border-emerald-400 bg-emerald-50' },
-  { key: 'sistema',        label: 'Sistema / TI',         cor: 'border-purple-400 bg-purple-50' },
-  { key: 'crise',          label: 'Crise / Decisão',      cor: 'border-red-400 bg-red-50' },
+  { key: 'operacao',       label: 'Operação Diária',     cor: 'border-l-blue-500 text-blue-600', bgIcon: 'bg-blue-50' },
+  { key: 'parametrizacao', label: 'Parametrização',       cor: 'border-l-amber-500 text-amber-600', bgIcon: 'bg-amber-50' },
+  { key: 'processos',      label: 'Processos / Melhoria', cor: 'border-l-emerald-500 text-emerald-600', bgIcon: 'bg-emerald-50' },
+  { key: 'sistema',        label: 'Sistema / TI',         cor: 'border-l-purple-500 text-purple-600', bgIcon: 'bg-purple-50' },
+  { key: 'crise',          label: 'Crise / Decisão',      cor: 'border-l-red-500 text-red-600', bgIcon: 'bg-red-50' },
 ];
 
 export const PROBLEMAS = [

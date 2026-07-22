@@ -155,18 +155,18 @@ const Raci = () => {
               onClick={() => abrir(p)}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
-              className={`relative text-left rounded-lg border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
+              className={`relative text-left rounded-lg bg-white border border-surface-200 border-l-4 p-5 cursor-pointer overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cat?.cor || 'border-l-slate-400'}`}
             >
-              <motion.div className="w-10 h-10 rounded-lg bg-white/20 shadow-sm flex items-center justify-center mb-3">
-                <Icone className="w-5 h-5 text-white drop-shadow" />
+              <motion.div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${cat?.bgIcon || 'bg-slate-50'}`}>
+                <Icone className={`w-5 h-5 ${cat ? cat.cor.split(' ')[1] : 'text-slate-500'}`} />
               </motion.div>
-              <motion.h3 className="font-bold text-white leading-tight mb-1 drop-shadow-sm">
+              <motion.h3 className="font-bold text-slate-800 leading-tight mb-1">
                 {p.titulo}
               </motion.h3>
-              <motion.p className="text-xs text-white/80 line-clamp-2">
+              <motion.p className="text-xs text-slate-500 line-clamp-2">
                 {p.descricao}
               </motion.p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-white/75">
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-accent">
                 Ver fluxograma e RACI <ChevronRight className="w-3 h-3" />
               </div>
             </motion.button>

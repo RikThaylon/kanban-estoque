@@ -358,58 +358,103 @@ const FornecedorModal = ({ fornecedor, onClose }) => {
               <AlertTriangle className="w-4 h-4 shrink-0" />{erro}
             </div>
           )}
-          <form id="forn-form" onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
-                <label className="label">Nome / Razão Social *</label>
-                <input className="input w-full" value={form.nome} onChange={e => f('nome', e.target.value)} required />
-              </div>
-              <div>
-                <label className="label">CNPJ</label>
-                <input className="input w-full font-mono" value={form.cnpj} onChange={e => f('cnpj', e.target.value)} placeholder="00.000.000/0000-00" />
-              </div>
-              <div>
-                <label className="label">Modal de Transporte</label>
-                <select className="input w-full" value={form.modal_padrao} onChange={e => f('modal_padrao', e.target.value)}>
-                  <option value="">Selecione...</option>
-                  {MODAL_VALIDOS.map(m => (
-                    <option key={m} value={m}>{ModalIcons[m]} {m.charAt(0).toUpperCase() + m.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">Contato (Nome)</label>
-                <input className="input w-full" value={form.contato_nome} onChange={e => f('contato_nome', e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Telefone</label>
-                <input className="input w-full font-mono" value={form.contato_telefone} onChange={e => f('contato_telefone', e.target.value)} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label">E-mail</label>
-                <input type="email" className="input w-full" value={form.contato_email} onChange={e => f('contato_email', e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Cidade</label>
-                <input className="input w-full" value={form.cidade} onChange={e => f('cidade', e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Estado (UF)</label>
-                <input className="input w-full uppercase" maxLength={2} value={form.estado} onChange={e => f('estado', e.target.value.toUpperCase())} />
-              </div>
-              <div>
-                <label className="label">Prazo de Pagamento (Dias)</label>
-                <input type="number" min="0" className="input w-full font-mono" value={form.prazo_pagamento_dias} onChange={e => f('prazo_pagamento_dias', e.target.value)} />
-              </div>
-              <div>
-                <label className="label">Avaliação (0-5)</label>
-                <input type="number" min="0" max="5" step="0.1" className="input w-full font-mono" value={form.avaliacao} onChange={e => f('avaliacao', e.target.value)} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label">Observações</label>
-                <textarea className="input w-full" rows={3} value={form.observacoes} onChange={e => f('observacoes', e.target.value)} placeholder="Notas internas sobre o fornecedor..." />
+          <form id="forn-form" onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Informações Principais */}
+            <div className="bg-surface-50 border border-surface-200 rounded-xl p-4 sm:p-5">
+              <h3 className="text-sm font-bold text-steel-800 flex items-center gap-2 mb-4">
+                <Building2 className="w-4 h-4 text-accent" /> Informações Principais
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="label">Nome / Razão Social *</label>
+                  <input className="input w-full" value={form.nome} onChange={e => f('nome', e.target.value)} required />
+                </div>
+                <div>
+                  <label className="label">CNPJ</label>
+                  <input className="input w-full font-mono" value={form.cnpj} onChange={e => f('cnpj', e.target.value)} placeholder="00.000.000/0000-00" />
+                </div>
+                <div>
+                  <label className="label">Modal de Transporte Padrão</label>
+                  <div className="relative">
+                    <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-steel-400" />
+                    <select className="input w-full pl-9" value={form.modal_padrao} onChange={e => f('modal_padrao', e.target.value)}>
+                      <option value="">Selecione...</option>
+                      {MODAL_VALIDOS.map(m => (
+                        <option key={m} value={m}>{ModalIcons[m]} {m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Contato & Localização */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-surface-50 border border-surface-200 rounded-xl p-4 sm:p-5">
+                <h3 className="text-sm font-bold text-steel-800 flex items-center gap-2 mb-4">
+                  <Mail className="w-4 h-4 text-accent" /> Contato
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="label">Pessoa de Contato</label>
+                    <input className="input w-full" value={form.contato_nome} onChange={e => f('contato_nome', e.target.value)} placeholder="Nome do representante" />
+                  </div>
+                  <div>
+                    <label className="label">Telefone</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-steel-400" />
+                      <input className="input w-full pl-9 font-mono" value={form.contato_telefone} onChange={e => f('contato_telefone', e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label">E-mail</label>
+                    <input type="email" className="input w-full" value={form.contato_email} onChange={e => f('contato_email', e.target.value)} placeholder="email@empresa.com" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-surface-50 border border-surface-200 rounded-xl p-4 sm:p-5">
+                <h3 className="text-sm font-bold text-steel-800 flex items-center gap-2 mb-4">
+                  <MapPin className="w-4 h-4 text-accent" /> Localização
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="label">Cidade</label>
+                    <input className="input w-full" value={form.cidade} onChange={e => f('cidade', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="label">Estado (UF)</label>
+                    <input className="input w-full uppercase" maxLength={2} value={form.estado} onChange={e => f('estado', e.target.value.toUpperCase())} placeholder="SP, MG, RJ..." />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Comercial & Observações */}
+            <div className="bg-surface-50 border border-surface-200 rounded-xl p-4 sm:p-5">
+              <h3 className="text-sm font-bold text-steel-800 flex items-center gap-2 mb-4">
+                <Star className="w-4 h-4 text-accent" /> Dados Comerciais
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Prazo de Pagamento (Dias)</label>
+                  <input type="number" min="0" className="input w-full font-mono" value={form.prazo_pagamento_dias} onChange={e => f('prazo_pagamento_dias', e.target.value)} placeholder="Ex: 30" />
+                </div>
+                <div>
+                  <label className="label">Avaliação do Fornecedor (0-5)</label>
+                  <div className="relative">
+                    <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                    <input type="number" min="0" max="5" step="0.1" className="input w-full pl-9 font-mono" value={form.avaliacao} onChange={e => f('avaliacao', e.target.value)} placeholder="Ex: 4.8" />
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">Observações Internas</label>
+                  <textarea className="input w-full resize-y" rows={3} value={form.observacoes} onChange={e => f('observacoes', e.target.value)} placeholder="Notas sobre qualidade, flexibilidade, restrições..." />
+                </div>
+              </div>
+            </div>
+
           </form>
         </div>
 
