@@ -318,7 +318,13 @@ router.post('/:id/fornecedores', authenticate, authorize('admin', 'gerente_opera
 );
 
 // PUT /api/v1/produtos/:id/fornecedores
-router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador'), audit('ATUALIZAR_FORNECEDORES_PRODUTO', 'produto_fornecedor'),
+router.put('/:id/fornecedores', authenticate,
+  async (req, res, next) => {
+    const pode = await perfilPode(req.user?.perfil, 'editar_fornecedor_produto').catch(() => false);
+    if (!pode) return res.status(403).json({ error: 'Sem permissão para editar fornecedores do produto' });
+    next();
+  },
+  audit('ATUALIZAR_FORNECEDORES_PRODUTO', 'produto_fornecedor'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -336,7 +342,13 @@ router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operac
 );
 
 // DELETE /api/v1/produtos/:id/fornecedores/:fornecedor_id
-router.delete('/:id/fornecedores/:fornecedor_id', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador'), audit('REMOVER_FORNECEDOR_PRODUTO', 'produto_fornecedor'),
+router.delete('/:id/fornecedores/:fornecedor_id', authenticate,
+  async (req, res, next) => {
+    const pode = await perfilPode(req.user?.perfil, 'editar_fornecedor_produto').catch(() => false);
+    if (!pode) return res.status(403).json({ error: 'Sem permissão para remover fornecedores do produto' });
+    next();
+  },
+  audit('REMOVER_FORNECEDOR_PRODUTO', 'produto_fornecedor'),
   async (req, res, next) => {
     try {
       const { id, fornecedor_id } = req.params;

@@ -88,10 +88,12 @@ const Configuracoes = () => {
     nivel_servico_padrao: 95,
     ciclos_estimativa_inicial: 10,
     taxa_carregamento_padrao: 0.2,
+    percentual_pr_como_es_provisorio: 50,
   });
   const [permissoes, setPermissoes] = useState({
     cadastrar_item: [],
     editar_curva_abc: [],
+    editar_fornecedor_produto: [],
     paginas: {},
   });
   const [turnos, setTurnos] = useState([]);
@@ -141,6 +143,7 @@ const Configuracoes = () => {
       setPermissoes({
         cadastrar_item: permissoesData.cadastrar_item || [],
         editar_curva_abc: permissoesData.editar_curva_abc || [],
+        editar_fornecedor_produto: permissoesData.editar_fornecedor_produto || [],
         paginas: permissoesData.paginas || {},
       });
     }
@@ -152,6 +155,7 @@ const Configuracoes = () => {
         nivel_servico_padrao: kanbanData.nivel_servico_padrao ?? 95,
         ciclos_estimativa_inicial: kanbanData.ciclos_estimativa_inicial ?? 10,
         taxa_carregamento_padrao: kanbanData.taxa_carregamento_padrao ?? 0.2,
+        percentual_pr_como_es_provisorio: kanbanData.percentual_pr_como_es_provisorio ?? 50,
       });
     }
   }, [kanbanData]);
@@ -185,6 +189,7 @@ const Configuracoes = () => {
     mutationFn: (permData) => api.patch('/configuracoes/permissoes', {
       cadastrar_item: permData.cadastrar_item || [],
       editar_curva_abc: permData.editar_curva_abc || [],
+      editar_fornecedor_produto: permData.editar_fornecedor_produto || [],
       paginas: permData.paginas || {},
     }),
     onSuccess: () => {
@@ -199,6 +204,7 @@ const Configuracoes = () => {
       nivel_servico_padrao: Number(kanbanData.nivel_servico_padrao),
       ciclos_estimativa_inicial: Number(kanbanData.ciclos_estimativa_inicial),
       taxa_carregamento_padrao: Number(kanbanData.taxa_carregamento_padrao),
+      percentual_pr_como_es_provisorio: Number(kanbanData.percentual_pr_como_es_provisorio),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracoes', 'kanban'] });
@@ -417,7 +423,7 @@ const Configuracoes = () => {
             </div>
           </div>
           <div className="p-4 sm:p-5 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <div>
                 <label className="label">Nível de serviço padrão</label>
                 <select
@@ -454,6 +460,20 @@ const Configuracoes = () => {
                   disabled={carregandoKanban}
                 />
                 <p className="text-xs text-steel-500 mt-1">Use 10 para dar base suficiente a Holt e regressão sem inventar histórico longo.</p>
+              </div>
+              <div>
+                <label className="label">% do PR como ES provisório</label>
+                <input
+                  type="number" min="0" max="100" step="5"
+                  value={kanban.percentual_pr_como_es_provisorio}
+                  onChange={(e) => setKanban((k) => ({ ...k, percentual_pr_como_es_provisorio: e.target.value }))}
+                  onBlur={handleKanbanBlur}
+                  className="input font-mono"
+                  disabled={carregandoKanban}
+                />
+                <p className="text-xs text-steel-500 mt-1">
+                  Enquanto o produto não completar os ciclos mínimos para IA/estatística, usa <strong>{kanban.percentual_pr_como_es_provisorio}%</strong> do PR como ES de segurança provisório.
+                </p>
               </div>
             </div>
           </div>
@@ -511,6 +531,15 @@ const Configuracoes = () => {
           </div>
           <div className="p-4 sm:p-5 space-y-5">
             <PermissionGroup title="Cadastrar item" value={permissoes.cadastrar_item} perfis={permissoesData?.perfis || []} disabled={carregandoPermissoes} onToggle={(p) => togglePerfil('cadastrar_item', p)} />
+
+            <PermissionGroup
+              title="Editar fornecedores vinculados ao produto"
+              description="Quem pode vincular, editar e desvincular fornecedores de um produto específico."
+              value={permissoes.editar_fornecedor_produto}
+              perfis={permissoesData?.perfis || []}
+              disabled={carregandoPermissoes}
+              onToggle={(p) => togglePerfil('editar_fornecedor_produto', p)}
+            />
 
             <div>
               <h3 className="text-sm font-bold text-steel-800 mb-3">Acesso por página</h3>

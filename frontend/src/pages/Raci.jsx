@@ -157,16 +157,16 @@ const Raci = () => {
               whileTap={{ scale: 0.98 }}
               className={`relative text-left rounded-lg border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
             >
-              <motion.div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-3">
-                <Icone className="w-5 h-5 text-steel-700" />
+              <motion.div className="w-10 h-10 rounded-lg bg-white/20 shadow-sm flex items-center justify-center mb-3">
+                <Icone className="w-5 h-5 text-white drop-shadow" />
               </motion.div>
-              <motion.h3 className="font-bold text-steel-800 leading-tight mb-1">
+              <motion.h3 className="font-bold text-white leading-tight mb-1 drop-shadow-sm">
                 {p.titulo}
               </motion.h3>
-              <motion.p className="text-xs text-steel-500 line-clamp-2">
+              <motion.p className="text-xs text-white/80 line-clamp-2">
                 {p.descricao}
               </motion.p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-steel-600">
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-white/75">
                 Ver fluxograma e RACI <ChevronRight className="w-3 h-3" />
               </div>
             </motion.button>

@@ -13,6 +13,7 @@ const CONFIG_DEFAULTS = {
   'pedidos.recebedores': 'comprador,facilitador',
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
+  'permissoes.editar_fornecedor_produto': 'admin,gerente_operacoes,supervisor_turno,comprador',
   'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.produtos': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.movimentacoes': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
@@ -30,6 +31,7 @@ const CONFIG_DEFAULTS = {
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
   'kanban.taxa_carregamento_padrao': 0.2,
+  'kanban.percentual_pr_como_es_provisorio': 50,
   'turnos.lista': JSON.stringify([
     { id: '1T', nome: '1T', inicio: '06:00', fim: '14:00' },
     { id: '2T', nome: '2T', inicio: '14:01', fim: '22:00' },
@@ -57,11 +59,13 @@ const PAGINAS_SISTEMA = [
 const PERMISSOES_CHAVES = {
   cadastrarItem: 'permissoes.cadastrar_item',
   editarCurvaAbc: 'permissoes.editar_curva_abc',
+  editarFornecedorProduto: 'permissoes.editar_fornecedor_produto',
 };
 
 const PERMISSAO_TO_CHAVE = {
   cadastrar_item: PERMISSOES_CHAVES.cadastrarItem,
   editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
+  editar_fornecedor_produto: PERMISSOES_CHAVES.editarFornecedorProduto,
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 const PERFIS_SEM_EXECUCAO_FLUXO_COMPRA = ['visualizador'];
@@ -137,17 +141,20 @@ function montarConfiguracoesKanban(payload) {
   const nivelServicoPadrao = Number(payload.nivel_servico_padrao);
   const ciclosEstimativaInicial = Number(payload.ciclos_estimativa_inicial);
   const taxaCarregamentoPadrao = Number(payload.taxa_carregamento_padrao);
+  const percentualPrEsProvisorio = Math.min(100, Math.max(0, Number(payload.percentual_pr_como_es_provisorio ?? CONFIG_DEFAULTS['kanban.percentual_pr_como_es_provisorio'])));
 
   return {
     configuracoes: {
       'kanban.nivel_servico_padrao': nivelServicoPadrao,
       'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
       'kanban.taxa_carregamento_padrao': taxaCarregamentoPadrao,
+      'kanban.percentual_pr_como_es_provisorio': percentualPrEsProvisorio,
     },
     resposta: {
       nivel_servico_padrao: nivelServicoPadrao,
       ciclos_estimativa_inicial: ciclosEstimativaInicial,
       taxa_carregamento_padrao: taxaCarregamentoPadrao,
+      percentual_pr_como_es_provisorio: percentualPrEsProvisorio,
     },
   };
 }
@@ -174,6 +181,7 @@ function montarConfiguracoesPermissoes(payload) {
   const configuracoes = {
     'permissoes.cadastrar_item': serializePerfis(payload.cadastrar_item),
     'permissoes.editar_curva_abc': serializePerfis(payload.editar_curva_abc),
+    'permissoes.editar_fornecedor_produto': serializePerfis(payload.editar_fornecedor_produto),
   };
 
   for (const pagina of PAGINAS_SISTEMA) {
@@ -298,9 +306,10 @@ async function getCargosFluxoCompra(options = {}) {
 }
 
 async function getPermissoesOperacionais() {
-  const [cadastrarItem, editarCurvaAbc, ...paginasValues] = await Promise.all([
+  const [cadastrarItem, editarCurvaAbc, editarFornecedorProduto, ...paginasValues] = await Promise.all([
     getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
     getConfiguracao(PERMISSOES_CHAVES.editarCurvaAbc, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarCurvaAbc]),
+    getConfiguracao(PERMISSOES_CHAVES.editarFornecedorProduto, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarFornecedorProduto]),
     ...PAGINAS_SISTEMA.map((pagina) => getConfiguracao(
       `permissoes.paginas.${pagina}`,
       CONFIG_DEFAULTS[`permissoes.paginas.${pagina}`] || ''
@@ -315,15 +324,17 @@ async function getPermissoesOperacionais() {
   return {
     cadastrar_item: parsePerfis(cadastrarItem),
     editar_curva_abc: parsePerfis(editarCurvaAbc),
+    editar_fornecedor_produto: parsePerfis(editarFornecedorProduto),
     paginas,
   };
 }
 
 async function getKanbanDefaults() {
-  const [nivelServicoPadrao, ciclosEstimativaInicial, taxaCarregamentoPadrao] = await Promise.all([
+  const [nivelServicoPadrao, ciclosEstimativaInicial, taxaCarregamentoPadrao, percentualPrEsProvisorio] = await Promise.all([
     getConfiguracao('kanban.nivel_servico_padrao', CONFIG_DEFAULTS['kanban.nivel_servico_padrao']),
     getConfiguracao('kanban.ciclos_estimativa_inicial', CONFIG_DEFAULTS['kanban.ciclos_estimativa_inicial']),
     getConfiguracao('kanban.taxa_carregamento_padrao', CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao']),
+    getConfiguracao('kanban.percentual_pr_como_es_provisorio', CONFIG_DEFAULTS['kanban.percentual_pr_como_es_provisorio']),
   ]);
   const taxaCarregamento = Number(taxaCarregamentoPadrao);
 
@@ -333,6 +344,7 @@ async function getKanbanDefaults() {
     taxa_carregamento_padrao: Number.isFinite(taxaCarregamento)
       ? Math.min(1, Math.max(0, taxaCarregamento))
       : CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao'],
+    percentual_pr_como_es_provisorio: Math.min(100, Math.max(0, Number(percentualPrEsProvisorio) || 50)),
   };
 }
 
