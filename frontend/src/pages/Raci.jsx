@@ -230,7 +230,7 @@ const Raci = () => {
                     </button>
                   </div>
                 ) : (
-                  <motion.h2 className="pr-10 text-xl sm:text-2xl font-bold leading-tight break-words">
+                  <motion.h2 className="pr-10 text-xl sm:text-2xl font-bold text-white leading-tight break-words">
                     {problemaAberto.titulo}
                   </motion.h2>
                 )}
