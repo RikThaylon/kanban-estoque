@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticate } = require('../middleware/auth');
 const { query } = require('../config/database');
+const { audit } = require('../middleware/audit');
 const { classificacaoABC } = require('../services/kanban.math');
 const {
   buildPeriodoSQL,
@@ -8,6 +9,7 @@ const {
   limitarMesesPrevisao,
   calcularCustoTotalPeriodo,
 } = require('../services/relatorio.workflow');
+const { perfilPode } = require('../services/configuracoes.service');
 
 const router = express.Router();
 
@@ -247,67 +249,211 @@ router.get('/estatisticas-gerais', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ─── GET /api/v1/relatorios/metas-gastos ────────────────────────────────────
+// Retorna todas as metas mensais cadastradas
+router.get('/metas-gastos', authenticate, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT ano_mes, meta_valor FROM metas_gastos_mensais ORDER BY ano_mes ASC`
+    );
+    const metas = {};
+    result.rows.forEach(r => { metas[r.ano_mes] = parseFloat(r.meta_valor); });
+    res.json({ metas });
+  } catch (err) { next(err); }
+});
+
+// ─── POST /api/v1/relatorios/metas-gastos ───────────────────────────────────
+// Salva ou atualiza a meta de gastos de um mês (requer permissão definir_meta_gastos)
+router.post('/metas-gastos', authenticate, audit('DEFINIR_META_GASTOS', 'metas_gastos_mensais'),
+  async (req, res, next) => {
+    try {
+      const pode = await perfilPode(req.user?.perfil, 'definir_meta_gastos');
+      if (!pode) return res.status(403).json({ error: 'FORBIDDEN', message: 'Sem permissão para definir metas de gastos' });
+
+      const { ano_mes, meta_valor } = req.body;
+      if (!ano_mes || !/^\d{4}-\d{2}$/.test(ano_mes)) {
+        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'ano_mes deve estar no formato YYYY-MM' });
+      }
+      const valor = parseFloat(meta_valor);
+      if (isNaN(valor) || valor < 0) {
+        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'meta_valor deve ser um número >= 0' });
+      }
+
+      const result = await query(
+        `INSERT INTO metas_gastos_mensais (ano_mes, meta_valor, criado_por, atualizado_em)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (ano_mes) DO UPDATE
+           SET meta_valor = EXCLUDED.meta_valor,
+               criado_por = EXCLUDED.criado_por,
+               atualizado_em = NOW()
+         RETURNING *`,
+        [ano_mes, valor, req.user.id]
+      );
+      res.json(result.rows[0]);
+    } catch (err) { next(err); }
+  }
+);
+
 // ─── GET /api/v1/relatorios/previsao-gastos-mensal ──────────────────────────
 // Agrupa pedidos APROVADOS / EMITIDOS / EM_TRANSITO / RECEBIDO_PARCIAL por
 // data_chegada = COALESCE(data_prevista, data_emissao + lead_time_nominal_dias).
-// Retorna previsão de saída de caixa por mês de chegada (não por data de emissão).
+// Retorna previsão de saída de caixa por mês de chegada + meta do mês + top items.
 router.get('/previsao-gastos-mensal', authenticate, async (req, res, next) => {
   try {
     const meses = limitarMesesPrevisao(req.query.meses);
 
-    // Status que ainda vão chegar (excluindo RECEBIDO total, CANCELADO, REJEITADO, RASCUNHO, AGUARDANDO_*)
-    const result = await query(`
-      WITH com_chegada AS (
-        SELECT pc.id, pc.numero, pc.status, pc.custo_total,
-               pc.quantidade_pedida, pc.quantidade_recebida,
-               (pc.custo_total - COALESCE(pc.custo_total * pc.quantidade_recebida / NULLIF(pc.quantidade_pedida, 0), 0)) AS valor_aberto,
-               COALESCE(
-                 pc.data_prevista::TIMESTAMPTZ,
-                 pc.data_emissao + (COALESCE(pf.lead_time_nominal_dias, 7) || ' days')::INTERVAL
-               ) AS data_chegada,
-               p.id AS produto_id, p.codigo AS produto_codigo, p.nome AS produto_nome,
-               c.nome AS categoria_nome, c.cor_hex
+    const [resultPrevisao, resultMetas, resultTopSaida, resultTopGasto] = await Promise.all([
+      // Previsão de chegada por mês
+      query(`
+        WITH com_chegada AS (
+          SELECT pc.id, pc.numero, pc.status, pc.custo_total,
+                 pc.quantidade_pedida, pc.quantidade_recebida,
+                 (pc.custo_total - COALESCE(pc.custo_total * pc.quantidade_recebida / NULLIF(pc.quantidade_pedida, 0), 0)) AS valor_aberto,
+                 COALESCE(
+                   pc.data_prevista::TIMESTAMPTZ,
+                   pc.data_emissao + (COALESCE(pf.lead_time_nominal_dias, 7) || ' days')::INTERVAL
+                 ) AS data_chegada,
+                 p.id AS produto_id, p.codigo AS produto_codigo, p.nome AS produto_nome,
+                 c.nome AS categoria_nome, c.cor_hex
+          FROM pedidos_compra pc
+          JOIN produtos p ON p.id = pc.produto_id
+          LEFT JOIN categorias c ON c.id = p.categoria_id
+          LEFT JOIN produto_fornecedor pf ON pf.produto_id = pc.produto_id AND pf.fornecedor_id = pc.fornecedor_id
+          WHERE pc.status IN ('APROVADO', 'AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL')
+            AND pc.data_emissao IS NOT NULL
+        )
+        SELECT TO_CHAR(date_trunc('month', data_chegada), 'YYYY-MM') AS mes_chegada,
+               COUNT(*) AS qtd_ordens,
+               SUM(valor_aberto) AS valor_total_previsto,
+               SUM(custo_total) AS valor_total_bruto,
+               jsonb_agg(jsonb_build_object(
+                 'pedido_id', id,
+                 'numero', numero,
+                 'status', status,
+                 'produto_codigo', produto_codigo,
+                 'produto_nome', produto_nome,
+                 'categoria_nome', categoria_nome,
+                 'cor_hex', cor_hex,
+                 'valor_aberto', valor_aberto,
+                 'data_chegada', data_chegada
+               ) ORDER BY data_chegada) AS itens
+        FROM com_chegada
+        WHERE data_chegada <= NOW() + ($1 || ' months')::INTERVAL
+        GROUP BY date_trunc('month', data_chegada)
+        ORDER BY date_trunc('month', data_chegada) ASC
+      `, [meses]),
+
+      // Metas cadastradas
+      query(`SELECT ano_mes, meta_valor FROM metas_gastos_mensais ORDER BY ano_mes ASC`),
+
+      // Top 5 produtos com mais saídas por quantidade no período
+      query(`
+        SELECT p.id AS produto_id, p.codigo, p.nome, p.unidade,
+               TO_CHAR(date_trunc('month', m.criado_em), 'YYYY-MM') AS mes,
+               SUM(m.quantidade) AS quantidade_total,
+               SUM(m.quantidade * p.custo_unitario) AS valor_total
+        FROM movimentacoes m
+        JOIN produtos p ON p.id = m.produto_id
+        WHERE m.tipo = 'SAIDA' AND m.status = 'EXECUTADO'
+          AND m.criado_em >= NOW() - ($1 || ' months')::INTERVAL
+        GROUP BY p.id, p.codigo, p.nome, p.unidade, mes
+        ORDER BY mes DESC, quantidade_total DESC
+      `, [meses]),
+
+      // Top 5 produtos com maior gasto em compras por mês de chegada
+      query(`
+        SELECT p.id AS produto_id, p.codigo, p.nome,
+               TO_CHAR(date_trunc('month',
+                 COALESCE(pc.data_prevista::TIMESTAMPTZ,
+                   pc.data_emissao + (COALESCE(pf.lead_time_nominal_dias, 7) || ' days')::INTERVAL)
+               ), 'YYYY-MM') AS mes_chegada,
+               SUM(pc.custo_total) AS valor_total_compras,
+               SUM(pc.quantidade_pedida) AS quantidade_total
         FROM pedidos_compra pc
         JOIN produtos p ON p.id = pc.produto_id
-        LEFT JOIN categorias c ON c.id = p.categoria_id
         LEFT JOIN produto_fornecedor pf ON pf.produto_id = pc.produto_id AND pf.fornecedor_id = pc.fornecedor_id
-        WHERE pc.status IN ('APROVADO', 'AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL')
-          AND pc.data_emissao IS NOT NULL
-      )
-      SELECT TO_CHAR(date_trunc('month', data_chegada), 'YYYY-MM') AS mes_chegada,
-             COUNT(*) AS qtd_ordens,
-             SUM(valor_aberto) AS valor_total_previsto,
-             SUM(custo_total) AS valor_total_bruto,
-             jsonb_agg(jsonb_build_object(
-               'pedido_id', id,
-               'numero', numero,
-               'status', status,
-               'produto_codigo', produto_codigo,
-               'produto_nome', produto_nome,
-               'categoria_nome', categoria_nome,
-               'cor_hex', cor_hex,
-               'valor_aberto', valor_aberto,
-               'data_chegada', data_chegada
-             ) ORDER BY data_chegada) AS itens
-      FROM com_chegada
-      WHERE data_chegada <= NOW() + ($1 || ' months')::INTERVAL
-      GROUP BY date_trunc('month', data_chegada)
-      ORDER BY date_trunc('month', data_chegada) ASC
-    `, [meses]);
+        WHERE pc.status IN ('APROVADO', 'AGUARDANDO_CHEGADA', 'EMITIDO', 'EM_TRANSITO', 'RECEBIDO_PARCIAL', 'CONCLUIDO', 'RECEBIDO')
+          AND pc.data_emissao >= NOW() - ($1 || ' months')::INTERVAL
+        GROUP BY p.id, p.codigo, p.nome, mes_chegada
+        ORDER BY mes_chegada DESC, valor_total_compras DESC
+      `, [meses]),
+    ]);
 
-    const linhas = result.rows.map(r => ({
-      mes_chegada: r.mes_chegada,
-      qtd_ordens: parseInt(r.qtd_ordens, 10),
-      valor_total_previsto: parseFloat(r.valor_total_previsto || 0),
-      valor_total_bruto: parseFloat(r.valor_total_bruto || 0),
-      itens: r.itens || [],
-    }));
+    // Montar mapa de metas
+    const metasMap = {};
+    resultMetas.rows.forEach(r => { metasMap[r.ano_mes] = parseFloat(r.meta_valor); });
+
+    // Montar top saídas por mês
+    const topSaidaMap = {};
+    resultTopSaida.rows.forEach(r => {
+      if (!topSaidaMap[r.mes]) topSaidaMap[r.mes] = [];
+      if (topSaidaMap[r.mes].length < 5) topSaidaMap[r.mes].push({
+        produto_id: r.produto_id, codigo: r.codigo, nome: r.nome, unidade: r.unidade,
+        quantidade_total: parseFloat(r.quantidade_total), valor_total: parseFloat(r.valor_total),
+      });
+    });
+
+    // Montar top gastos em compras por mês de chegada
+    const topGastoMap = {};
+    resultTopGasto.rows.forEach(r => {
+      if (!topGastoMap[r.mes_chegada]) topGastoMap[r.mes_chegada] = [];
+      if (topGastoMap[r.mes_chegada].length < 5) topGastoMap[r.mes_chegada].push({
+        produto_id: r.produto_id, codigo: r.codigo, nome: r.nome,
+        valor_total_compras: parseFloat(r.valor_total_compras),
+        quantidade_total: parseFloat(r.quantidade_total),
+      });
+    });
+
+    const linhas = resultPrevisao.rows.map(r => {
+      const mes = r.mes_chegada;
+      const meta = metasMap[mes] || null;
+      const previsto = parseFloat(r.valor_total_previsto || 0);
+      return {
+        mes_chegada: mes,
+        qtd_ordens: parseInt(r.qtd_ordens, 10),
+        valor_total_previsto: previsto,
+        valor_total_bruto: parseFloat(r.valor_total_bruto || 0),
+        meta_valor: meta,
+        percentual_meta: meta && meta > 0 ? Math.round((previsto / meta) * 100) : null,
+        status_meta: !meta ? 'sem_meta'
+          : previsto > meta ? 'estourado'
+          : previsto > meta * 0.8 ? 'alerta'
+          : 'dentro',
+        top_saida: topSaidaMap[mes] || [],
+        top_gasto_compras: topGastoMap[mes] || [],
+        itens: r.itens || [],
+      };
+    });
+
+    // Adicionar meses com meta mas sem previsão
+    const mesesComPrevisao = new Set(linhas.map(l => l.mes_chegada));
+    resultMetas.rows.forEach(r => {
+      if (!mesesComPrevisao.has(r.ano_mes)) {
+        linhas.push({
+          mes_chegada: r.ano_mes,
+          qtd_ordens: 0,
+          valor_total_previsto: 0,
+          valor_total_bruto: 0,
+          meta_valor: parseFloat(r.meta_valor),
+          percentual_meta: 0,
+          status_meta: 'dentro',
+          top_saida: topSaidaMap[r.ano_mes] || [],
+          top_gasto_compras: topGastoMap[r.ano_mes] || [],
+          itens: [],
+        });
+      }
+    });
+    linhas.sort((a, b) => a.mes_chegada.localeCompare(b.mes_chegada));
 
     const totalPeriodo = linhas.reduce((s, l) => s + l.valor_total_previsto, 0);
+    const totalMeta = linhas.reduce((s, l) => s + (l.meta_valor || 0), 0);
 
     res.json({
       meses_horizonte: meses,
       total_previsto_periodo: totalPeriodo,
+      total_meta_periodo: totalMeta,
+      percentual_meta_global: totalMeta > 0 ? Math.round((totalPeriodo / totalMeta) * 100) : null,
+      metas: metasMap,
       linhas,
     });
   } catch (err) { next(err); }

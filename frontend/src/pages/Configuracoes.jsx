@@ -94,6 +94,7 @@ const Configuracoes = () => {
     cadastrar_item: [],
     editar_curva_abc: [],
     editar_fornecedor_produto: [],
+    definir_meta_gastos: [],
     paginas: {},
   });
   const [turnos, setTurnos] = useState([]);
@@ -144,6 +145,7 @@ const Configuracoes = () => {
         cadastrar_item: permissoesData.cadastrar_item || [],
         editar_curva_abc: permissoesData.editar_curva_abc || [],
         editar_fornecedor_produto: permissoesData.editar_fornecedor_produto || [],
+        definir_meta_gastos: permissoesData.definir_meta_gastos || [],
         paginas: permissoesData.paginas || {},
       });
     }
@@ -190,6 +192,7 @@ const Configuracoes = () => {
       cadastrar_item: permData.cadastrar_item || [],
       editar_curva_abc: permData.editar_curva_abc || [],
       editar_fornecedor_produto: permData.editar_fornecedor_produto || [],
+      definir_meta_gastos: permData.definir_meta_gastos || [],
       paginas: permData.paginas || {},
     }),
     onSuccess: () => {
@@ -539,6 +542,15 @@ const Configuracoes = () => {
               perfis={permissoesData?.perfis || []}
               disabled={carregandoPermissoes}
               onToggle={(p) => togglePerfil('editar_fornecedor_produto', p)}
+            />
+
+            <PermissionGroup
+              title="Definir metas de gastos"
+              description="Quem pode configurar metas mensais de gastos na aba de Relatórios."
+              value={permissoes.definir_meta_gastos}
+              perfis={permissoesData?.perfis || []}
+              disabled={carregandoPermissoes}
+              onToggle={(p) => togglePerfil('definir_meta_gastos', p)}
             />
 
             <div>

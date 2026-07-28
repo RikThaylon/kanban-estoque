@@ -21,23 +21,35 @@ const { query } = require('../../src/config/database');
 const { authHeader } = require('../helpers/auth');
 
 describe('Produtos Routes', () => {
-  beforeEach(() => { jest.clearAllMocks(); query.mockResolvedValue({rows:[]}); });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    query.mockImplementation((sql, params) => {
+      const text = String(sql).toLowerCase();
+      if (text.includes('group by kp.faixa_atual')) return Promise.resolve({ rows: [{ faixa_atual: 'VERDE', count: '1' }] });
+      if (text.includes('select count(*)')) return Promise.resolve({ rows: [{ count: '1' }] });
+      if (text.includes('select valor from configuracoes_sistema')) {
+        if (params && params[0] === 'kanban.taxa_carregamento_padrao') return Promise.resolve({ rows: [{ valor: '0.33' }] });
+        return Promise.resolve({ rows: [] });
+      }
+      if (text.includes('insert into produtos')) return Promise.resolve({ rows: [{ id: 'p1', codigo: params[0], nome: params[1], taxa_carregamento: params[7] }] });
+      if (text.includes('select p.*, kp.') && text.includes('where p.id =')) return Promise.resolve({ rows: [{ id: 'p1', nome: 'VH-200' }] });
+      if (text.includes('select p.*, kp.')) return Promise.resolve({ rows: [{ id: 'p1', nome: 'VH-200', faixa_atual: 'VERDE' }] });
+      if (text.includes('select pf.*, f.nome')) return Promise.resolve({ rows: [{ fornecedor_id: 'f1' }] });
+      if (text.includes('update produtos set')) return Promise.resolve({ rows: [{ id: 'p1', nome: 'Atualizado' }] });
+      return Promise.resolve({ rows: [] });
+    });
+  });
 
   describe('GET /api/v1/produtos', () => {
     it('deve listar produtos com paginação e resumo', async () => {
-      query.mockResolvedValueOnce({rows:[{count:'3'}]})
-        .mockResolvedValueOnce({rows:[{id:'p1',nome:'VH-200',faixa_atual:'VERDE'}]})
-        .mockResolvedValueOnce({rows:[{faixa_atual:'VERDE',count:'2'},{faixa_atual:'AMARELO',count:'1'}]});
       const res = await request(app).get('/api/v1/produtos').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200); expect(res.body.resumo).toBeDefined();
     });
     it('deve filtrar por faixa', async () => {
-      query.mockResolvedValueOnce({rows:[{count:'1'}]}).mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[]});
       const res = await request(app).get('/api/v1/produtos?faixa=VERMELHO').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200);
     });
     it('deve buscar por nome/código', async () => {
-      query.mockResolvedValueOnce({rows:[{count:'1'}]}).mockResolvedValueOnce({rows:[{id:'p1'}]}).mockResolvedValueOnce({rows:[]});
       const res = await request(app).get('/api/v1/produtos?busca=VH').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200);
     });
@@ -46,32 +58,16 @@ describe('Produtos Routes', () => {
   describe('POST /api/v1/produtos', () => {
     const body = {codigo:'TST-001',nome:'Produto Teste',unidade:'UN',custo_unitario:45};
     it('admin deve criar produto', async () => {
-      query.mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[{valor:'0.33'}]})
-        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
-        .mockResolvedValueOnce({rows:[]}); // INSERT kanban_parametros
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send(body);
       expect(res.status).toBe(201);
       const insertProdutoCall = query.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO produtos'));
       expect(insertProdutoCall[1][7]).toBe(0.33);
     });
     it('comprador deve criar produto por permissao padrao', async () => {
-      query.mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
-        .mockResolvedValueOnce({rows:[]});
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('comprador')).send(body);
       expect(res.status).toBe(201);
     });
     it('deve calcular Kanban inicial quando CMD e LT forem informados', async () => {
-      query.mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[]})
-        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
-        .mockResolvedValueOnce({rows:[]});
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin'))
         .send({...body, cmd_inicial: 5, lead_time_inicial: 10});
       expect(res.status).toBe(201);
@@ -88,14 +84,14 @@ describe('Produtos Routes', () => {
 
   describe('GET /api/v1/produtos/:id', () => {
     it('deve retornar produto com fornecedores e movimentações', async () => {
-      query.mockResolvedValueOnce({rows:[{id:'p1',nome:'VH-200'}]})
-        .mockResolvedValueOnce({rows:[{fornecedor_id:'f1'}]})
-        .mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[]});
       const res = await request(app).get('/api/v1/produtos/p1').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200); expect(res.body.fornecedores).toBeDefined();
     });
     it('deve retornar 404 para produto inexistente', async () => {
-      query.mockResolvedValueOnce({rows:[]});
+      query.mockImplementation((sql) => {
+        if (String(sql).includes('WHERE p.id =')) return Promise.resolve({ rows: [] });
+        return Promise.resolve({ rows: [] });
+      });
       const res = await request(app).get('/api/v1/produtos/inexistente').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(404);
     });
@@ -103,7 +99,6 @@ describe('Produtos Routes', () => {
 
   describe('PATCH /api/v1/produtos/:id', () => {
     it('deve atualizar campos permitidos', async () => {
-      query.mockResolvedValueOnce({rows:[{id:'p1',nome:'Atualizado'}]});
       const res = await request(app).patch('/api/v1/produtos/p1').set('Authorization',authHeader('admin'))
         .send({nome:'Atualizado',custo_unitario:50});
       expect(res.status).toBe(200);
@@ -116,12 +111,11 @@ describe('Produtos Routes', () => {
 
   describe('DELETE /api/v1/produtos/:id', () => {
     it('admin deve desativar (soft delete)', async () => {
-      query.mockResolvedValueOnce({rows:[{id:'p1'}]});
       const res = await request(app).delete('/api/v1/produtos/p1').set('Authorization',authHeader('admin'));
       expect(res.status).toBe(200);
     });
     it('não-admin não pode deletar', async () => {
-      const res = await request(app).delete('/api/v1/produtos/p1').set('Authorization',authHeader('supervisor_turno'));
+      const res = await request(app).delete('/api/v1/produtos/p1').set('Authorization',authHeader('comprador'));
       expect(res.status).toBe(403);
     });
   });

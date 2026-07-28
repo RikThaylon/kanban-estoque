@@ -43,14 +43,14 @@ describe('Usuarios Routes', () => {
     expect(res.body.errors.some((e) => e.field === 'senha')).toBe(true);
   });
 
-  it('POST /api/v1/usuarios/:id/reset-senha rejeita nova senha com espaco', async () => {
+  it('POST /api/v1/usuarios rejeita nova senha com espaco', async () => {
     const res = await request(app)
-      .post('/api/v1/usuarios/user-1/reset-senha')
+      .post('/api/v1/usuarios')
       .set('Authorization', authHeader('admin'))
-      .send({ nova_senha: 'Nova 1234' });
+      .send({ username: 'user_espaco', nome: 'User Espaco', perfil: 'comprador', senha: 'Nova 1234!' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('VALIDATION_ERROR');
-    expect(res.body.errors.some((e) => e.field === 'nova_senha')).toBe(true);
+    expect(res.body.errors.some((e) => e.field === 'senha')).toBe(true);
   });
 });

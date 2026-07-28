@@ -74,12 +74,12 @@
     letter-spacing: 0;
   }
 
-  main h1[class] {
+  :where(main h1[class]) {
     color: var(--ink);
     font-weight: 900;
   }
 
-  main h2[class] {
+  :where(main h2[class]) {
     color: var(--ink);
   }
 

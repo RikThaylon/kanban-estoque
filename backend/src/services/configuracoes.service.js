@@ -14,6 +14,7 @@ const CONFIG_DEFAULTS = {
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
   'permissoes.editar_fornecedor_produto': 'admin,gerente_operacoes,supervisor_turno,comprador',
+  'permissoes.definir_meta_gastos': 'admin,gerente_operacoes',
   'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.produtos': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.movimentacoes': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
@@ -60,12 +61,14 @@ const PERMISSOES_CHAVES = {
   cadastrarItem: 'permissoes.cadastrar_item',
   editarCurvaAbc: 'permissoes.editar_curva_abc',
   editarFornecedorProduto: 'permissoes.editar_fornecedor_produto',
+  definirMetaGastos: 'permissoes.definir_meta_gastos',
 };
 
 const PERMISSAO_TO_CHAVE = {
   cadastrar_item: PERMISSOES_CHAVES.cadastrarItem,
   editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
   editar_fornecedor_produto: PERMISSOES_CHAVES.editarFornecedorProduto,
+  definir_meta_gastos: PERMISSOES_CHAVES.definirMetaGastos,
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 const PERFIS_SEM_EXECUCAO_FLUXO_COMPRA = ['visualizador'];
@@ -182,6 +185,7 @@ function montarConfiguracoesPermissoes(payload) {
     'permissoes.cadastrar_item': serializePerfis(payload.cadastrar_item),
     'permissoes.editar_curva_abc': serializePerfis(payload.editar_curva_abc),
     'permissoes.editar_fornecedor_produto': serializePerfis(payload.editar_fornecedor_produto),
+    'permissoes.definir_meta_gastos': serializePerfis(payload.definir_meta_gastos),
   };
 
   for (const pagina of PAGINAS_SISTEMA) {
@@ -306,10 +310,11 @@ async function getCargosFluxoCompra(options = {}) {
 }
 
 async function getPermissoesOperacionais() {
-  const [cadastrarItem, editarCurvaAbc, editarFornecedorProduto, ...paginasValues] = await Promise.all([
+  const [cadastrarItem, editarCurvaAbc, editarFornecedorProduto, definirMetaGastos, ...paginasValues] = await Promise.all([
     getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
     getConfiguracao(PERMISSOES_CHAVES.editarCurvaAbc, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarCurvaAbc]),
     getConfiguracao(PERMISSOES_CHAVES.editarFornecedorProduto, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarFornecedorProduto]),
+    getConfiguracao(PERMISSOES_CHAVES.definirMetaGastos, CONFIG_DEFAULTS[PERMISSOES_CHAVES.definirMetaGastos]),
     ...PAGINAS_SISTEMA.map((pagina) => getConfiguracao(
       `permissoes.paginas.${pagina}`,
       CONFIG_DEFAULTS[`permissoes.paginas.${pagina}`] || ''
@@ -325,6 +330,7 @@ async function getPermissoesOperacionais() {
     cadastrar_item: parsePerfis(cadastrarItem),
     editar_curva_abc: parsePerfis(editarCurvaAbc),
     editar_fornecedor_produto: parsePerfis(editarFornecedorProduto),
+    definir_meta_gastos: parsePerfis(definirMetaGastos),
     paginas,
   };
 }
