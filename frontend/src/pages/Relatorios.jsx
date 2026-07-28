@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -256,12 +256,18 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 const Relatorios = () => {
-  const { user, permissoes } = useAuth();
+  const { user } = useAuthStore();
   const qc = useQueryClient();
   const [periodo, setPeriodo] = useState(30);
   const [showMetaModal, setShowMetaModal] = useState(false);
 
-  const podeDefinirMeta = permissoes?.definir_meta_gastos?.includes(user?.perfil);
+  const { data: permissoesData } = useQuery({
+    queryKey: ['configuracoes', 'permissoes'],
+    queryFn: async () => (await api.get('/configuracoes/permissoes')).data,
+    staleTime: 60_000,
+  });
+
+  const podeDefinirMeta = user?.perfil === 'admin' || (permissoesData?.definir_meta_gastos || []).includes(user?.perfil);
 
   const { data: stats } = useQuery({
     queryKey: ['relatorios', 'estatisticas-gerais', periodo],
