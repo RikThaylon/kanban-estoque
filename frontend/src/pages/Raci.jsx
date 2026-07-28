@@ -192,7 +192,7 @@ const Raci = () => {
               className="bg-white rounded-lg shadow-2xl w-full max-w-5xl mx-auto my-3 sm:my-6 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative p-4 sm:p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white">
+              <div className="relative p-4 sm:p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white" style={{ color: 'white' }}>
                 <button
                   onClick={() => setProblemaAberto(null)}
                   className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"

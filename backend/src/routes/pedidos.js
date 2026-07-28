@@ -101,6 +101,7 @@ router.get('/sugestoes', authenticate, async (req, res, next) => {
       ) pf ON true
       LEFT JOIN fornecedores f ON f.id = pf.fornecedor_id
       WHERE p.ativo = true
+        AND (p.recorrente IS NULL OR p.recorrente = true)
         AND kp.ponto_reposicao IS NOT NULL
         AND p.estoque_atual <= kp.ponto_reposicao
       ORDER BY

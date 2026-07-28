@@ -70,7 +70,11 @@ router.get('/', authenticate, async (req, res, next) => {
 
     const dataRes = await query(
       `SELECT p.*, kp.faixa_atual, kp.ponto_reposicao, kp.estoque_seguranca, kp.eoq, kp.estoque_maximo,
-              kp.demanda_diaria_media, c.nome AS categoria_nome, c.cor_hex
+              kp.demanda_diaria_media, c.nome AS categoria_nome, c.cor_hex,
+              CASE WHEN p.recorrente = false AND kp.demanda_diaria_media > 0
+                   THEN ROUND(p.estoque_atual / kp.demanda_diaria_media, 1)
+                   ELSE NULL
+              END AS dias_estoque_estimado
        FROM produtos p
        LEFT JOIN kanban_parametros kp ON kp.produto_id = p.id
        LEFT JOIN categorias c ON c.id = p.categoria_id
@@ -108,6 +112,7 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
     body('custo_pedido').optional().isFloat({ min: 0 }),
     body('taxa_carregamento').optional().isFloat({ min: 0, max: 1 }),
     body('nivel_servico').optional().isIn(['90', '95', '98', '99']),
+    body('recorrente').optional().isBoolean(),
     body('sku').optional().trim().isLength({ max: 80 }),
     body('observacoes').optional().trim().isLength({ max: 2000 }),
   ], validate,
@@ -116,6 +121,7 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
       const {
         codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido,
         taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
+        recorrente = true,
       } = req.body;
       const defaultsKanban = await getKanbanDefaults();
       const {
@@ -132,9 +138,9 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
         lead_time_inicial,
       }, defaultsKanban);
       const result = await query(
-        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
+        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, recorrente, criado_por)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, recorrente, req.user.id]
       );
       const seriesEstimadas = buildEstimatedKanbanSeries({
         cmd: cmdInicial,
@@ -198,7 +204,11 @@ router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await query(
-      `SELECT p.*, kp.*, c.nome AS categoria_nome, c.cor_hex
+      `SELECT p.*, kp.*, c.nome AS categoria_nome, c.cor_hex,
+              CASE WHEN p.recorrente = false AND kp.demanda_diaria_media > 0
+                   THEN ROUND(p.estoque_atual / kp.demanda_diaria_media, 1)
+                   ELSE NULL
+              END AS dias_estoque_estimado
        FROM produtos p
        LEFT JOIN kanban_parametros kp ON kp.produto_id = p.id
        LEFT JOIN categorias c ON c.id = p.categoria_id

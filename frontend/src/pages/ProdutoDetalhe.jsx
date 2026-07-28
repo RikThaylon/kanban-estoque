@@ -199,7 +199,13 @@ const ProdutoDetalhe = () => {
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h1 className="text-xl sm:text-2xl font-bold text-steel-800 break-words">{produto.nome}</h1>
-            <FaixaBadge faixa={produto.faixa_atual} />
+            {produto.recorrente === false ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                NÃO RECORRENTE
+              </span>
+            ) : (
+              <FaixaBadge faixa={produto.faixa_atual} />
+            )}
           </div>
           <p className="text-steel-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
@@ -231,9 +237,11 @@ const ProdutoDetalhe = () => {
               <span className="text-sm font-bold ml-1">dias</span>
             </div>
             <p className="text-xs mt-2 opacity-80">
-              {diasAteReposicao !== null
-                ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias até o PR` : 'No ponto de reposição ou abaixo')
-                : 'Informe CMD para calcular'}
+              {produto.recorrente === false
+                ? 'Item pontual / sem reposição automática'
+                : (diasAteReposicao !== null
+                  ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias até o PR` : 'No ponto de reposição ou abaixo')
+                  : 'Informe CMD para calcular')}
             </p>
           </div>
           <div>
@@ -694,6 +702,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
     lead_time_padrao_dias: produto.lead_time_padrao_dias != null ? produto.lead_time_padrao_dias : '',
     observacoes: produto.observacoes || '',
     ativo: produto.ativo !== false,
+    recorrente: produto.recorrente !== false,
   });
 
   const f = (k, v) => setForm(s => ({ ...s, [k]: v }));
@@ -859,6 +868,18 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
                     className="w-4 h-4 text-accent border-surface-300 rounded focus:ring-accent"
                   />
                   <label htmlFor="chk-ativo" className="text-sm font-semibold text-steel-700 cursor-pointer">Produto Ativo</label>
+                </div>
+                <div className="flex items-center gap-3 mt-6">
+                  <input
+                    type="checkbox"
+                    id="chk-recorrente"
+                    checked={form.recorrente}
+                    onChange={e => f('recorrente', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-surface-300 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="chk-recorrente" className="text-sm font-semibold text-purple-900 cursor-pointer">
+                    Produto Recorrente (Demanda Contínua)
+                  </label>
                 </div>
                 <div className="sm:col-span-3">
                   <label className="label">Observações Internas</label>
