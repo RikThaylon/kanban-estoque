@@ -31,22 +31,54 @@ function mesLabel(anoMes) {
 
 function statusMetaConfig(status) {
   switch (status) {
-    case 'estourado': return { color: 'text-red-400', bg: 'bg-red-900/30', border: 'border-red-700', icon: XCircle, label: 'Estourado' };
-    case 'alerta':    return { color: 'text-amber-400', bg: 'bg-amber-900/30', border: 'border-amber-700', icon: AlertTriangle, label: 'Alerta' };
-    case 'dentro':    return { color: 'text-emerald-400', bg: 'bg-emerald-900/30', border: 'border-emerald-700', icon: CheckCircle, label: 'No limite' };
-    default:          return { color: 'text-slate-400', bg: 'bg-slate-800/30', border: 'border-slate-600', icon: Calendar, label: 'Sem meta' };
+    case 'estourado':
+      return {
+        color: 'text-red-700',
+        bg: 'bg-red-50',
+        border: 'border-red-200',
+        pillBg: 'bg-red-100 text-red-800',
+        icon: XCircle,
+        label: 'Estourado',
+      };
+    case 'alerta':
+      return {
+        color: 'text-amber-800',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        pillBg: 'bg-amber-100 text-amber-800',
+        icon: AlertTriangle,
+        label: 'Alerta',
+      };
+    case 'dentro':
+      return {
+        color: 'text-emerald-800',
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        pillBg: 'bg-emerald-100 text-emerald-800',
+        icon: CheckCircle,
+        label: 'No limite',
+      };
+    default:
+      return {
+        color: 'text-steel-700',
+        bg: 'bg-surface-50',
+        border: 'border-surface-200',
+        pillBg: 'bg-surface-100 text-steel-700',
+        icon: Calendar,
+        label: 'Sem meta',
+      };
   }
 }
 
 function KpiCard({ icon: Icon, color, bg, label, value, sub }) {
   return (
-    <div className="card p-4 flex items-start gap-3">
+    <div className="card p-4 flex items-start gap-3 bg-white border border-surface-200 shadow-sm">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
         <Icon className={`w-5 h-5 ${color}`} />
       </div>
       <div>
         <div className="text-xs text-steel-500 font-medium">{label}</div>
-        <div className="text-xl font-bold text-steel-800 mt-0.5">{value ?? '�'}</div>
+        <div className="text-xl font-bold text-steel-900 mt-0.5">{value ?? '-'}</div>
         {sub && <div className="text-xs text-steel-400 mt-0.5">{sub}</div>}
       </div>
     </div>
@@ -54,17 +86,17 @@ function KpiCard({ icon: Icon, color, bg, label, value, sub }) {
 }
 
 function EmptyMsg({ msg }) {
-  return <div className="py-8 text-center text-sm text-steel-400">{msg}</div>;
+  return <div className="py-6 text-center text-xs text-steel-400 font-medium">{msg}</div>;
 }
 
 function ProgressBar({ pct, status }) {
   const w = Math.min(pct ?? 0, 100);
   return (
-    <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+    <div className="w-full bg-surface-200 rounded-full h-2 overflow-hidden">
       <div
-        className={`h-2.5 rounded-full transition-all duration-700 ${
+        className={`h-2 rounded-full transition-all duration-700 ${
           status === 'estourado' ? 'bg-red-500' :
-          status === 'alerta' ? 'bg-amber-400' : 'bg-emerald-400'
+          status === 'alerta' ? 'bg-amber-500' : 'bg-emerald-500'
         }`}
         style={{ width: `${w}%` }}
       />
@@ -91,27 +123,27 @@ function ModalDefinirMeta({ open, onClose, metas, onSave }) {
   const metasOrdenadas = Object.entries(metas || {}).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-800 rounded-2xl shadow-2xl w-full max-w-md border border-surface-600">
-        <div className="flex items-center justify-between p-5 border-b border-surface-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-surface-200">
+        <div className="flex items-center justify-between p-5 border-b border-surface-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-accent/20 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
               <Target className="w-5 h-5 text-accent" />
             </div>
-            <h2 className="text-lg font-bold text-white">Definir Meta de Gastos</h2>
+            <h2 className="text-lg font-bold text-steel-900">Definir Meta de Gastos</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-600 text-steel-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-100 text-steel-400 hover:text-steel-700 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-steel-400 mb-1.5">Mes / Ano</label>
+              <label className="block text-xs font-medium text-steel-600 mb-1.5">Mês / Ano</label>
               <input type="month" value={anoMes} onChange={e => setAnoMes(e.target.value)} className="input w-full text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-steel-400 mb-1.5">Meta (R$)</label>
+              <label className="block text-xs font-medium text-steel-600 mb-1.5">Meta (R$)</label>
               <input type="number" min="0" step="100" placeholder="0,00" value={valor} onChange={e => setValor(e.target.value)} className="input w-full text-sm" />
             </div>
           </div>
@@ -120,12 +152,12 @@ function ModalDefinirMeta({ open, onClose, metas, onSave }) {
           </button>
           {metasOrdenadas.length > 0 && (
             <div>
-              <div className="text-xs font-semibold text-steel-400 uppercase tracking-wider mb-2">Metas cadastradas</div>
+              <div className="text-xs font-semibold text-steel-500 uppercase tracking-wider mb-2">Metas cadastradas</div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {metasOrdenadas.map(([mes, val]) => (
-                  <div key={mes} className="flex items-center justify-between p-2.5 rounded-lg bg-surface-700">
-                    <span className="text-sm font-medium text-white">{mesLabel(mes)}</span>
-                    <span className="text-sm font-mono text-emerald-400">{formatMoney(val)}</span>
+                  <div key={mes} className="flex items-center justify-between p-2.5 rounded-lg bg-surface-50 border border-surface-100">
+                    <span className="text-sm font-medium text-steel-800">{mesLabel(mes)}</span>
+                    <span className="text-sm font-mono font-bold text-emerald-700">{formatMoney(val)}</span>
                   </div>
                 ))}
               </div>
@@ -141,96 +173,149 @@ function MesRow({ linha }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = statusMetaConfig(linha.status_meta);
   const Icon = cfg.icon;
+
+  const temDados = (linha.top_saida?.length > 0) || (linha.top_gasto_compras?.length > 0) || (linha.itens?.length > 0);
+
   return (
-    <div className={`rounded-xl border ${cfg.border} overflow-hidden transition-all`}>
-      <button onClick={() => setExpanded(v => !v)} className={`w-full flex items-center gap-4 p-4 ${cfg.bg} hover:brightness-110 transition-all text-left`}>
-        <div className="w-16 text-center flex-shrink-0">
-          <div className="text-base font-bold text-white">{mesLabel(linha.mes_chegada)}</div>
-        </div>
-        <Icon className={`w-5 h-5 ${cfg.color} flex-shrink-0`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+    <div className={`rounded-xl border ${cfg.border} bg-white shadow-sm overflow-hidden transition-all mb-3`}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center justify-between p-4 bg-white hover:bg-surface-50 transition-colors text-left border-b border-surface-100"
+      >
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-16 text-center flex-shrink-0">
+            <div className="text-base font-bold text-steel-900">{mesLabel(linha.mes_chegada)}</div>
+          </div>
+
+          <div className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${cfg.pillBg} border ${cfg.border} flex-shrink-0`}>
+            <Icon className="w-3.5 h-3.5" />
+            <span>{cfg.label}</span>
+          </div>
+
+          <div className="flex-1 min-w-0 mx-2">
+            <div className="flex items-center justify-between mb-1">
+              {linha.meta_valor ? (
+                <div className="text-xs font-medium text-steel-600">
+                  Previsto: <span className="font-bold text-steel-900 font-mono">{formatMoney(linha.valor_total_previsto)}</span> / Meta: <span className="font-mono text-steel-700">{formatMoney(linha.meta_valor)}</span>
+                </div>
+              ) : (
+                <div className="text-xs font-medium text-steel-600">
+                  Previsto: <span className="font-bold text-steel-900 font-mono">{formatMoney(linha.valor_total_previsto)}</span>
+                </div>
+              )}
+              {linha.percentual_meta !== null && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${cfg.pillBg}`}>
+                  {linha.percentual_meta}%
+                </span>
+              )}
+            </div>
             {linha.meta_valor && (
-              <span className="text-xs text-steel-400">
-                {formatMoney(linha.valor_total_previsto)} / {formatMoney(linha.meta_valor)}
-                {linha.percentual_meta !== null && <span className={`ml-2 font-bold ${cfg.color}`}>{linha.percentual_meta}%</span>}
-              </span>
+              <ProgressBar pct={linha.percentual_meta} status={linha.status_meta} />
             )}
           </div>
-          {linha.meta_valor ? (
-            <ProgressBar pct={linha.percentual_meta} status={linha.status_meta} />
-          ) : (
-            <div className="text-sm text-steel-300 font-mono">{formatMoney(linha.valor_total_previsto)} previsto</div>
-          )}
         </div>
-        <div className="hidden sm:block text-right flex-shrink-0">
-          <div className="text-sm font-semibold text-white">{linha.qtd_ordens} OC{linha.qtd_ordens !== 1 ? 's' : ''}</div>
+
+        <div className="flex items-center gap-4 flex-shrink-0 ml-3">
+          <div className="text-xs font-semibold text-steel-700 bg-surface-100 px-3 py-1.5 rounded-lg border border-surface-200">
+            {linha.qtd_ordens} {linha.qtd_ordens === 1 ? 'OC' : 'OCs'}
+          </div>
+          {expanded ? <ChevronUp className="w-4 h-4 text-steel-500" /> : <ChevronDown className="w-4 h-4 text-steel-500" />}
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-steel-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-steel-400 flex-shrink-0" />}
       </button>
+
       {expanded && (
-        <div className="border-t border-slate-700 bg-surface-900 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Package className="w-4 h-4 text-accent" />
-              <span className="text-xs font-bold text-steel-300 uppercase tracking-wider">Mais saidas (qtd)</span>
+        <div className="p-4 bg-surface-50 border-t border-surface-200">
+          {!temDados ? (
+            <div className="py-4 text-center text-xs text-steel-500 font-medium bg-white rounded-lg border border-surface-200">
+              Nenhuma movimentação ou ordem de compra prevista para este mês.
             </div>
-            {linha.top_saida?.length ? (
-              <div className="space-y-1.5">
-                {linha.top_saida.map((item, i) => (
-                  <div key={item.produto_id} className="flex items-center gap-2">
-                    <span className="w-5 text-center text-xs font-bold text-steel-500">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-white truncate">{item.nome}</div>
-                      <div className="text-xs text-steel-500">{item.codigo}</div>
-                    </div>
-                    <div className="text-xs font-mono text-emerald-400">{formatNumber(item.quantidade_total)} {item.unidade}</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Mais Saídas */}
+              <div className="bg-white rounded-lg border border-surface-200 p-3.5 shadow-sm">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-surface-100">
+                  <Package className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-steel-700 uppercase tracking-wider">Mais saídas (Qtd)</span>
+                </div>
+                {linha.top_saida?.length ? (
+                  <div className="divide-y divide-surface-100">
+                    {linha.top_saida.map((item, i) => (
+                      <div key={item.produto_id} className="py-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-5 text-center text-xs font-bold text-steel-400">{i + 1}</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-steel-800 truncate">{item.nome}</div>
+                            <div className="text-[11px] text-steel-500 font-mono">{item.codigo}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                          {formatNumber(item.quantidade_total)} {item.unidade}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : <EmptyMsg msg="Sem saídas registradas neste mês" />}
               </div>
-            ) : <EmptyMsg msg="Sem saidas neste mes" />}
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <DollarSign className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-bold text-steel-300 uppercase tracking-wider">Maior gasto em compras</span>
-            </div>
-            {linha.top_gasto_compras?.length ? (
-              <div className="space-y-1.5">
-                {linha.top_gasto_compras.map((item, i) => (
-                  <div key={item.produto_id} className="flex items-center gap-2">
-                    <span className="w-5 text-center text-xs font-bold text-steel-500">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-white truncate">{item.nome}</div>
-                      <div className="text-xs text-steel-500">{item.codigo}</div>
-                    </div>
-                    <div className="text-xs font-mono text-amber-400">{formatMoney(item.valor_total_compras)}</div>
+
+              {/* Maior Gasto */}
+              <div className="bg-white rounded-lg border border-surface-200 p-3.5 shadow-sm">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-surface-100">
+                  <DollarSign className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-bold text-steel-700 uppercase tracking-wider">Maior gasto em compras</span>
+                </div>
+                {linha.top_gasto_compras?.length ? (
+                  <div className="divide-y divide-surface-100">
+                    {linha.top_gasto_compras.map((item, i) => (
+                      <div key={item.produto_id} className="py-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-5 text-center text-xs font-bold text-steel-400">{i + 1}</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-steel-800 truncate">{item.nome}</div>
+                            <div className="text-[11px] text-steel-500 font-mono">{item.codigo}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+                          {formatMoney(item.valor_total_compras)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : <EmptyMsg msg="Sem compras registradas neste mês" />}
               </div>
-            ) : <EmptyMsg msg="Sem compras neste mes" />}
-          </div>
-          {linha.itens?.length > 0 && (
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-3">
-                <ShoppingCart className="w-4 h-4 text-blue-400" />
-                <span className="text-xs font-bold text-steel-300 uppercase tracking-wider">Ordens de compra previstas</span>
-              </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {linha.itens.map(oc => (
-                  <div key={oc.pedido_id} className="flex items-center gap-3 p-2 rounded-lg bg-surface-700">
-                    <span className="text-xs font-mono text-steel-300">{oc.numero || `#${String(oc.pedido_id).slice(0,8)}`}</span>
-                    <span className="flex-1 text-xs text-white truncate">{oc.produto_nome}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      oc.status === 'EM_TRANSITO' ? 'bg-blue-900/50 text-blue-300' :
-                      oc.status === 'APROVADO' ? 'bg-emerald-900/50 text-emerald-300' :
-                      'bg-slate-700 text-slate-300'
-                    }`}>{oc.status?.replace(/_/g, ' ')}</span>
-                    <span className="text-xs font-mono text-white">{formatMoney(oc.valor_aberto)}</span>
+
+              {/* Ordens de Compra Previstas */}
+              {linha.itens?.length > 0 && (
+                <div className="md:col-span-2 bg-white rounded-lg border border-surface-200 p-3.5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-surface-100">
+                    <ShoppingCart className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-bold text-steel-700 uppercase tracking-wider">Ordens de compra previstas</span>
                   </div>
-                ))}
-              </div>
+                  <div className="divide-y divide-surface-100 max-h-56 overflow-y-auto">
+                    {linha.itens.map(oc => {
+                      const statusStyle =
+                        oc.status === 'EM_TRANSITO' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        oc.status === 'APROVADO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        'bg-surface-100 text-steel-700 border-surface-200';
+                      return (
+                        <div key={oc.pedido_id} className="py-2 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-xs font-mono font-semibold text-steel-700 bg-surface-100 px-2 py-0.5 rounded">
+                              {oc.numero || `#${String(oc.pedido_id).slice(0,8)}`}
+                            </span>
+                            <span className="text-xs font-medium text-steel-800 truncate">{oc.produto_nome}</span>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusStyle}`}>
+                              {oc.status?.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-steel-900">{formatMoney(oc.valor_aberto)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -242,13 +327,13 @@ function MesRow({ linha }) {
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-surface-800 border border-surface-600 rounded-xl p-3 shadow-xl text-sm">
-      <div className="font-semibold text-white mb-1">{label}</div>
+    <div className="bg-white border border-surface-200 rounded-xl p-3 shadow-lg text-xs">
+      <div className="font-bold text-steel-900 mb-1.5">{label}</div>
       {payload.map(p => (
-        <div key={p.name} className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-steel-400">{p.name}:</span>
-          <span className="font-mono text-white">{formatMoney(p.value)}</span>
+        <div key={p.name} className="flex items-center gap-2 py-0.5">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
+          <span className="text-steel-600 font-medium">{p.name}:</span>
+          <span className="font-mono font-bold text-steel-900">{formatMoney(p.value)}</span>
         </div>
       ))}
     </div>
