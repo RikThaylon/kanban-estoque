@@ -9,6 +9,7 @@ import KanbanSawtoothChart from '../components/kanban/KanbanSawtoothChart';
 import FaixaBadge from '../components/kanban/FaixaBadge';
 import FormulaCard from '../components/kanban/FormulaCard';
 import ConsumptionChart from '../components/charts/ConsumptionChart';
+import ForecastDetails from '../components/forecast/ForecastDetails';
 import { formatMoney, formatNumber } from '../utils/formatters';
 import { invalidateOperationalData } from '../utils/queryInvalidation';
 
@@ -78,6 +79,13 @@ const ProdutoDetalhe = () => {
       return res.data;
     },
     enabled: !!produto && activeTab === 'rastreamento',
+    retry: false,
+  });
+
+  const { data: forecast, isLoading: loadingForecast, error: forecastError } = useQuery({
+    queryKey: ['produto', id, 'forecast', 30],
+    queryFn: async () => (await api.get(`/produtos/${id}/forecast?horizon=30`)).data,
+    enabled: !!produto && activeTab === 'forecast',
     retry: false,
   });
 
@@ -184,6 +192,7 @@ const ProdutoDetalhe = () => {
   const TABS = [
     { key: 'kanban', label: 'Kanban' },
     { key: 'grafico', label: 'Gráfico linear' },
+    { key: 'forecast', label: 'Previsão' },
     { key: 'rastreamento', label: 'Rastreamento Matemático' },
     { key: 'movimentacoes', label: 'Movimentações' },
     { key: 'fornecedores', label: 'Fornecedores' },
@@ -405,6 +414,10 @@ const ProdutoDetalhe = () => {
             </div>
           )}
 
+          {activeTab === 'forecast' && (
+            <ForecastDetails analysis={forecast} loading={loadingForecast} error={forecastError} />
+          )}
+
           {/* ── Aba Rastreamento Matemático ── */}
           {activeTab === 'rastreamento' && (
             <div className="space-y-6">
@@ -416,8 +429,8 @@ const ProdutoDetalhe = () => {
                   <AlertCircle className="w-10 h-10 text-amber-400" />
                   <p className="font-bold text-steel-700">Dados insuficientes para rastreamento</p>
                   <p className="text-sm text-steel-400 max-w-md">
-                    O rastreamento matemático requer pelo menos 4 semanas de movimentações e 2 pedidos recebidos.
-                    Registre movimentações de saída regularmente para o modelo Holt-Winters e a Regressão Linear entrarem em ação.
+                    O rastreamento matemático melhora com pelo menos 7 dias completos de movimentações e 2 pedidos recebidos.
+                    O seletor adaptativo compara baselines, Holt, modelos sazonais e intermitentes fora da amostra.
                   </p>
                 </div>
               )}
@@ -430,7 +443,7 @@ const ProdutoDetalhe = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-sm font-bold text-steel-600 mb-2 border-b border-surface-200 pb-2">
-                        Suavização Exponencial Dupla de Holt (Demanda)
+                        Holt legado (challenger de demanda)
                       </h4>
                       <ul className="text-sm text-steel-700 space-y-2 font-mono bg-white p-4 rounded border border-surface-200">
                         <li>α (Nível) = {safe(rastreamento?.holt_outputs?.alpha)}</li>
