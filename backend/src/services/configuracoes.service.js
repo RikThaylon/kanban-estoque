@@ -33,6 +33,14 @@ const CONFIG_DEFAULTS = {
   'kanban.ciclos_estimativa_inicial': 10,
   'kanban.taxa_carregamento_padrao': 0.2,
   'kanban.percentual_pr_como_es_provisorio': 50,
+  'forecast.adi_threshold': 1.32,
+  'forecast.cv2_threshold': 0.49,
+  'forecast.seasonality_min_correlation': 0.45,
+  'forecast.underforecast_cost': 1.5,
+  'forecast.overforecast_cost': 1.0,
+  'forecast.absolute_tolerance': 1,
+  'forecast.relative_warning': 0.15,
+  'forecast.relative_critical': 0.30,
   'turnos.lista': JSON.stringify([
     { id: '1T', nome: '1T', inicio: '06:00', fim: '14:00' },
     { id: '2T', nome: '2T', inicio: '14:01', fim: '22:00' },
@@ -159,6 +167,23 @@ function montarConfiguracoesKanban(payload) {
       taxa_carregamento_padrao: taxaCarregamentoPadrao,
       percentual_pr_como_es_provisorio: percentualPrEsProvisorio,
     },
+  };
+}
+
+function montarConfiguracoesForecast(payload) {
+  const resposta = {
+    adi_threshold: Number(payload.adi_threshold),
+    cv2_threshold: Number(payload.cv2_threshold),
+    seasonality_min_correlation: Number(payload.seasonality_min_correlation),
+    underforecast_cost: Number(payload.underforecast_cost),
+    overforecast_cost: Number(payload.overforecast_cost),
+    absolute_tolerance: Number(payload.absolute_tolerance),
+    relative_warning: Number(payload.relative_warning),
+    relative_critical: Number(payload.relative_critical),
+  };
+  return {
+    resposta,
+    configuracoes: Object.fromEntries(Object.entries(resposta).map(([key, value]) => [`forecast.${key}`, value])),
   };
 }
 
@@ -354,6 +379,43 @@ async function getKanbanDefaults() {
   };
 }
 
+async function getForecastDefaults() {
+  const keys = [
+    'adi_threshold',
+    'cv2_threshold',
+    'seasonality_min_correlation',
+    'underforecast_cost',
+    'overforecast_cost',
+    'absolute_tolerance',
+    'relative_warning',
+    'relative_critical',
+  ];
+  const values = await Promise.all(keys.map(key => getConfiguracao(
+    `forecast.${key}`,
+    CONFIG_DEFAULTS[`forecast.${key}`]
+  )));
+  const parsed = Object.fromEntries(keys.map((key, index) => [key, Number(values[index])]));
+  return {
+    ...parsed,
+    engineConfig: {
+      demand: {
+        adiThreshold: parsed.adi_threshold,
+        cv2Threshold: parsed.cv2_threshold,
+        seasonalityMinCorrelation: parsed.seasonality_min_correlation,
+      },
+      backtest: {
+        underforecastCost: parsed.underforecast_cost,
+        overforecastCost: parsed.overforecast_cost,
+      },
+      tolerance: {
+        absolute: parsed.absolute_tolerance,
+        relativeWarning: parsed.relative_warning,
+        relativeCritical: parsed.relative_critical,
+      },
+    },
+  };
+}
+
 async function perfilPode(perfil, permissao) {
   if (perfil === 'admin') return true;
   const chave = PERMISSAO_TO_CHAVE[permissao];
@@ -402,6 +464,7 @@ module.exports = {
   getAprovadoresCompra,
   getCargosFluxoCompra,
   getKanbanDefaults,
+  getForecastDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
   normalizarTurnos,
@@ -410,6 +473,7 @@ module.exports = {
   formatarRespostaPedidos,
   montarConfiguracoesPedidos,
   montarConfiguracoesKanban,
+  montarConfiguracoesForecast,
   montarConfiguracoesTurnos,
   montarConfiguracoesPermissoes,
   perfilPode,
