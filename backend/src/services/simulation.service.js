@@ -18,6 +18,15 @@ const WORKER_CONCURRENCY = Math.max(1, os.cpus().length - 1);
 
 let pool = null;
 
+function stableSeed(value) {
+  let hash = 2166136261;
+  for (const character of String(value)) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
 function getPool() {
   if (!pool) {
     pool = new Piscina({
@@ -62,6 +71,7 @@ async function enqueueSimulation({ skuId, kanbanParametros, nSimulations = 10000
   const Z = inter.Z || Z_TABLE[95];
   const intermitente = inter.tierDemanda === 'TIER_2_INTERMITENTE';
 
+  const seed = stableSeed(`${skuId}:${runId}:${nSimulations}`);
   const task = {
     demandaDiariaMedia: inter.demandaDiariaMedia || 0,
     sigmaD: inter.sigmaD || 0,
@@ -72,6 +82,8 @@ async function enqueueSimulation({ skuId, kanbanParametros, nSimulations = 10000
     nSimulations,
     Z,
     intermitente,
+    seed,
+    serviceLevelProbability: normalCDF(Z),
   };
 
   // Calcular fill rate teórico analítico (Normal)
@@ -93,7 +105,7 @@ async function enqueueSimulation({ skuId, kanbanParametros, nSimulations = 10000
        SET status = 'completed', progress = 100,
            fill_rate_simulated = $1, result_json = $2, finished_at = NOW()
        WHERE id = $3`,
-      [result.fillRateSimulated, JSON.stringify(result), runId]
+      [result.cycleServiceLevelSimulated, JSON.stringify(result), runId]
     );
     logger.info(`[MonteCarloService] Run ${runId} concluído. Fill rate: ${result.fillRateSimulated}`);
   }).catch(async (err) => {
@@ -147,4 +159,4 @@ function normalCDF(z) {
   return z >= 0 ? cdf : 1 - cdf;
 }
 
-module.exports = { enqueueSimulation, getSimulationResult, listRunsForSku };
+module.exports = { enqueueSimulation, getSimulationResult, listRunsForSku, normalCDF, stableSeed };

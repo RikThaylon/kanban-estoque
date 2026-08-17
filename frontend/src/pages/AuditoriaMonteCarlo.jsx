@@ -195,9 +195,9 @@ const AuditoriaMonteCarlo = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Fill Rate Simulado', value: `${(result.fillRateSimulated * 100).toFixed(2)}%`, alert: result.fillRateSimulated < 0.90 },
-                  { label: 'Fill Rate Teórico', value: `${(result.fillRateTheorical * 100).toFixed(2)}%` },
-                  { label: 'Risco de Ruptura', value: `${(result.stockoutRisk * 100).toFixed(2)}%`, alert: result.stockoutRisk > 0.10 },
+                  { label: 'Nível de serviço por ciclo', value: `${((result.cycleServiceLevelSimulated ?? result.fillRateSimulated) * 100).toFixed(2)}%`, alert: (result.cycleServiceLevelSimulated ?? result.fillRateSimulated) < 0.90 },
+                  { label: 'Nível teórico', value: `${((result.cycleServiceLevelTheoretical ?? result.fillRateTheorical) * 100).toFixed(2)}%` },
+                  { label: 'Probabilidade de ruptura', value: `${((result.stockoutProbability ?? result.stockoutRisk) * 100).toFixed(2)}%`, alert: (result.stockoutProbability ?? result.stockoutRisk) > 0.10 },
                   { label: 'ES Empírico (P95)', value: formatNumber(result.esSugerido) },
                 ].map(({ label, value, alert }) => (
                   <div key={label} className={`rounded-lg p-3 border ${alert ? 'bg-red-900/20 border-red-500/40' : 'bg-gray-900/60 border-gray-700'}`}>
