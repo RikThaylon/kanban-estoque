@@ -8,6 +8,7 @@ const {
   getLimitesAprovacaoPedido,
   getCargosFluxoCompra,
   getKanbanDefaults,
+  getForecastDefaults,
   getTurnosOperacionais,
   getPermissoesOperacionais,
   PAGINAS_SISTEMA,
@@ -15,6 +16,7 @@ const {
   formatarRespostaPedidos,
   montarConfiguracoesPedidos,
   montarConfiguracoesKanban,
+  montarConfiguracoesForecast,
   montarConfiguracoesTurnos,
   montarConfiguracoesPermissoes,
   PERFIS_APROVADORES_CONFIGURAVEIS,
@@ -93,6 +95,47 @@ router.patch('/kanban',
   async (req, res, next) => {
     try {
       const { configuracoes, resposta } = montarConfiguracoesKanban(req.body);
+      await salvarConfiguracoes(configuracoes, req.user.id);
+      res.json(resposta);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get('/forecast', authenticate, async (req, res, next) => {
+  try {
+    const defaults = await getForecastDefaults();
+    const { engineConfig, ...response } = defaults;
+    res.json(response);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/forecast',
+  authenticate,
+  authorize('admin'),
+  audit('ATUALIZAR_CONFIGURACOES_FORECAST', 'configuracoes_sistema'),
+  [
+    body('adi_threshold').isFloat({ min: 1, max: 10 }),
+    body('cv2_threshold').isFloat({ min: 0, max: 10 }),
+    body('seasonality_min_correlation').isFloat({ min: 0, max: 1 }),
+    body('underforecast_cost').isFloat({ min: 0.1, max: 20 }),
+    body('overforecast_cost').isFloat({ min: 0.1, max: 20 }),
+    body('absolute_tolerance').isFloat({ min: 0, max: 365 }),
+    body('relative_warning').isFloat({ min: 0, max: 1 }),
+    body('relative_critical').isFloat({ min: 0, max: 2 }).custom((value, { req }) => {
+      if (Number(value) < Number(req.body.relative_warning)) {
+        throw new Error('relative_critical deve ser maior ou igual a relative_warning');
+      }
+      return true;
+    }),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { configuracoes, resposta } = montarConfiguracoesForecast(req.body);
       await salvarConfiguracoes(configuracoes, req.user.id);
       res.json(resposta);
     } catch (err) {
