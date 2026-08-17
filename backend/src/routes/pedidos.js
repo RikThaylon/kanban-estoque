@@ -9,7 +9,8 @@ const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
 const { recalcularKanban } = require('../services/kanban.calc');
 const { dispatchRecalculoKanban } = require('../services/recalculo.dispatcher');
-const { getLimitesAprovacaoPedido, getAprovadoresCompra, getCargosFluxoCompra } = require('../services/configuracoes.service');
+const { getLimitesAprovacaoPedido, getAprovadoresCompra, getCargosFluxoCompra, getForecastDefaults } = require('../services/configuracoes.service');
+const { classifyTolerance } = require('../services/forecast/lead-time.engine');
 const {
   determinarStatusInicialPedido,
   determinarProximaAprovacao,
@@ -399,7 +400,13 @@ router.patch('/:id/status', authenticate, audit('ATUALIZAR_STATUS_PEDIDO', 'pedi
       let extra = '';
       const params = [novoStatus, id];
       if (novoStatus === 'AGUARDANDO_CHEGADA') {
-        extra = ', data_emissao = NOW(), numero_oc_externa = $3, fornecedor_id = COALESCE($4, fornecedor_id), fornecedor_escolhido_por = $5, fornecedor_escolhido_em = NOW()';
+        extra = `, data_emissao = NOW(), numero_oc_externa = $3,
+          fornecedor_id = COALESCE($4, fornecedor_id), fornecedor_escolhido_por = $5,
+          fornecedor_escolhido_em = NOW(),
+          lead_time_previsto_no_momento = (
+            SELECT lead_time_previsto_dias FROM kanban_parametros
+            WHERE produto_id = pedidos_compra.produto_id
+          )`;
         params.push(numero_oc_externa, fornecedor_id || null, req.user.id);
       }
       if (novoStatus === 'APROVADO') {
@@ -453,10 +460,49 @@ router.post('/:id/receber', authenticate,
         quantidadeRecebida: quantidade_recebida,
       });
 
+      let leadTimeTolerance = null;
+      if (novoStatus === 'CONCLUIDO' && pedido.data_emissao && pedido.lead_time_previsto_no_momento) {
+        const actualLeadTimeDays = Math.max(0, Math.floor(
+          (new Date(dataReceb).getTime() - new Date(pedido.data_emissao).getTime()) / 86400000
+        ));
+        const forecastDefaults = await getForecastDefaults();
+        leadTimeTolerance = classifyTolerance(
+          actualLeadTimeDays,
+          Number(pedido.lead_time_previsto_no_momento),
+          forecastDefaults.engineConfig
+        );
+      }
+
       await client.query(
-        `UPDATE pedidos_compra SET quantidade_recebida = $1, status = $2, data_recebimento = $3, atualizado_em = NOW() WHERE id = $4`,
-        [totalRecebido, novoStatus, dataReceb, id]
+        `UPDATE pedidos_compra SET quantidade_recebida = $1, status = $2,
+           data_recebimento = $3,
+           lead_time_erro_absoluto = COALESCE($5, lead_time_erro_absoluto),
+           lead_time_erro_relativo = COALESCE($6, lead_time_erro_relativo),
+           lead_time_tolerancia_status = COALESCE($7, lead_time_tolerancia_status),
+           atualizado_em = NOW()
+         WHERE id = $4`,
+        [
+          totalRecebido,
+          novoStatus,
+          dataReceb,
+          id,
+          leadTimeTolerance?.absoluteError ?? null,
+          leadTimeTolerance?.relativeError ?? null,
+          leadTimeTolerance?.status ?? null,
+        ]
       );
+
+      if (leadTimeTolerance && leadTimeTolerance.status !== 'ACCEPTABLE') {
+        await client.query(
+          `INSERT INTO alertas (produto_id, tipo, titulo, mensagem, severidade)
+           VALUES ($1, 'LEAD_TIME_DEVIATION', 'Desvio no lead time realizado', $2, $3)`,
+          [
+            pedido.produto_id,
+            `Pedido ${pedido.numero}: realizado ${leadTimeTolerance.actual} dias, previsto ${Number(leadTimeTolerance.forecast).toFixed(1)} dias (${(leadTimeTolerance.relativeError * 100).toFixed(1)}%).`,
+            leadTimeTolerance.status === 'CRITICAL' ? 'CRITICO' : 'AVISO',
+          ]
+        );
+      }
 
       // Criar movimentação ENTRADA + atualizar estoque (a migration 003 removeu o trigger)
       const prodRes = await client.query('SELECT estoque_atual FROM produtos WHERE id = $1 FOR UPDATE', [pedido.produto_id]);
