@@ -18,6 +18,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
+  APP_TIMEZONE: z.string().default('America/Sao_Paulo'),
   BCRYPT_ROUNDS: z.coerce.number().default(12),
   RATE_LIMIT_MAX: z.coerce.number().default(200),
 }).superRefine((value, ctx) => {
