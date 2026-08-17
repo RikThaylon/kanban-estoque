@@ -8,9 +8,12 @@ const { createLimiter } = require('../middleware/rateLimiter');
 const { query } = require('../config/database');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 const { NotFoundError, AppError } = require('../utils/errors');
-const { calcularParametrosKanban, buildEstimatedKanbanSeries } = require('../services/kanban.math');
+const { calcularParametrosKanban } = require('../services/kanban.math');
 const { getKanbanSeries } = require('../services/kanban.repo');
-const { perfilPode, getKanbanDefaults } = require('../services/configuracoes.service');
+const { perfilPode, getKanbanDefaults, getForecastDefaults } = require('../services/configuracoes.service');
+const { analyzeDemand } = require('../services/forecast/forecast.engine');
+const { analyzeLeadTime } = require('../services/forecast/lead-time.engine');
+const { calculateInventoryRisk } = require('../services/forecast/inventory-risk');
 const {
   resolverParametrosCadastroProduto,
   montarAtualizacaoProduto,
@@ -136,21 +139,17 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
       );
-      const seriesEstimadas = buildEstimatedKanbanSeries({
-        cmd: cmdInicial,
-        leadTime: leadTimeInicial,
-        ciclos: defaultsKanban.ciclos_estimativa_inicial,
-      });
-
-      if (seriesEstimadas.estimado) {
+      if (cmdInicial > 0 && leadTimeInicial > 0) {
         const calculado = calcularParametrosKanban({
-          demandaSemanalSeries: seriesEstimadas.demandaSemanalSeries,
-          leadTimeSeries: seriesEstimadas.leadTimeSeries,
+          demandaSemanalSeries: [],
+          leadTimeSeries: [],
+          leadTimeFornecedor: leadTimeInicial,
           custoUnitario: parseFloat(custo_unitario),
           custoPedido: custoPedidoFinal,
           taxaCarregamento: taxaCarregamentoFinal,
           nivelServico: nivelServicoFinal,
           estoqueAtual: 0,
+          expectedDemand: cmdInicial,
         });
         await query(`
           INSERT INTO kanban_parametros (
@@ -172,8 +171,8 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
             calculado.EOQ,
             calculado.Emax,
             calculado.faixa,
-            seriesEstimadas.ciclosUsados,
-            seriesEstimadas.ciclosUsados,
+            0,
+            0,
           ]
         );
       } else {
@@ -339,16 +338,19 @@ router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operac
 router.get('/:id/historico-consumo', authenticate, async (req, res, next) => {
   try {
     const semanas = limitarSemanasHistorico(req.query.semanas);
-    const result = await query(`
-      SELECT date_trunc('week', criado_em) AS semana,
-             COALESCE(SUM(CASE WHEN tipo IN ('SAIDA','TRANSFERENCIA') THEN quantidade ELSE 0 END), 0) AS consumo
-      FROM movimentacoes
-      WHERE produto_id = $1 AND tipo IN ('SAIDA','TRANSFERENCIA')
-        AND criado_em >= NOW() - ($2 || ' weeks')::INTERVAL
-      GROUP BY date_trunc('week', criado_em)
-      ORDER BY semana ASC
-    `, [req.params.id, semanas.toString()]);
-    res.json(result.rows);
+    const { demandaDiariaObservations } = await getKanbanSeries(req.params.id);
+    const recent = demandaDiariaObservations.slice(-(semanas * 7));
+    const offset = recent.length % 7;
+    const aligned = recent.length < 7 ? recent : (offset ? recent.slice(offset) : recent);
+    const weekly = [];
+    for (let index = 0; index < aligned.length; index += 7) {
+      const period = aligned.slice(index, index + 7);
+      weekly.push({
+        semana: period[0]?.date,
+        consumo: period.reduce((sum, observation) => sum + observation.value, 0),
+      });
+    }
+    res.json(weekly);
   } catch (err) { next(err); }
 });
 
@@ -366,6 +368,78 @@ router.get('/:id/historico-lead-time', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/v1/produtos/:id/forecast?horizon=30
+router.get('/:id/forecast-runs', authenticate, async (req, res, next) => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const result = await query(`
+      SELECT id, engine_version, model_type, model_version, status, frequency,
+             horizon_periods, parameters, demand_profile, metrics, challengers,
+             data_quality, drift, confidence, trained_until, evaluated_at, created_at
+      FROM forecast_runs
+      WHERE produto_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2
+    `, [req.params.id, limit]);
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/:id/forecast', authenticate, async (req, res, next) => {
+  try {
+    const horizon = Math.min(90, Math.max(1, parseInt(req.query.horizon, 10) || 30));
+    const prodRes = await query(`
+      SELECT p.id, p.estoque_atual, p.nivel_servico,
+             kp.lead_time_previsto_dias
+      FROM produtos p
+      LEFT JOIN kanban_parametros kp ON kp.produto_id = p.id
+      WHERE p.id = $1 AND p.ativo = true
+    `, [req.params.id]);
+    if (prodRes.rows.length === 0) throw new NotFoundError('Produto');
+    const product = prodRes.rows[0];
+    const series = await getKanbanSeries(req.params.id);
+    const forecastDefaults = await getForecastDefaults();
+    const nominalLeadTime = series.leadTimeFornecedor
+      ?? (product.lead_time_previsto_dias ? Number(product.lead_time_previsto_dias) : null);
+    const leadTime = (series.leadTimeSeries.length || nominalLeadTime)
+      ? analyzeLeadTime(series.leadTimeSeries, {
+        nominal: nominalLeadTime,
+        config: forecastDefaults.engineConfig,
+      })
+      : null;
+    const forecast = analyzeDemand(series.demandaDiariaSeries, {
+      horizon,
+      dates: series.demandaDiariaObservations.map(observation => observation.date),
+      trainedUntil: series.demandaDiariaObservations.at(-1)?.date || null,
+      dataQuality: series.dataQuality,
+      missingPeriodTreatment: series.dataQuality.missingPeriodTreatment,
+      config: forecastDefaults.engineConfig,
+    });
+    const inventoryRisk = leadTime
+      ? calculateInventoryRisk({
+        forecastAnalysis: forecast,
+        leadTimeDays: leadTime.distribution.expected,
+        sigmaDemandDaily: forecast.forecast.residualStdDev,
+        sigmaLeadTime: leadTime.distribution.stdDev,
+        serviceLevel: Number(product.nivel_servico) || 95,
+        inventory: Number(product.estoque_atual) || 0,
+      })
+      : null;
+
+    res.json({
+      materialId: req.params.id,
+      ...forecast,
+      leadTime,
+      inventoryRisk,
+      history: series.demandaDiariaObservations.slice(-90),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/v1/produtos/:id/rastreamento-calculo
 router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => {
   try {
@@ -374,7 +448,32 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
     if (prodRes.rows.length === 0) throw new NotFoundError('Produto');
     const produto = prodRes.rows[0];
 
-    const { demandaSemanalSeries, leadTimeSeries, leadTimeFornecedor } = await getKanbanSeries(id);
+    const series = await getKanbanSeries(id);
+    const {
+      demandaSemanalSeries,
+      demandaDiariaSeries,
+      demandaDiariaObservations,
+      leadTimeSeries,
+      leadTimeFornecedor,
+      dataQuality,
+    } = series;
+    const forecastDefaults = await getForecastDefaults();
+    const leadTimeAnalysis = (leadTimeSeries.length || leadTimeFornecedor)
+      ? analyzeLeadTime(leadTimeSeries, {
+        nominal: leadTimeFornecedor,
+        config: forecastDefaults.engineConfig,
+      })
+      : null;
+    const adaptiveForecast = demandaDiariaSeries.length
+      ? analyzeDemand(demandaDiariaSeries, {
+        horizon: Math.ceil(leadTimeAnalysis?.distribution?.expected || leadTimeFornecedor || 30),
+        dates: demandaDiariaObservations.map(observation => observation.date),
+        trainedUntil: demandaDiariaObservations.at(-1)?.date || null,
+        dataQuality,
+        missingPeriodTreatment: dataQuality.missingPeriodTreatment,
+        config: forecastDefaults.engineConfig,
+      })
+      : null;
 
     const result = calcularParametrosKanban({
       demandaSemanalSeries, leadTimeSeries,
@@ -384,6 +483,8 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
       taxaCarregamento: parseFloat(produto.taxa_carregamento),
       nivelServico: produto.nivel_servico,
       estoqueAtual: parseFloat(produto.estoque_atual),
+      forecastAnalysis: adaptiveForecast,
+      leadTimeAnalysis,
     });
 
     // Conferência manual com fórmula clássica simples (CMD = Σ/dias, PR = CMD × LT_médio)
@@ -401,6 +502,13 @@ router.get('/:id/rastreamento-calculo', authenticate, async (req, res, next) => 
       holt_outputs: result.intermediarios.holt,
       regressao_inputs: { leadTimes: leadTimeSeries },
       regressao_outputs: result.intermediarios.regressao,
+      forecast: adaptiveForecast,
+      lead_time: leadTimeAnalysis,
+      inventory_risk: result.intermediarios.inventoryRisk,
+      demand_profile: adaptiveForecast?.profile || null,
+      model_selection: adaptiveForecast?.modelSelection || null,
+      model_metrics: adaptiveForecast?.metrics || null,
+      confidence: adaptiveForecast?.confidence || 'INSUFFICIENT_DATA',
       es_calculo: {
         Z: result.intermediarios.Z,
         sigmaD: result.intermediarios.sigmaD,
