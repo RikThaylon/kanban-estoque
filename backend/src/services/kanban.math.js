@@ -5,6 +5,9 @@
  * cálculos determinísticos de ES/PR/EOQ e Classificação ABC.
  */
 const mathUtils = require('../utils/math');
+const { holtDoubleExponential: adaptiveHolt } = require('./forecast/forecast.models');
+const { linearRegressionLeadTime } = require('./forecast/lead-time.engine');
+const { calculateInventoryRisk } = require('./forecast/inventory-risk');
 
 /** Tabela Z para nível de serviço */
 const Z_TABLE = { 90: 1.2816, 95: 1.6449, 98: 1.8808, 99: 2.3263 };
@@ -44,45 +47,7 @@ function buildEstimatedKanbanSeries({ cmd, leadTime, ciclos = DEFAULT_ESTIMATED_
  * @returns {{ forecast: number, sigma: number, nivel: number, tendencia: number, residuos: number[] }}
  */
 function holtDoubleExponential(series, alpha = 0.3, beta = 0.1) {
-  if (!series || series.length < 3) {
-    return { forecast: 0, sigma: 0, nivel: 0, tendencia: 0, residuos: [] };
-  }
-
-  // Inicializa nível com primeira observação
-  let nivel = series[0];
-  // Inicializa tendência com diferença entre as duas primeiras
-  let tendencia = series[1] - series[0];
-  const residuos = [];
-
-  for (let t = 1; t < series.length; t++) {
-    const valor = series[t];
-    const previsao = nivel + tendencia;
-    residuos.push(valor - previsao);
-
-    // Atualiza nível: L(t) = α × Y(t) + (1-α) × (L(t-1) + T(t-1))
-    const nivelAnterior = nivel;
-    nivel = alpha * valor + (1 - alpha) * (nivelAnterior + tendencia);
-
-    // Atualiza tendência: T(t) = β × (L(t) - L(t-1)) + (1-β) × T(t-1)
-    tendencia = beta * (nivel - nivelAnterior) + (1 - beta) * tendencia;
-  }
-
-  // Previsão para próximo período: F(t+1) = L(t) + T(t)
-  const forecast = nivel + tendencia;
-
-  // Sigma dos resíduos
-  const n = residuos.length;
-  const mediaRes = residuos.reduce((s, r) => s + r, 0) / n;
-  const variancia = residuos.reduce((s, r) => s + Math.pow(r - mediaRes, 2), 0) / (n - 1 > 0 ? n - 1 : 1);
-  const sigma = Math.sqrt(variancia);
-
-  return {
-    forecast: Math.max(0, forecast),
-    sigma,
-    nivel,
-    tendencia,
-    residuos,
-  };
+  return adaptiveHolt(series, alpha, beta, 1);
 }
 
 /**
@@ -93,57 +58,13 @@ function holtDoubleExponential(series, alpha = 0.3, beta = 0.1) {
  * @returns {{ previsao: number, sigma: number, intercepto: number, inclinacao: number, r2: number }}
  */
 function regressaoLinear(leadTimes) {
-  if (!leadTimes || leadTimes.length < 2) {
-    const media = leadTimes && leadTimes.length === 1 ? leadTimes[0] : 0;
-    return { previsao: media, sigma: 0, intercepto: media, inclinacao: 0, r2: 0 };
-  }
-
-  const n = leadTimes.length;
-  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-
-  for (let i = 0; i < n; i++) {
-    const x = i + 1;
-    const y = leadTimes[i];
-    sumX += x;
-    sumY += y;
-    sumXY += x * y;
-    sumX2 += x * x;
-    sumY2 += y * y;
-  }
-
-  const mediaX = sumX / n;
-  const mediaY = sumY / n;
-
-  // b = [n×Σxy − Σx×Σy] ÷ [n×Σx² − (Σx)²]
-  const denominador = n * sumX2 - sumX * sumX;
-  const inclinacao = denominador !== 0 ? (n * sumXY - sumX * sumY) / denominador : 0;
-
-  // a = ȳ − b × x̄
-  const intercepto = mediaY - inclinacao * mediaX;
-
-  // Previsão para próximo pedido (x = n+1)
-  const previsao = intercepto + inclinacao * (n + 1);
-
-  // R² para validar qualidade do ajuste
-  const ssTot = leadTimes.reduce((s, y) => s + Math.pow(y - mediaY, 2), 0);
-  const ssRes = leadTimes.reduce((s, y, i) => {
-    const yPred = intercepto + inclinacao * (i + 1);
-    return s + Math.pow(y - yPred, 2);
-  }, 0);
-  const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
-
-  // Sigma dos resíduos
-  const residuos = leadTimes.map((y, i) => y - (intercepto + inclinacao * (i + 1)));
-  const mediaRes = residuos.reduce((s, r) => s + r, 0) / n;
-  const variancia = residuos.reduce((s, r) => s + Math.pow(r - mediaRes, 2), 0) / (n - 2 > 0 ? n - 2 : 1);
-  const sigma = Math.sqrt(variancia);
-
+  const result = linearRegressionLeadTime(leadTimes);
   return {
-    previsao: Math.max(0, previsao),
-    sigma,
-    intercepto,
-    inclinacao,
-    r2,
+    previsao: result.previsao,
+    sigma: result.sigma,
+    intercepto: result.intercepto,
+    inclinacao: result.inclinacao,
+    r2: result.r2,
   };
 }
 
@@ -173,10 +94,12 @@ function calcularParametrosKanban({
   classificacaoAbc,
   expectedDemand,
   dynamicCv,
+  forecastAnalysis,
+  leadTimeAnalysis,
 }) {
   const alertas = [];
 
-  if ((!leadTimeSeries || leadTimeSeries.length < 2) && !leadTimeFornecedor) {
+  if ((!leadTimeSeries || leadTimeSeries.length < 2) && !leadTimeFornecedor && !leadTimeAnalysis?.distribution?.expected) {
     return {
       ES: 0, PR: 0, EOQ: 0, Emax: 0,
       faixa: 'SEM_DADOS',
@@ -188,7 +111,7 @@ function calcularParametrosKanban({
   }
 
   // Série de demanda com menos de 3 semanas → dados insuficientes para qualquer cálculo estatístico
-  if (demandaSemanalSeries && demandaSemanalSeries.length > 0 && demandaSemanalSeries.length < 3 && !expectedDemand) {
+  if (demandaSemanalSeries && demandaSemanalSeries.length > 0 && demandaSemanalSeries.length < 3 && !expectedDemand && !forecastAnalysis) {
     return {
       ES: 0, PR: 0, EOQ: 0, Emax: 0,
       faixa: 'SEM_DADOS',
@@ -208,7 +131,17 @@ function calcularParametrosKanban({
   let holt = { forecast: 0, sigma: 0, nivel: 0, tendencia: 0 };
   let cvConfidence = null;
 
-  if (demandaSemanalSeries && demandaSemanalSeries.length >= 12) {
+  if (forecastAnalysis?.forecast) {
+    tierDemanda = `AUTO_${forecastAnalysis.profile?.type || 'UNCLASSIFIED'}`;
+    holt = holtDoubleExponential(demandaSemanalSeries || []);
+    demandaDiariaMedia = forecastAnalysis.forecast.expectedDailyDemand || 0;
+    sigmaD = forecastAnalysis.forecast.residualStdDev
+      || forecastAnalysis.profile?.stdDev
+      || 0;
+    // simulation_runs keeps the legacy provenance vocabulary
+    // (calculated/seed/default). Forecast confidence is persisted separately.
+    cvConfidence = 'calculated';
+  } else if (demandaSemanalSeries && demandaSemanalSeries.length >= 12) {
     // Tier 3 - Histórico maduro
     tierDemanda = 'TIER_3_HOLT';
     holt = holtDoubleExponential(demandaSemanalSeries);
@@ -243,14 +176,19 @@ function calcularParametrosKanban({
   }
 
   // 2. Regressão → lead time previsto e seu desvio
-  const usandoLeadTimeFornecedor = (!leadTimeSeries || leadTimeSeries.length < 2) && leadTimeFornecedor;
-  const reg = usandoLeadTimeFornecedor
-    ? { previsao: Number(leadTimeFornecedor), sigma: 0, intercepto: Number(leadTimeFornecedor), inclinacao: 0, r2: 0 }
-    : regressaoLinear(leadTimeSeries);
-  const ltPrevisto = Math.max(1, reg.previsao);
-  const sigmaLT = reg.sigma;
+  const usandoLeadTimeAdaptativo = Boolean(leadTimeAnalysis?.distribution?.expected);
+  const usandoLeadTimeFornecedor = !usandoLeadTimeAdaptativo && (!leadTimeSeries || leadTimeSeries.length < 2) && leadTimeFornecedor;
+  const reg = usandoLeadTimeAdaptativo
+    ? (leadTimeAnalysis.ols || regressaoLinear(leadTimeSeries))
+    : usandoLeadTimeFornecedor
+      ? { previsao: Number(leadTimeFornecedor), sigma: 0, intercepto: Number(leadTimeFornecedor), inclinacao: 0, r2: 0 }
+      : regressaoLinear(leadTimeSeries);
+  const ltPrevisto = Math.max(1, usandoLeadTimeAdaptativo ? leadTimeAnalysis.distribution.expected : reg.previsao);
+  const sigmaLT = usandoLeadTimeAdaptativo ? leadTimeAnalysis.distribution.stdDev : reg.sigma;
   // ltSeguro mantido apenas para exposição de buffer no rastreamento
-  const ltSeguro = ltPrevisto + Z_TABLE[95] * sigmaLT;
+  const ltSeguro = usandoLeadTimeAdaptativo
+    ? Math.max(ltPrevisto, leadTimeAnalysis.distribution.p90 || ltPrevisto + Z_TABLE[95] * sigmaLT)
+    : ltPrevisto + Z_TABLE[95] * sigmaLT;
 
   // 3. ES — fórmula clássica de demanda durante lead time com AMBOS estocásticos:
   //
@@ -264,8 +202,22 @@ function calcularParametrosKanban({
   //    e subestimava o estoque de segurança em 30–50% para itens com d alto e LT instável.
   let ES;
   let sigmaDuranteLT = 0;
+  let demandaDuranteLT = demandaDiariaMedia * ltPrevisto;
+  let inventoryRisk = null;
   
-  if (demandaDiariaMedia === 0 && tierDemanda === 'TIER_0_PROXY') {
+  if (forecastAnalysis?.forecast) {
+    inventoryRisk = calculateInventoryRisk({
+      forecastAnalysis,
+      leadTimeDays: ltPrevisto,
+      sigmaDemandDaily: sigmaD,
+      sigmaLeadTime: sigmaLT,
+      serviceLevel: nivelServico,
+      inventory: estoqueAtual,
+    });
+    demandaDuranteLT = inventoryRisk.expectedDemandDuringLeadTime;
+    sigmaDuranteLT = inventoryRisk.sigmaDuringLeadTime;
+    ES = Math.ceil(inventoryRisk.safetyStock);
+  } else if (demandaDiariaMedia === 0 && tierDemanda === 'TIER_0_PROXY') {
     // Fallback: Método de King para demanda zero
     ES = mathUtils.applyKingMethod(classificacaoAbc);
     alertas.push('AVISO: Demanda nula. Utilizado Método de King para Estoque de Segurança.');
@@ -276,7 +228,7 @@ function calcularParametrosKanban({
   }
 
   // 4. PR = ceil(demanda_diaria × lt_previsto + ES)
-  const PR = Math.ceil(demandaDiariaMedia * ltPrevisto + ES);
+  const PR = Math.ceil(demandaDuranteLT + ES);
 
   // 5. EOQ = ceil(sqrt(2 × D_anual × custo_pedido / H))
   const dAnual = demandaDiariaMedia * 365;
@@ -324,9 +276,13 @@ function calcularParametrosKanban({
         intercepto: reg.intercepto,
         inclinacao: reg.inclinacao,
         r2: reg.r2,
-        fonte: usandoLeadTimeFornecedor ? 'fornecedor' : 'historico',
+        fonte: usandoLeadTimeAdaptativo ? 'auto_model_selection' : usandoLeadTimeFornecedor ? 'fornecedor' : 'historico',
       },
+      forecast: forecastAnalysis || null,
+      leadTime: leadTimeAnalysis || null,
+      inventoryRisk,
       demandaDiariaMedia,
+      demandaDuranteLT,
       sigmaD,
       ltPrevisto,
       sigmaLT,

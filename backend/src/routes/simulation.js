@@ -47,10 +47,14 @@ router.post('/run', authenticate, antiCsrf, async (req, res, next) => {
       },
     };
 
+    const parsedSimulations = Number.parseInt(n_simulations, 10);
+    const normalizedSimulations = Number.isFinite(parsedSimulations)
+      ? Math.min(50000, Math.max(1000, parsedSimulations))
+      : 10000;
     const runId = await simulationService.enqueueSimulation({
       skuId: sku_id,
       kanbanParametros,
-      nSimulations: Math.min(50000, Math.max(1000, parseInt(n_simulations))),
+      nSimulations: normalizedSimulations,
     });
 
     res.status(202).json({
