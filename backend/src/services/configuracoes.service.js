@@ -416,6 +416,43 @@ async function getForecastDefaults() {
   };
 }
 
+async function getForecastDefaults() {
+  const keys = [
+    'adi_threshold',
+    'cv2_threshold',
+    'seasonality_min_correlation',
+    'underforecast_cost',
+    'overforecast_cost',
+    'absolute_tolerance',
+    'relative_warning',
+    'relative_critical',
+  ];
+  const values = await Promise.all(keys.map(key => getConfiguracao(
+    `forecast.${key}`,
+    CONFIG_DEFAULTS[`forecast.${key}`]
+  )));
+  const parsed = Object.fromEntries(keys.map((key, index) => [key, Number(values[index])]));
+  return {
+    ...parsed,
+    engineConfig: {
+      demand: {
+        adiThreshold: parsed.adi_threshold,
+        cv2Threshold: parsed.cv2_threshold,
+        seasonalityMinCorrelation: parsed.seasonality_min_correlation,
+      },
+      backtest: {
+        underforecastCost: parsed.underforecast_cost,
+        overforecastCost: parsed.overforecast_cost,
+      },
+      tolerance: {
+        absolute: parsed.absolute_tolerance,
+        relativeWarning: parsed.relative_warning,
+        relativeCritical: parsed.relative_critical,
+      },
+    },
+  };
+}
+
 async function perfilPode(perfil, permissao) {
   if (perfil === 'admin') return true;
   const chave = PERMISSAO_TO_CHAVE[permissao];

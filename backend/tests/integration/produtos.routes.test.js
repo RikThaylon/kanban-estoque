@@ -4,6 +4,13 @@
  */
 require('../setup');
 
+// Product-route tests do not exercise password hashing. Keep this suite
+// portable when the optional native bcrypt binary is unavailable locally.
+jest.mock('bcrypt', () => ({
+  hash: jest.fn(async value => `mock:${value}`),
+  compare: jest.fn(async () => true),
+}));
+
 jest.mock('../../src/config/database', () => {
   const mq = jest.fn(); const mc = { query: jest.fn(), release: jest.fn() };
   return { query: mq, getClient: jest.fn().mockResolvedValue(mc), pool: { end: jest.fn() }, _mockClient: mc };
@@ -67,6 +74,12 @@ describe('Produtos Routes', () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('comprador')).send(body);
       expect(res.status).toBe(201);
     });
+    it('deve calcular proxy inicial sem inventar ciclos históricos', async () => {
+      query.mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[]})
+        .mockResolvedValueOnce({rows:[{id:'p1',codigo:'TST-001',nome:'Produto Teste'}]})
+        .mockResolvedValueOnce({rows:[]});
     it('deve calcular Kanban inicial quando CMD e LT forem informados', async () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin'))
         .send({...body, cmd_inicial: 5, lead_time_inicial: 10});
@@ -74,7 +87,8 @@ describe('Produtos Routes', () => {
       const insertKanbanCall = query.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO kanban_parametros'));
       expect(insertKanbanCall[1][7]).toBeGreaterThanOrEqual(0);
       expect(insertKanbanCall[1][8]).toBeGreaterThan(0);
-      expect(insertKanbanCall[1][12]).toBe(10);
+      expect(insertKanbanCall[1][12]).toBe(0);
+      expect(insertKanbanCall[1][13]).toBe(0);
     });
     it('deve validar campos obrigatórios', async () => {
       const res = await request(app).post('/api/v1/produtos').set('Authorization',authHeader('admin')).send({});
