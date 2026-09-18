@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
-  BRAND_NAME: z.string().default('BRIMAJOR'),
+  BRAND_NAME: z.string().default('SMART_KANBAN'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   REDIS_ENABLED: z.enum(['true', 'false']).default('true'),

@@ -289,7 +289,7 @@ router.post('/reset-password', recoveryLimiter,
         ),
         // Encerrar TODAS as sessões ativas do usuário (segurança)
         query(
-          "UPDATE refresh_tokens SET revogado = true, revoked_reason = 'password_reset' WHERE usuario_id = $1 AND revogado = false",
+          "UPDATE refresh_tokens SET revogado = true WHERE usuario_id = $1 AND revogado = false",
           [req_.usuario_id]
         ),
       ]);

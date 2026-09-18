@@ -406,12 +406,12 @@ const PedidoActions = ({ pedido, user, fluxo, onAprovar, onRejeitar, onEmitir, o
         </button>
       )}
       {podeEmitir && (
-        <button onClick={onEmitir} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Registrar OC externa">
+        <button onClick={onEmitir} className="p-1.5 text-accent hover:bg-red-50 rounded transition-colors" title="Registrar OC externa">
           <Send className="w-4 h-4" />
         </button>
       )}
       {podeReceber && (
-        <button onClick={onReceber} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Receber">
+        <button onClick={onReceber} className="p-1.5 text-accent hover:bg-red-50 rounded transition-colors" title="Receber">
           <PackageCheck className="w-4 h-4" />
         </button>
       )}
@@ -730,7 +730,7 @@ const EmitirPedidoModal = ({ pedido, onClose, onConfirm, loading }) => {
           <button onClick={onClose} className="text-steel-400 hover:text-steel-600"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div className="text-sm text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-md p-3">
+          <div className="text-sm text-red-800 bg-red-50 border border-red-100 rounded-md p-3">
             Pedido já aprovado internamente. O comprador deve escolher o fornecedor e informar o número da OC criada no sistema externo.
           </div>
           <div className="text-sm text-steel-600 bg-surface-50 rounded-md p-3">

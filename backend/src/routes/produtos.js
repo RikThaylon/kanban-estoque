@@ -73,7 +73,11 @@ router.get('/', authenticate, async (req, res, next) => {
 
     const dataRes = await query(
       `SELECT p.*, kp.faixa_atual, kp.ponto_reposicao, kp.estoque_seguranca, kp.eoq, kp.estoque_maximo,
-              kp.demanda_diaria_media, c.nome AS categoria_nome, c.cor_hex
+              kp.demanda_diaria_media, c.nome AS categoria_nome, c.cor_hex,
+              CASE WHEN p.recorrente = false AND kp.demanda_diaria_media > 0
+                   THEN ROUND(p.estoque_atual / kp.demanda_diaria_media, 1)
+                   ELSE NULL
+              END AS dias_estoque_estimado
        FROM produtos p
        LEFT JOIN kanban_parametros kp ON kp.produto_id = p.id
        LEFT JOIN categorias c ON c.id = p.categoria_id
@@ -111,6 +115,7 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
     body('custo_pedido').optional().isFloat({ min: 0 }),
     body('taxa_carregamento').optional().isFloat({ min: 0, max: 1 }),
     body('nivel_servico').optional().isIn(['90', '95', '98', '99']),
+    body('recorrente').optional().isBoolean(),
     body('sku').optional().trim().isLength({ max: 80 }),
     body('observacoes').optional().trim().isLength({ max: 2000 }),
   ], validate,
@@ -119,6 +124,7 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
       const {
         codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido,
         taxa_carregamento, nivel_servico, localizacao, cmd_inicial, lead_time_inicial,
+        recorrente = true,
       } = req.body;
       const defaultsKanban = await getKanbanDefaults();
       const {
@@ -135,9 +141,9 @@ router.post('/', authenticate, autorizarCadastroProduto, createLimiter, audit('C
         lead_time_inicial,
       }, defaultsKanban);
       const result = await query(
-        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, criado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, req.user.id]
+        `INSERT INTO produtos (codigo, nome, descricao, unidade, categoria_id, custo_unitario, custo_pedido, taxa_carregamento, nivel_servico, localizacao, recorrente, criado_por)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+        [codigo, nome, descricao, unidade, categoria_id, custo_unitario, custoPedidoFinal, taxaCarregamentoFinal, nivelServicoFinal, localizacao, recorrente, req.user.id]
       );
       if (cmdInicial > 0 && leadTimeInicial > 0) {
         const calculado = calcularParametrosKanban({
@@ -197,7 +203,11 @@ router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await query(
-      `SELECT p.*, kp.*, c.nome AS categoria_nome, c.cor_hex
+      `SELECT p.*, kp.*, c.nome AS categoria_nome, c.cor_hex,
+              CASE WHEN p.recorrente = false AND kp.demanda_diaria_media > 0
+                   THEN ROUND(p.estoque_atual / kp.demanda_diaria_media, 1)
+                   ELSE NULL
+              END AS dias_estoque_estimado
        FROM produtos p
        LEFT JOIN kanban_parametros kp ON kp.produto_id = p.id
        LEFT JOIN categorias c ON c.id = p.categoria_id
@@ -317,7 +327,13 @@ router.post('/:id/fornecedores', authenticate, authorize('admin', 'gerente_opera
 );
 
 // PUT /api/v1/produtos/:id/fornecedores
-router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operacoes', 'supervisor_turno', 'comprador'), audit('ATUALIZAR_FORNECEDORES_PRODUTO', 'produto_fornecedor'),
+router.put('/:id/fornecedores', authenticate,
+  async (req, res, next) => {
+    const pode = await perfilPode(req.user?.perfil, 'editar_fornecedor_produto').catch(() => false);
+    if (!pode) return res.status(403).json({ error: 'Sem permissão para editar fornecedores do produto' });
+    next();
+  },
+  audit('ATUALIZAR_FORNECEDORES_PRODUTO', 'produto_fornecedor'),
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -330,6 +346,24 @@ router.put('/:id/fornecedores', authenticate, authorize('admin', 'gerente_operac
         );
       }
       res.json({ message: 'Fornecedores atualizados' });
+    } catch (err) { next(err); }
+  }
+);
+
+// DELETE /api/v1/produtos/:id/fornecedores/:fornecedor_id
+router.delete('/:id/fornecedores/:fornecedor_id', authenticate,
+  async (req, res, next) => {
+    const pode = await perfilPode(req.user?.perfil, 'editar_fornecedor_produto').catch(() => false);
+    if (!pode) return res.status(403).json({ error: 'Sem permissão para remover fornecedores do produto' });
+    next();
+  },
+  audit('REMOVER_FORNECEDOR_PRODUTO', 'produto_fornecedor'),
+  async (req, res, next) => {
+    try {
+      const { id, fornecedor_id } = req.params;
+      const result = await query('DELETE FROM produto_fornecedor WHERE produto_id = $1 AND fornecedor_id = $2 RETURNING *', [id, fornecedor_id]);
+      if (result.rows.length === 0) throw new NotFoundError('Vínculo com fornecedor');
+      res.json({ message: 'Fornecedor desvinculado com sucesso' });
     } catch (err) { next(err); }
   }
 );

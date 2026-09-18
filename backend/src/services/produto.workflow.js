@@ -13,6 +13,7 @@ const CAMPOS_ATUALIZAVEIS_PRODUTO = [
   'taxa_carregamento',
   'nivel_servico',
   'localizacao',
+  'recorrente',
 ];
 
 /**

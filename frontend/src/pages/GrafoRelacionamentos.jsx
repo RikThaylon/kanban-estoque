@@ -46,13 +46,13 @@ const GAP_Y = 125;
 const PADDING_COLLISION = 12;
 
 const TYPE_META = {
-  produto: { label: 'Peças', icon: Package, color: '#005DFF', bg: '#F2F7FF', column: 1 },
-  maquina: { label: 'Máquinas', icon: Cog, color: '#000000', bg: '#F7F9FC', column: 3 },
+  produto: { label: 'Peças', icon: Package, color: '#C0182A', bg: '#FFF0F2', column: 1 },
+  maquina: { label: 'Máquinas', icon: Cog, color: '#3C3C40', bg: '#F7F7F7', column: 3 },
   departamento: { label: 'Departamentos', icon: Building2, color: '#3F4959', bg: '#FFFFFF', column: 4 },
-  supervisor: { label: 'Supervisores', icon: UserRound, color: '#0088FF', bg: '#EAF6FF', column: 5 },
-  fornecedor: { label: 'Fornecedores', icon: Truck, color: '#0044CC', bg: '#F2F7FF', column: 4 },
-  estoque: { label: 'Estoque', icon: Warehouse, color: '#0088FF', bg: '#EAF6FF', column: 2 },
-  pedido: { label: 'Pedidos', icon: ShoppingCart, color: '#00123D', bg: '#F7F9FC', column: 0 },
+  supervisor: { label: 'Supervisores', icon: UserRound, color: '#636369', bg: '#F5F5F5', column: 5 },
+  fornecedor: { label: 'Fornecedores', icon: Truck, color: '#8F0F1E', bg: '#FFF0F2', column: 4 },
+  estoque: { label: 'Estoque', icon: Warehouse, color: '#0B7A4B', bg: '#E7F6EF', column: 2 },
+  pedido: { label: 'Pedidos', icon: ShoppingCart, color: '#0D0102', bg: '#F7F7F7', column: 0 },
 };
 
 const STATUS_PEDIDO = [
@@ -104,7 +104,7 @@ function statusColor(status) {
   if (status === 'VERMELHO' || status === 'REJEITADO' || status === 'CANCELADO') return '#CC2030';
   if (status === 'AMARELO' || status === 'AGUARDANDO_APROVACAO' || status === 'AGUARDANDO_GERENTE') return '#B86700';
   if (status === 'VERDE' || status === 'CONCLUIDO' || status === 'APROVADO') return '#0B7A4B';
-  if (status === 'AGUARDANDO_CHEGADA' || status === 'EM_TRANSITO' || status === 'RECEBIDO_PARCIAL') return '#005DFF';
+  if (status === 'AGUARDANDO_CHEGADA' || status === 'EM_TRANSITO' || status === 'RECEBIDO_PARCIAL') return '#B86700';
   return '#667085';
 }
 
@@ -670,10 +670,10 @@ const GrafoRelacionamentos = () => {
                     >
                       <defs>
                         <marker id="arrow-grafo" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                          <path d="M 0 0 L 10 5 L 0 10 z" fill="#91A0B7" />
+                          <path d="M 0 0 L 10 5 L 0 10 z" fill="#636369" />
                         </marker>
                         <pattern id="grid-grafo" width="32" height="32" patternUnits="userSpaceOnUse">
-                          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#E8EEF7" strokeWidth="1" />
+                          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#EBEBED" strokeWidth="1" />
                         </pattern>
                       </defs>
                       <rect width={layout.canvasWidth} height={layout.canvasHeight} fill="url(#grid-grafo)" />
@@ -687,7 +687,7 @@ const GrafoRelacionamentos = () => {
                               key={`path-${edge.id}`}
                               d={edge.pathD}
                               fill="none"
-                              stroke={highlighted ? '#667085' : '#E8EEF7'}
+                              stroke={highlighted ? '#636369' : '#EBEBED'}
                               strokeWidth={highlighted ? 2.0 : 1.4}
                               markerEnd="url(#arrow-grafo)"
                               opacity={highlighted ? 1 : 0.18}
@@ -721,9 +721,9 @@ const GrafoRelacionamentos = () => {
                                 <div 
                                   className="flex h-full w-full flex-col justify-between p-3 rounded-xl"
                                   style={{
-                                    backgroundColor: selected ? '#DCEBFF' : meta.bg,
-                                    border: `${selected ? 2.5 : 1.5}px solid ${selected ? '#005DFF' : meta.color}`,
-                                    boxShadow: selected ? '0 10px 14px rgba(0,93,255,0.18)' : 'none',
+                                    backgroundColor: selected ? '#FFF0F2' : meta.bg,
+                                    border: `${selected ? 2.5 : 1.5}px solid ${selected ? '#C0182A' : meta.color}`,
+                                    boxShadow: selected ? '0 10px 14px rgba(192,24,42,0.18)' : 'none',
                                     boxSizing: 'border-box'
                                   }}
                                   xmlns="http://www.w3.org/1999/xhtml"

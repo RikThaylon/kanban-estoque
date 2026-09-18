@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save, X } from 'lucide-react';
+import { ArrowLeft, AlertCircle, AlertTriangle, Clock3, Plus, Save, X, Trash2, Edit2 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import KanbanBar from '../components/kanban/KanbanBar';
@@ -135,6 +135,15 @@ const ProdutoDetalhe = () => {
     onSuccess: () => {
       setFornecedorForm({ fornecedor_id: '', prioridade: '', preco_acordado: '', lead_time_nominal_dias: '' });
       invalidateOperationalData(queryClient, id);
+      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
+    },
+  });
+
+  const removerFornecedor = useMutation({
+    mutationFn: (fornecedorId) => api.delete(`/produtos/${id}/fornecedores/${fornecedorId}`),
+    onSuccess: () => {
+      invalidateOperationalData(queryClient, id);
+      queryClient.invalidateQueries({ queryKey: ['produto', id, 'fornecedores'] });
     },
   });
 
@@ -199,13 +208,19 @@ const ProdutoDetalhe = () => {
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <h1 className="text-xl sm:text-2xl font-bold text-steel-800 break-words">{produto.nome}</h1>
-            <FaixaBadge faixa={produto.faixa_atual} />
+            {produto.recorrente === false ? (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                NÃO RECORRENTE
+              </span>
+            ) : (
+              <FaixaBadge faixa={produto.faixa_atual} />
+            )}
           </div>
           <p className="text-steel-400 text-sm font-mono mt-1">CÓD: {produto.codigo} | CAT: {produto.categoria_nome}</p>
         </div>
         <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
           {isAdmin && (
-            <button className="btn-secondary justify-center border-accent text-accent hover:bg-blue-50" onClick={() => setEditModalOpen(true)}>
+            <button className="btn-secondary justify-center border-accent text-accent hover:bg-red-50" onClick={() => setEditModalOpen(true)}>
               Editar Produto
             </button>
           )}
@@ -231,9 +246,11 @@ const ProdutoDetalhe = () => {
               <span className="text-sm font-bold ml-1">dias</span>
             </div>
             <p className="text-xs mt-2 opacity-80">
-              {diasAteReposicao !== null
-                ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias até o PR` : 'No ponto de reposição ou abaixo')
-                : 'Informe CMD para calcular'}
+              {produto.recorrente === false
+                ? 'Item pontual / sem reposição automática'
+                : (diasAteReposicao !== null
+                  ? (diasAteReposicao > 0 ? `${formatNumber(diasAteReposicao)} dias até o PR` : 'No ponto de reposição ou abaixo')
+                  : 'Informe CMD para calcular')}
             </p>
           </div>
           <div>
@@ -590,33 +607,69 @@ const ProdutoDetalhe = () => {
                         <th className="p-4 text-right">Preço acordado</th>
                         <th className="p-4 text-right">Lead time</th>
                         <th className="p-4 text-center">Status</th>
+                        <th className="p-4 text-center">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-100">
-                      {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => (
-                        <tr key={i} className="hover:bg-surface-50">
-                          <td className="p-4">
-                            <div className="font-bold text-steel-800">{fv.fornecedor_nome || fv.nome}</div>
-                            {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
-                          </td>
-                          <td className="p-4">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-100 text-steel-500'}`}>
-                              {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right font-medium text-steel-700">
-                            {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
-                          </td>
-                          <td className="p-4 text-right text-steel-600">
-                            {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
-                          </td>
-                          <td className="p-4 text-center">
-                            <span className={`text-xs font-bold px-2 py-1 rounded ${fv.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {fv.ativo !== false ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {(Array.isArray(fornecedoresVinculados) ? fornecedoresVinculados : []).map((fv, i) => {
+                        const fvId = fv.fornecedor_id || fv.id;
+                        return (
+                          <tr key={i} className="hover:bg-surface-50">
+                            <td className="p-4">
+                              <div className="font-bold text-steel-800">{fv.fornecedor_nome || fv.nome}</div>
+                              {fv.cnpj && <div className="text-xs text-steel-400">{fv.cnpj}</div>}
+                            </td>
+                            <td className="p-4">
+                              <span className={`text-xs font-bold px-2 py-1 rounded ${fv.prioridade === 1 ? 'bg-red-100 text-red-800' : 'bg-surface-100 text-steel-500'}`}>
+                                {fv.prioridade === 1 ? '★ Principal' : `#${fv.prioridade}`}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right font-medium text-steel-700">
+                              {fv.preco_acordado ? formatMoney(fv.preco_acordado) : '—'}
+                            </td>
+                            <td className="p-4 text-right text-steel-600">
+                              {fv.lead_time_nominal_dias ? `${fv.lead_time_nominal_dias} dias` : '—'}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`text-xs font-bold px-2 py-1 rounded ${fv.ativo !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {fv.ativo !== false ? 'Ativo' : 'Inativo'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFornecedorForm({
+                                      fornecedor_id: fvId,
+                                      prioridade: fv.prioridade || '',
+                                      preco_acordado: fv.preco_acordado || '',
+                                      lead_time_nominal_dias: fv.lead_time_nominal_dias || '',
+                                    });
+                                  }}
+                                  className="p-1.5 text-steel-400 hover:text-accent hover:bg-red-50 rounded transition-colors"
+                                  title="Editar parâmetros deste fornecedor"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Desvincular o fornecedor "${fv.fornecedor_nome || fv.nome}" deste produto?`)) {
+                                      removerFornecedor.mutate(fvId);
+                                    }
+                                  }}
+                                  disabled={removerFornecedor.isPending}
+                                  className="p-1.5 text-steel-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Remover / Desvincular fornecedor"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   </div>
@@ -662,6 +715,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
     lead_time_padrao_dias: produto.lead_time_padrao_dias != null ? produto.lead_time_padrao_dias : '',
     observacoes: produto.observacoes || '',
     ativo: produto.ativo !== false,
+    recorrente: produto.recorrente !== false,
   });
 
   const f = (k, v) => setForm(s => ({ ...s, [k]: v }));
@@ -719,7 +773,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
           <form id="prod-admin-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Seção 1: Identificação */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">1. Identificação Geral</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">1. Identificação Geral</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="label">Código *</label>
@@ -757,7 +811,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 2: Estoques */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">2. Níveis de Estoque (Ajuste Manual)</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">2. Níveis de Estoque (Ajuste Manual)</h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="label">Estoque Atual</label>
@@ -780,7 +834,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 3: Parâmetros Kanban */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">3. Parâmetros de Custos e Lead Time</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">3. Parâmetros de Custos e Lead Time</h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="label">Preço de compra (R$)</label>
@@ -816,7 +870,7 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
 
             {/* Seção 4: Outros */}
             <div>
-              <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 pb-1 border-b border-indigo-100">4. Status e Notas</h3>
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-3 pb-1 border-b border-red-100">4. Status e Notas</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center gap-3 mt-6">
                   <input
@@ -827,6 +881,18 @@ const AdminProdutoEditModal = ({ produto, categorias, onClose }) => {
                     className="w-4 h-4 text-accent border-surface-300 rounded focus:ring-accent"
                   />
                   <label htmlFor="chk-ativo" className="text-sm font-semibold text-steel-700 cursor-pointer">Produto Ativo</label>
+                </div>
+                <div className="flex items-center gap-3 mt-6">
+                  <input
+                    type="checkbox"
+                    id="chk-recorrente"
+                    checked={form.recorrente}
+                    onChange={e => f('recorrente', e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-surface-300 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="chk-recorrente" className="text-sm font-semibold text-purple-900 cursor-pointer">
+                    Produto Recorrente (Demanda Contínua)
+                  </label>
                 </div>
                 <div className="sm:col-span-3">
                   <label className="label">Observações Internas</label>

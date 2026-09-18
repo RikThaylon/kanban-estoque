@@ -23,10 +23,10 @@ const ICONES = {
 };
 
 const LETRA_INFO = {
-  R: { label: 'Responsável', cor: 'bg-emerald-500 text-white', desc: 'Executa a ação' },
-  A: { label: 'Aprovador',   cor: 'bg-red-500 text-white',     desc: 'Responde pelo resultado' },
-  C: { label: 'Consultado',  cor: 'bg-amber-400 text-white',   desc: 'Opina antes' },
-  I: { label: 'Informado',   cor: 'bg-blue-400 text-white',    desc: 'Recebe ciencia' },
+  R: { label: 'Responsável', cor: 'bg-emerald-600 text-white font-bold shadow-sm', desc: 'Executa a ação' },
+  A: { label: 'Aprovador',   cor: 'bg-accent text-white font-black shadow-sm ring-2 ring-red-300', desc: 'Responde pelo resultado' },
+  C: { label: 'Consultado',  cor: 'bg-amber-500 text-white font-bold shadow-sm', desc: 'Opina antes' },
+  I: { label: 'Informado',   cor: 'bg-slate-600 text-white font-bold shadow-sm', desc: 'Recebe ciência' },
 };
 
 const Raci = () => {
@@ -129,7 +129,7 @@ const Raci = () => {
         <div className="flex gap-2 overflow-x-auto">
           <button
             onClick={() => setCategoriaSel('todas')}
-            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === 'todas' ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
+            className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all ${categoriaSel === 'todas' ? 'bg-gradient-to-r from-accent to-red-800 text-white shadow-sm' : 'bg-white text-steel-600 hover:bg-surface-100 border border-surface-200'}`}
           >
             Todas
           </button>
@@ -137,7 +137,7 @@ const Raci = () => {
             <button
               key={c.key}
               onClick={() => setCategoriaSel(c.key)}
-              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap ${categoriaSel === c.key ? 'bg-navy-700 text-white' : 'bg-white text-steel-600 hover:bg-surface-100'}`}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all ${categoriaSel === c.key ? 'bg-gradient-to-r from-accent to-red-800 text-white shadow-sm' : 'bg-white text-steel-600 hover:bg-surface-100 border border-surface-200'}`}
             >
               {c.label}
             </button>
@@ -155,18 +155,18 @@ const Raci = () => {
               onClick={() => abrir(p)}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
-              className={`relative text-left rounded-lg border-2 p-5 cursor-pointer overflow-hidden ${cat?.cor || 'border-surface-200 bg-white'}`}
+              className={`relative text-left rounded-lg bg-white border border-surface-200 border-l-4 p-5 cursor-pointer overflow-hidden shadow-sm hover:shadow-md transition-shadow ${cat?.cor || 'border-l-slate-400'}`}
             >
-              <motion.div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-3">
-                <Icone className="w-5 h-5 text-steel-700" />
+              <motion.div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${cat?.bgIcon || 'bg-slate-50'}`}>
+                <Icone className={`w-5 h-5 ${cat ? cat.cor.split(' ')[1] : 'text-slate-500'}`} />
               </motion.div>
-              <motion.h3 className="font-bold text-steel-800 leading-tight mb-1">
+              <motion.h3 className="font-bold text-slate-800 leading-tight mb-1">
                 {p.titulo}
               </motion.h3>
-              <motion.p className="text-xs text-steel-500 line-clamp-2">
+              <motion.p className="text-xs text-slate-500 line-clamp-2">
                 {p.descricao}
               </motion.p>
-              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-steel-600">
+              <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-accent">
                 Ver fluxograma e RACI <ChevronRight className="w-3 h-3" />
               </div>
             </motion.button>
@@ -192,7 +192,7 @@ const Raci = () => {
               className="bg-white rounded-lg shadow-2xl w-full max-w-5xl mx-auto my-3 sm:my-6 max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative p-4 sm:p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white">
+              <div className="relative p-4 sm:p-6 bg-gradient-to-br from-navy-700 to-navy-800 text-white" style={{ color: 'white' }}>
                 <button
                   onClick={() => setProblemaAberto(null)}
                   className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"
@@ -230,7 +230,7 @@ const Raci = () => {
                     </button>
                   </div>
                 ) : (
-                  <motion.h2 className="pr-10 text-xl sm:text-2xl font-bold leading-tight break-words">
+                  <motion.h2 className="pr-10 text-xl sm:text-2xl font-bold text-white leading-tight break-words" style={{ color: '#ffffff' }}>
                     {problemaAberto.titulo}
                   </motion.h2>
                 )}
@@ -306,7 +306,7 @@ const Raci = () => {
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-kanban-verde text-steel-800' : 'border-transparent text-steel-400 hover:text-steel-700'}`}
+    className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${active ? 'border-accent text-accent font-bold' : 'border-transparent text-steel-400 hover:text-steel-700'}`}
   >
     <Icon className="w-4 h-4" /> {children}
   </button>

@@ -88,11 +88,11 @@ const Login = () => {
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-6 sm:mb-8 w-full">
           <div className="flex items-center gap-3 mb-4 p-2">
-            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-blue-900/50 border border-blue-400/30">
-              B
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-accent to-red-800 text-white text-xl sm:text-2xl font-bold shadow-lg shadow-red-900/50 border border-red-400/30">
+              K
             </div>
             <span className="text-2xl sm:text-3xl font-bold tracking-wide text-white drop-shadow-lg">
-              Brimajor Kanban
+              Smart Kanban
             </span>
           </div>
           
@@ -102,7 +102,7 @@ const Login = () => {
             </h1>
           </div>
           
-          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-semibold text-blue-200 bg-slate-800/60 px-4 py-2.5 rounded-full border border-slate-700/50 backdrop-blur-md shadow-inner">
+          <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[11px] sm:text-xs font-semibold text-slate-200 bg-slate-800/60 px-4 py-2.5 rounded-full border border-slate-700/50 backdrop-blur-md shadow-inner">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span>Sessão segura</span>
@@ -148,7 +148,7 @@ const Login = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
+                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
                   placeholder="Seu usuário"
                   required
                   autoComplete="username"
@@ -169,7 +169,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => { setRecuperarOpen(true); setRecSucesso(''); setRecErro(''); }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold focus:outline-none"
+                  className="text-xs text-primary hover:text-red-800 font-semibold focus:outline-none"
                 >
                   Esqueci minha senha
                 </button>
@@ -183,7 +183,7 @@ const Login = () => {
                   type="password"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
+                  className="block w-full rounded-xl border-0 py-3.5 pl-11 pr-4 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 transition-all bg-gray-50 focus:bg-white"
                   placeholder="Sua senha"
                   required
                   autoComplete="current-password"
@@ -195,7 +195,7 @@ const Login = () => {
             <button 
               type="submit" 
               disabled={loading || !username || !senha} 
-              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-[#003366] to-[#004080] px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-900/30 hover:from-[#002244] hover:to-[#003366] hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#003366] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-red-800 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-950/20 hover:from-red-600 hover:to-red-900 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? (
                 <>
@@ -275,20 +275,29 @@ const Login = () => {
                     />
                   </div>
 
-                  <div className="flex gap-2 pt-2 justify-end">
-                    <button 
-                      type="button" 
-                      onClick={() => setRecuperarOpen(false)}
-                      className="btn-secondary"
+                  <div className="pt-2 border-t border-surface-100 flex flex-col gap-2">
+                    <div className="flex gap-2 justify-end">
+                      <button 
+                        type="button" 
+                        onClick={() => setRecuperarOpen(false)}
+                        className="btn-secondary"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={recLoading || !recUser.trim()}
+                        className="btn-primary"
+                      >
+                        {recLoading ? 'Processando...' : 'Solicitar Chamado'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/recuperar-senha')}
+                      className="text-xs text-center text-primary hover:underline pt-1"
                     >
-                      Cancelar
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={recLoading || !recUser.trim()}
-                      className="btn-primary"
-                    >
-                      {recLoading ? 'Processando...' : 'Solicitar Chamado'}
+                      Já possui um token de recuperação? Digite o token aqui
                     </button>
                   </div>
                 </form>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Shield, MapPin, ToggleLeft, ToggleRight, Save,
@@ -201,15 +202,7 @@ const Seguranca = () => {
 
   // Verificar permissão
   if (user?.perfil !== 'admin') {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Lock className="w-12 h-12 text-steel-300 mx-auto mb-3" />
-          <h2 className="font-bold text-steel-700 mb-1">Acesso Restrito</h2>
-          <p className="text-sm text-steel-400">Esta área é exclusiva para administradores.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   // ─── Queries ────────────────────────────────────────────────────
@@ -311,7 +304,7 @@ const Seguranca = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-red-800 flex items-center justify-center shadow-lg">
               <Shield className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-steel-800">Segurança Avançada</h1>
@@ -369,7 +362,7 @@ const Seguranca = () => {
                   onClick={handleToggle}
                   disabled={toggleMfa.isPending || (!position && !config?.ativo)}
                   className={`text-3xl transition-all duration-300 disabled:opacity-40 ${
-                    config?.ativo ? 'text-accent hover:text-blue-700' : 'text-steel-300 hover:text-steel-400'
+                    config?.ativo ? 'text-accent hover:text-red-700' : 'text-steel-300 hover:text-steel-400'
                   }`}
                   title={config?.ativo ? 'Desativar MFA' : 'Ativar MFA'}
                 >
@@ -547,8 +540,8 @@ const Seguranca = () => {
                         center={[position.lat, position.lng]}
                         radius={raio}
                         pathOptions={{
-                          color: '#005dff',
-                          fillColor: '#005dff',
+                          color: '#C0182A',
+                          fillColor: '#C0182A',
                           fillOpacity: 0.08,
                           weight: 2,
                           dashArray: '6 4',

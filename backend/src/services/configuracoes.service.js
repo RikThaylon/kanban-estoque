@@ -13,6 +13,8 @@ const CONFIG_DEFAULTS = {
   'pedidos.recebedores': 'comprador,facilitador',
   'permissoes.cadastrar_item': 'comprador',
   'permissoes.editar_curva_abc': 'eng_producao',
+  'permissoes.editar_fornecedor_produto': 'admin,gerente_operacoes,supervisor_turno,comprador',
+  'permissoes.definir_meta_gastos': 'admin,gerente_operacoes',
   'permissoes.paginas.dashboard': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.produtos': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes,supervisor_turno,comprador,facilitador,visualizador',
   'permissoes.paginas.movimentacoes': 'admin,gerente_operacoes,supervisor_turno,comprador,facilitador',
@@ -26,9 +28,11 @@ const CONFIG_DEFAULTS = {
   'permissoes.paginas.relatorios': 'admin,gerente_operacoes,gerente_engenharia,plant_manager,comprador,visualizador',
   'permissoes.paginas.simulacao': 'admin',
   'permissoes.paginas.usuarios': 'admin,plant_manager,gerente_engenharia,eng_processos,eng_producao,gerente_operacoes',
+  'permissoes.paginas.seguranca': 'admin',
   'kanban.nivel_servico_padrao': 95,
   'kanban.ciclos_estimativa_inicial': 10,
   'kanban.taxa_carregamento_padrao': 0.2,
+  'kanban.percentual_pr_como_es_provisorio': 50,
   'forecast.adi_threshold': 1.32,
   'forecast.cv2_threshold': 0.49,
   'forecast.seasonality_min_correlation': 0.45,
@@ -58,16 +62,21 @@ const PAGINAS_SISTEMA = [
   'relatorios',
   'simulacao',
   'usuarios',
+  'seguranca',
 ];
 
 const PERMISSOES_CHAVES = {
   cadastrarItem: 'permissoes.cadastrar_item',
   editarCurvaAbc: 'permissoes.editar_curva_abc',
+  editarFornecedorProduto: 'permissoes.editar_fornecedor_produto',
+  definirMetaGastos: 'permissoes.definir_meta_gastos',
 };
 
 const PERMISSAO_TO_CHAVE = {
   cadastrar_item: PERMISSOES_CHAVES.cadastrarItem,
   editar_curva_abc: PERMISSOES_CHAVES.editarCurvaAbc,
+  editar_fornecedor_produto: PERMISSOES_CHAVES.editarFornecedorProduto,
+  definir_meta_gastos: PERMISSOES_CHAVES.definirMetaGastos,
 };
 const PERFIS_SEM_APROVACAO_COMPRA = ['comprador', 'facilitador', 'visualizador'];
 const PERFIS_SEM_EXECUCAO_FLUXO_COMPRA = ['visualizador'];
@@ -143,17 +152,20 @@ function montarConfiguracoesKanban(payload) {
   const nivelServicoPadrao = Number(payload.nivel_servico_padrao);
   const ciclosEstimativaInicial = Number(payload.ciclos_estimativa_inicial);
   const taxaCarregamentoPadrao = Number(payload.taxa_carregamento_padrao);
+  const percentualPrEsProvisorio = Math.min(100, Math.max(0, Number(payload.percentual_pr_como_es_provisorio ?? CONFIG_DEFAULTS['kanban.percentual_pr_como_es_provisorio'])));
 
   return {
     configuracoes: {
       'kanban.nivel_servico_padrao': nivelServicoPadrao,
       'kanban.ciclos_estimativa_inicial': ciclosEstimativaInicial,
       'kanban.taxa_carregamento_padrao': taxaCarregamentoPadrao,
+      'kanban.percentual_pr_como_es_provisorio': percentualPrEsProvisorio,
     },
     resposta: {
       nivel_servico_padrao: nivelServicoPadrao,
       ciclos_estimativa_inicial: ciclosEstimativaInicial,
       taxa_carregamento_padrao: taxaCarregamentoPadrao,
+      percentual_pr_como_es_provisorio: percentualPrEsProvisorio,
     },
   };
 }
@@ -197,6 +209,8 @@ function montarConfiguracoesPermissoes(payload) {
   const configuracoes = {
     'permissoes.cadastrar_item': serializePerfis(payload.cadastrar_item),
     'permissoes.editar_curva_abc': serializePerfis(payload.editar_curva_abc),
+    'permissoes.editar_fornecedor_produto': serializePerfis(payload.editar_fornecedor_produto),
+    'permissoes.definir_meta_gastos': serializePerfis(payload.definir_meta_gastos),
   };
 
   for (const pagina of PAGINAS_SISTEMA) {
@@ -321,9 +335,11 @@ async function getCargosFluxoCompra(options = {}) {
 }
 
 async function getPermissoesOperacionais() {
-  const [cadastrarItem, editarCurvaAbc, ...paginasValues] = await Promise.all([
+  const [cadastrarItem, editarCurvaAbc, editarFornecedorProduto, definirMetaGastos, ...paginasValues] = await Promise.all([
     getConfiguracao(PERMISSOES_CHAVES.cadastrarItem, CONFIG_DEFAULTS[PERMISSOES_CHAVES.cadastrarItem]),
     getConfiguracao(PERMISSOES_CHAVES.editarCurvaAbc, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarCurvaAbc]),
+    getConfiguracao(PERMISSOES_CHAVES.editarFornecedorProduto, CONFIG_DEFAULTS[PERMISSOES_CHAVES.editarFornecedorProduto]),
+    getConfiguracao(PERMISSOES_CHAVES.definirMetaGastos, CONFIG_DEFAULTS[PERMISSOES_CHAVES.definirMetaGastos]),
     ...PAGINAS_SISTEMA.map((pagina) => getConfiguracao(
       `permissoes.paginas.${pagina}`,
       CONFIG_DEFAULTS[`permissoes.paginas.${pagina}`] || ''
@@ -338,15 +354,18 @@ async function getPermissoesOperacionais() {
   return {
     cadastrar_item: parsePerfis(cadastrarItem),
     editar_curva_abc: parsePerfis(editarCurvaAbc),
+    editar_fornecedor_produto: parsePerfis(editarFornecedorProduto),
+    definir_meta_gastos: parsePerfis(definirMetaGastos),
     paginas,
   };
 }
 
 async function getKanbanDefaults() {
-  const [nivelServicoPadrao, ciclosEstimativaInicial, taxaCarregamentoPadrao] = await Promise.all([
+  const [nivelServicoPadrao, ciclosEstimativaInicial, taxaCarregamentoPadrao, percentualPrEsProvisorio] = await Promise.all([
     getConfiguracao('kanban.nivel_servico_padrao', CONFIG_DEFAULTS['kanban.nivel_servico_padrao']),
     getConfiguracao('kanban.ciclos_estimativa_inicial', CONFIG_DEFAULTS['kanban.ciclos_estimativa_inicial']),
     getConfiguracao('kanban.taxa_carregamento_padrao', CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao']),
+    getConfiguracao('kanban.percentual_pr_como_es_provisorio', CONFIG_DEFAULTS['kanban.percentual_pr_como_es_provisorio']),
   ]);
   const taxaCarregamento = Number(taxaCarregamentoPadrao);
 
@@ -356,6 +375,44 @@ async function getKanbanDefaults() {
     taxa_carregamento_padrao: Number.isFinite(taxaCarregamento)
       ? Math.min(1, Math.max(0, taxaCarregamento))
       : CONFIG_DEFAULTS['kanban.taxa_carregamento_padrao'],
+    percentual_pr_como_es_provisorio: Math.min(100, Math.max(0, Number(percentualPrEsProvisorio) || 50)),
+  };
+}
+
+async function getForecastDefaults() {
+  const keys = [
+    'adi_threshold',
+    'cv2_threshold',
+    'seasonality_min_correlation',
+    'underforecast_cost',
+    'overforecast_cost',
+    'absolute_tolerance',
+    'relative_warning',
+    'relative_critical',
+  ];
+  const values = await Promise.all(keys.map(key => getConfiguracao(
+    `forecast.${key}`,
+    CONFIG_DEFAULTS[`forecast.${key}`]
+  )));
+  const parsed = Object.fromEntries(keys.map((key, index) => [key, Number(values[index])]));
+  return {
+    ...parsed,
+    engineConfig: {
+      demand: {
+        adiThreshold: parsed.adi_threshold,
+        cv2Threshold: parsed.cv2_threshold,
+        seasonalityMinCorrelation: parsed.seasonality_min_correlation,
+      },
+      backtest: {
+        underforecastCost: parsed.underforecast_cost,
+        overforecastCost: parsed.overforecast_cost,
+      },
+      tolerance: {
+        absolute: parsed.absolute_tolerance,
+        relativeWarning: parsed.relative_warning,
+        relativeCritical: parsed.relative_critical,
+      },
+    },
   };
 }
 

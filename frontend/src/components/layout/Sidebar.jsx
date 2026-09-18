@@ -82,7 +82,7 @@ const NavItem = ({ item, collapsed }) => {
         `group relative flex items-center gap-3 rounded-lg transition-all duration-150 select-none
         ${collapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2.5'}
         ${isActive
-          ? 'bg-cyan-500/15 text-white font-semibold shadow-[inset_3px_0_0_theme(colors.accent)]'
+          ? 'bg-accent/15 text-white font-semibold shadow-[inset_3px_0_0_theme(colors.accent)]'
           : 'text-white/60 hover:bg-white/[0.08] hover:text-white/90'
         }`
       }
@@ -133,9 +133,9 @@ const Sidebar = () => {
         fixed top-0 left-0 h-screen z-20 flex flex-col
         text-white overflow-hidden
         transition-[width] duration-300 ease-in-out
-        bg-[linear-gradient(168deg,#071525_0%,#0c2340_55%,#071525_100%)]
+        bg-[linear-gradient(168deg,#0D0102_0%,#1A0508_55%,#0D0102_100%)]
         border-r border-white/[0.07]
-        shadow-[4px_0_32px_rgba(0,10,40,0.35)]
+        shadow-[4px_0_32px_rgba(10,0,2,0.50)]
         ${widthClass}
         ${mobileTranslate} lg:translate-x-0
       `}
@@ -147,20 +147,20 @@ const Sidebar = () => {
         {/* Logo mark */}
         <div className={`
           shrink-0 rounded-lg flex items-center justify-center font-black text-white
-          bg-gradient-to-br from-accent to-blue-700
-          shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_20px_rgba(0,136,255,0.40)]
+          bg-gradient-to-br from-accent to-red-800
+          shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_20px_rgba(232,33,59,0.40)]
           ${collapsed ? 'w-9 h-9 text-base' : 'w-9 h-9 text-base'}
         `}>
-          B
+          K
         </div>
 
         {!collapsed && (
           <div className="min-w-0">
             <span className="block font-bold text-[15px] leading-tight tracking-tight text-white">
-              Brimajor
+              Smart Kanban
             </span>
             <span className="block text-[10px] uppercase tracking-widest text-white/40 leading-tight">
-              Kanban Estoque
+              Controle de Estoque
             </span>
           </div>
         )}
@@ -213,7 +213,7 @@ const Sidebar = () => {
           /* Collapsed: just avatar */
           <div className="flex justify-center">
             <div
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold shadow-sm"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-accent to-red-800 flex items-center justify-center text-white text-xs font-bold shadow-sm"
               title={user?.nome}
             >
               {initials}
@@ -222,7 +222,7 @@ const Sidebar = () => {
         ) : (
           /* Expanded: full card */
           <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.05] px-3 py-2.5 border border-white/[0.07]">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-red-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
               {initials}
             </div>
             <div className="min-w-0 flex-1">

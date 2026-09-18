@@ -164,7 +164,13 @@ const Produtos = () => {
                       </span>
                     </div>
                   </div>
-                  <FaixaBadge faixa={produto.faixa_atual} />
+                  {produto.recorrente === false ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                      NÃO RECORRENTE
+                    </span>
+                  ) : (
+                    <FaixaBadge faixa={produto.faixa_atual} />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
@@ -173,8 +179,12 @@ const Produtos = () => {
                     <p className="font-bold text-steel-700">{formatNumber(produto.estoque_atual)} {produto.unidade}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-steel-400">PR</p>
-                    <p className="font-bold text-steel-700">{formatNumber(produto.ponto_reposicao) || '-'}</p>
+                    <p className="text-xs text-steel-400">{produto.recorrente === false ? 'Dias Est.' : 'PR'}</p>
+                    <p className="font-bold text-steel-700">
+                      {produto.recorrente === false
+                        ? (produto.dias_estoque_estimado != null ? `${produto.dias_estoque_estimado}d` : '-')
+                        : (formatNumber(produto.ponto_reposicao) || '-')}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-steel-400">Custo un.</p>
@@ -211,8 +221,8 @@ const Produtos = () => {
                 <th className="p-4">Produto</th>
                 <th className="p-4">Categoria</th>
                 <th className="p-4 text-right">Estoque</th>
-                <th className="p-4 text-center">Faixa Kanban</th>
-                <th className="p-4 text-right">PR</th>
+                <th className="p-4 text-center">Faixa Kanban / Recorrência</th>
+                <th className="p-4 text-right">PR / Cobertura</th>
                 <th className="p-4 text-right">Custo Un.</th>
                 <th className="p-4"></th>
               </tr>
@@ -229,7 +239,8 @@ const Produtos = () => {
               ) : (
                 data?.data.map((produto) => {
                   let rowColor = '';
-                  if (produto.faixa_atual === 'VERMELHO') rowColor = 'bg-red-50/30';
+                  if (produto.recorrente === false) rowColor = 'bg-purple-50/20';
+                  else if (produto.faixa_atual === 'VERMELHO') rowColor = 'bg-red-50/30';
                   else if (produto.faixa_atual === 'AMARELO') rowColor = 'bg-amber-50/30';
 
                   return (
@@ -250,10 +261,18 @@ const Produtos = () => {
                         {formatNumber(produto.estoque_atual)} {produto.unidade}
                       </td>
                       <td className="p-4 text-center">
-                        <FaixaBadge faixa={produto.faixa_atual} />
+                        {produto.recorrente === false ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                            NÃO RECORRENTE
+                          </span>
+                        ) : (
+                          <FaixaBadge faixa={produto.faixa_atual} />
+                        )}
                       </td>
                       <td className="p-4 text-right text-steel-600 font-medium">
-                        {formatNumber(produto.ponto_reposicao) || '-'}
+                        {produto.recorrente === false
+                          ? (produto.dias_estoque_estimado != null ? `${produto.dias_estoque_estimado}d` : '-')
+                          : (formatNumber(produto.ponto_reposicao) || '-')}
                       </td>
                       <td className="p-4 text-right text-steel-600">
                         {formatMoney(produto.custo_unitario)}
@@ -315,6 +334,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
     taxa_carregamento: produto?.taxa_carregamento || 0.20,
     nivel_servico: produto?.nivel_servico || 95,
     localizacao: produto?.localizacao || '',
+    recorrente: produto?.recorrente !== undefined ? produto.recorrente : true,
     // Parâmetros iniciais Kanban (só no cadastro)
     cmd_inicial: '',
     lead_time_inicial: '',
@@ -401,6 +421,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
         custo_pedido: parseFloat(form.custo_pedido),
         taxa_carregamento: parseFloat(form.taxa_carregamento),
         localizacao: form.localizacao,
+        recorrente: form.recorrente,
       };
       if (isEdit) payload.nivel_servico = parseInt(form.nivel_servico);
       if (isEdit) {
@@ -541,6 +562,23 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
                 <Label>Localização no estoque</Label>
                 <input className="input" value={form.localizacao} onChange={e => f('localizacao', e.target.value)} placeholder="Ex: Prateleira A3" />
               </div>
+            </div>
+            <div className="mt-4 p-3 rounded-lg border border-purple-200 bg-purple-50/50 flex items-center justify-between">
+              <div>
+                <label htmlFor="modal-chk-recorrente" className="text-xs font-bold text-purple-900 cursor-pointer block">
+                  Produto Recorrente (Demanda Contínua)
+                </label>
+                <p className="text-[11px] text-purple-700">
+                  Desmarque para itens de projeto/pontuais (desativa Kanban automático e cálculos de previsão).
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                id="modal-chk-recorrente"
+                checked={form.recorrente}
+                onChange={e => f('recorrente', e.target.checked)}
+                className="w-5 h-5 text-accent border-purple-300 rounded focus:ring-accent cursor-pointer ml-3"
+              />
             </div>
           </div>
 
@@ -697,7 +735,7 @@ const ProdutoModal = ({ produto, modo = 'novo', onClose }) => {
           {erro && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3">{erro}</div>}
 
           {!isEdit && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs rounded-md p-3">
+            <div className="bg-red-50 border border-red-100 text-red-800 text-xs rounded-md p-3">
               Após criar, o produto entra com faixa <strong>SEM_DADOS</strong> (se CMD e Lead Time não forem informados) ou terá seus parâmetros calculados imediatamente. Conforme movimentações e pedidos forem registrados, o modelo estatístico (Holt-Winters + Regressão) refinará automaticamente os valores.
             </div>
           )}
